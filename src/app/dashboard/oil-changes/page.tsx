@@ -14,13 +14,15 @@ import { addDocumentNonBlocking } from '@/firebase/non-blocking-updates';
 import { useToast } from '@/hooks/use-toast';
 import { Loader2, PlusCircle, Droplets } from 'lucide-react';
 import Link from 'next/link';
-import type { OilChange } from '@/lib/types';
+import type { OilChange, Vehicle } from '@/lib/types';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 
 const oilChangeSchema = z.object({
+  vehicleId: z.string({ required_error: 'Debes seleccionar un vehículo.' }),
   oilType: z.string().min(3, 'El tipo de aceite debe tener al menos 3 caracteres.'),
   oilPrice: z.preprocess(
     (a) => parseFloat(z.string().parse(a)),
@@ -42,6 +44,14 @@ export default function OilChangesPage() {
   const { toast } = useToast();
   const [isSubmitting, setIsSubmitting] = useState(false);
 
+  // Fetch Vehicles
+  const vehiclesCollection = useMemoFirebase(() => {
+    if (!firestore || !user) return null;
+    return collection(firestore, `users/${user.uid}/vehicles`);
+  }, [firestore, user]);
+  const { data: vehicles, isLoading: areVehiclesLoading } = useCollection<Vehicle>(vehiclesCollection);
+
+  // Fetch Oil Changes
   const oilChangesCollection = useMemoFirebase(() => {
     if (!firestore || !user) return null;
     return collection(firestore, `users/${user.uid}/oilChanges`);
@@ -65,8 +75,8 @@ export default function OilChangesPage() {
   });
 
   async function onSubmit(values: z.infer<typeof oilChangeSchema>) {
-    if (!user || !firestore) {
-      toast({ variant: 'destructive', title: 'Error', description: 'Debes iniciar sesión.' });
+    if (!user || !firestore || !vehicles) {
+      toast({ variant: 'destructive', title: 'Error', description: 'Debes iniciar sesión y tener vehículos registrados.' });
       return;
     }
 
@@ -77,10 +87,18 @@ export default function OilChangesPage() {
 
     setIsSubmitting(true);
 
+    const selectedVehicle = vehicles.find(v => v.id === values.vehicleId);
+    if (!selectedVehicle) {
+        toast({ variant: 'destructive', title: 'Error', description: 'Vehículo seleccionado no válido.' });
+        setIsSubmitting(false);
+        return;
+    }
+
     try {
       const oilChangeData = {
         ...values,
         userId: user.uid,
+        vehicleName: `${selectedVehicle.brand} ${selectedVehicle.model}`, // Denormalized name
         date: serverTimestamp(),
       };
       
@@ -103,10 +121,10 @@ export default function OilChangesPage() {
     }
   }
 
-  const isLoading = isUserLoading || areOilChangesLoading;
+  const isLoading = isUserLoading || areOilChangesLoading || areVehiclesLoading;
   
-  const formatDate = (dateValue: string | Timestamp) => {
-    if (!dateValue) return '';
+  const formatDate = (dateValue: string | Timestamp | undefined) => {
+    if (!dateValue) return 'Pendiente';
     const date = (dateValue as Timestamp)?.toDate ? (dateValue as Timestamp).toDate() : new Date(dateValue);
     return format(date, 'dd MMM yyyy', { locale: es });
   };
@@ -132,6 +150,30 @@ export default function OilChangesPage() {
             <Form {...form}>
               <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                   <FormField
+                      control={form.control}
+                      name="vehicleId"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Vehículo</FormLabel>
+                          <Select onValueChange={field.onChange} defaultValue={field.value} disabled={!vehicles || vehicles.length === 0}>
+                            <FormControl>
+                              <SelectTrigger>
+                                <SelectValue placeholder={!vehicles || vehicles.length === 0 ? "Primero registra un vehículo" : "Selecciona un vehículo"} />
+                              </SelectTrigger>
+                            </FormControl>
+                            <SelectContent>
+                              {vehicles?.map(vehicle => (
+                                <SelectItem key={vehicle.id} value={vehicle.id}>
+                                  {vehicle.brand} {vehicle.model} ({vehicle.year})
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
                   <FormField
                     control={form.control}
                     name="oilType"
@@ -177,11 +219,14 @@ export default function OilChangesPage() {
                     )}
                   />
                 </div>
-                <Button type="submit" disabled={isSubmitting}>
+                <Button type="submit" disabled={isSubmitting || !vehicles || vehicles.length === 0}>
                   {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                   <PlusCircle className="mr-2" />
                   Guardar Registro
                 </Button>
+                {(!vehicles || vehicles.length === 0) && !isLoading && (
+                    <p className="text-sm text-muted-foreground">Debes <Link href="/dashboard/my-vehicles" className="underline">registrar un vehículo</Link> antes de añadir un cambio de aceite.</p>
+                )}
               </form>
             </Form>
           </CardContent>
@@ -199,6 +244,7 @@ export default function OilChangesPage() {
                         <TableHeader>
                             <TableRow>
                                 <TableHead>Fecha</TableHead>
+                                <TableHead>Vehículo</TableHead>
                                 <TableHead>Tipo de Aceite</TableHead>
                                 <TableHead>Kilometraje</TableHead>
                                 <TableHead>Próximo Cambio</TableHead>
@@ -210,6 +256,7 @@ export default function OilChangesPage() {
                                 oilChanges.map((change) => (
                                     <TableRow key={change.id}>
                                         <TableCell>{formatDate(change.date)}</TableCell>
+                                        <TableCell className="font-medium">{change.vehicleName}</TableCell>
                                         <TableCell>{change.oilType}</TableCell>
                                         <TableCell>{change.mileage.toLocaleString()} km</TableCell>
                                         <TableCell>{change.nextChangeMileage.toLocaleString()} km</TableCell>
@@ -218,7 +265,7 @@ export default function OilChangesPage() {
                                 ))
                             ) : (
                                 <TableRow>
-                                    <TableCell colSpan={5} className="text-center h-24">
+                                    <TableCell colSpan={6} className="text-center h-24">
                                         No hay registros de cambios de aceite.
                                     </TableCell>
                                 </TableRow>
@@ -232,3 +279,5 @@ export default function OilChangesPage() {
     </div>
   );
 }
+
+    

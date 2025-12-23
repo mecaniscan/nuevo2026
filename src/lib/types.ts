@@ -47,6 +47,8 @@ export type Review = {
 export type OilChange = {
     id: string;
     userId: string;
+    vehicleId: string;
+    vehicleName: string; // Denormalized for easy display
     date: string | Timestamp;
     oilType: string;
     oilPrice: number;
@@ -66,4 +68,5 @@ export type Vehicle = {
     price: number;
 };
 
+    
     
