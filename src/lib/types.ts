@@ -70,5 +70,13 @@ export type Vehicle = {
     currentMileage: number;
 };
 
+export type FavoriteWorkshop = {
+    workshopId: string;
+    name: string;
+    address: string;
+    imageUrl: string;
+    averageRating: number;
+    addedAt: Timestamp;
+}
     
     

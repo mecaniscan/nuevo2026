@@ -187,6 +187,15 @@ service cloud.firestore {
         allow create, update: if isOwner(userId) && request.resource.data.userId == userId;
         allow delete: if isExistingOwner(userId) && resource.data.userId == userId;
       }
+      
+      /**
+       * @description Secures a user's favorite workshops subcollection.
+       * @path /users/{userId}/favorites/{workshopId}
+       * @allow (read, write) A user can manage their own list of favorite workshops.
+       */
+      match /favorites/{workshopId} {
+        allow get, list, create, update, delete: if isOwner(userId);
+      }
     }
   }
 }

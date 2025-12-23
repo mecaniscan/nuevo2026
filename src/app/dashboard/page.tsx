@@ -6,7 +6,7 @@ import { useCollection } from '@/firebase/firestore/use-collection';
 import type { Workshop, Appointment, OilChange, Vehicle } from '@/lib/types';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Loader2, Calendar, Wrench, Trash2, Settings, Pencil, LogOut, User as UserIcon, Lock, ListPlus, Building, ArrowRight, Droplets, Car, Gauge, ScanLine } from 'lucide-react';
+import { Loader2, Calendar, Wrench, Trash2, Settings, Pencil, LogOut, User as UserIcon, Lock, ListPlus, Building, ArrowRight, Droplets, Car, Gauge, ScanLine, Heart } from 'lucide-react';
 import Link from 'next/link';
 import { initiateAnonymousSignIn, initiateSignOut, initiateEmailSignIn } from '@/firebase/non-blocking-login';
 import { useAuth } from '@/firebase';
@@ -343,6 +343,16 @@ export default function DashboardPage() {
                 description={`Tienes ${appointments?.length || 0} citas. Ver o agendar.`}
             />
         </div>
+        
+        {/* Favorites Section */}
+        <div className="lg:col-span-1">
+             <ActionButton 
+                href="/dashboard/my-favorites"
+                icon={<Heart className="h-8 w-8 text-primary"/>}
+                title="Mis Favoritos"
+                description="Accede a tus talleres guardados."
+            />
+        </div>
 
         {/* My Vehicles Section */}
         <div className="lg:col-span-1">
@@ -365,7 +375,7 @@ export default function DashboardPage() {
         </div>
 
         {/* AI Scanner Section */}
-        <div className="lg:col-span-1">
+        <div className="lg:col-span-3">
             <ActionButton 
                 href="/#decoder"
                 icon={<ScanLine className="h-8 w-8 text-primary"/>}

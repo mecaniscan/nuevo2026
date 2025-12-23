@@ -7,11 +7,11 @@ import * as z from 'zod';
 import { useParams, useRouter } from 'next/navigation';
 import Image from 'next/image';
 import { useDoc, useUser, useFirestore, useMemoFirebase, useCollection } from '@/firebase';
-import { doc, collection, query, where, serverTimestamp, Timestamp } from 'firebase/firestore';
-import type { Workshop, Appointment, Service, Review } from '@/lib/types';
+import { doc, collection, query, where, serverTimestamp, Timestamp, writeBatch, getDoc, deleteDoc } from 'firebase/firestore';
+import type { Workshop, Appointment, Service, Review, FavoriteWorkshop } from '@/lib/types';
 import { addDocumentNonBlocking } from '@/firebase/non-blocking-updates';
 import { PlaceHolderImages } from '@/lib/placeholder-images';
-import { Loader2, MapPin, ScanLine, Star, Calendar as CalendarIcon, Wrench, MessageSquare, Send } from 'lucide-react';
+import { Loader2, MapPin, ScanLine, Star, Calendar as CalendarIcon, Wrench, MessageSquare, Send, Heart } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -79,6 +79,13 @@ export default function WorkshopDetailPage() {
         return reviews.some(review => review.userId === user.uid);
     }, [user, reviews]);
 
+    // Fetch User Favorites
+    const favoriteRef = useMemoFirebase(() => {
+        if (!firestore || !user || !workshopId) return null;
+        return doc(firestore, `users/${user.uid}/favorites`, workshopId);
+    }, [firestore, user, workshopId]);
+    const { data: favorite, isLoading: isFavoriteLoading } = useDoc<FavoriteWorkshop>(favoriteRef);
+    const isFavorite = !!favorite;
 
     const appointmentForm = useForm<z.infer<typeof appointmentSchema>>({
         resolver: zodResolver(appointmentSchema),
@@ -110,6 +117,41 @@ export default function WorkshopDetailPage() {
     const handleLogin = () => {
         initiateAnonymousSignIn(auth);
     };
+
+    const toggleFavorite = async () => {
+        if (!firestore || !user || !workshopId || !workshop) {
+            toast({ variant: 'destructive', title: 'Error', description: 'Debes iniciar sesión para guardar favoritos.' });
+            return;
+        }
+
+        const favRef = doc(firestore, `users/${user.uid}/favorites`, workshopId);
+
+        try {
+            if (isFavorite) {
+                // Remove from favorites
+                await deleteDoc(favRef);
+                toast({ title: 'Eliminado de Favoritos', description: `${workshop.name} ha sido eliminado de tu lista.` });
+            } else {
+                // Add to favorites
+                const batch = writeBatch(firestore);
+                const favoriteData: FavoriteWorkshop = {
+                    workshopId,
+                    name: workshop.name,
+                    address: workshop.address,
+                    imageUrl: workshop.image.imageUrl,
+                    averageRating: workshop.averageRating,
+                    addedAt: serverTimestamp(),
+                };
+                batch.set(favRef, favoriteData);
+                await batch.commit();
+                toast({ title: '¡Guardado en Favoritos!', description: `${workshop.name} ha sido añadido a tu lista.` });
+            }
+        } catch (error) {
+            console.error('Error toggling favorite:', error);
+            toast({ variant: 'destructive', title: 'Error', description: 'No se pudo actualizar tu lista de favoritos.' });
+        }
+    };
+
 
     async function onAppointmentSubmit(values: z.infer<typeof appointmentSchema>) {
         if (!user || !firestore || !workshopId || !workshop) {
@@ -198,7 +240,7 @@ export default function WorkshopDetailPage() {
         return format(date, 'dd MMM yyyy', { locale: es });
     };
 
-    if (isWorkshopLoading || isUserLoading || isServicesLoading || areReviewsLoading) {
+    if (isWorkshopLoading || isUserLoading || isServicesLoading || areReviewsLoading || isFavoriteLoading) {
         return (
             <div className="flex min-h-screen items-center justify-center">
                 <Loader2 className="h-16 w-16 animate-spin text-primary" />
@@ -235,12 +277,20 @@ export default function WorkshopDetailPage() {
                         priority
                     />
                     <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/30 to-transparent" />
-                    <div className="absolute bottom-0 left-0 p-6">
-                        <h1 className="text-4xl font-headline font-bold text-white shadow-text">{workshop.name}</h1>
-                        <div className="flex items-center gap-2 text-sm text-white/90 mt-2">
-                            <MapPin className="h-4 w-4 shrink-0" /> 
-                            <span>{workshop.address}, {workshop.city}</span>
+                    <div className="absolute bottom-0 left-0 p-6 w-full flex justify-between items-end">
+                        <div>
+                            <h1 className="text-4xl font-headline font-bold text-white shadow-text">{workshop.name}</h1>
+                            <div className="flex items-center gap-2 text-sm text-white/90 mt-2">
+                                <MapPin className="h-4 w-4 shrink-0" /> 
+                                <span>{workshop.address}, {workshop.city}</span>
+                            </div>
                         </div>
+                        {user && !user.isAnonymous && (
+                            <Button size="icon" variant="secondary" onClick={toggleFavorite} className="rounded-full h-12 w-12 shrink-0">
+                                <Heart className={cn("h-6 w-6 transition-all", isFavorite ? "text-red-500 fill-red-500" : "text-muted-foreground")} />
+                                <span className="sr-only">Añadir a favoritos</span>
+                            </Button>
+                        )}
                     </div>
                      {workshop.obdScannerService && (
                         <Badge variant="default" className="absolute top-4 right-4 bg-accent text-accent-foreground border-transparent shadow-md">
