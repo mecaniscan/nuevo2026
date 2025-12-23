@@ -1,20 +1,53 @@
 "use client";
 
-import { useState } from 'react';
-import { workshops } from '@/lib/data';
+import { useState, useMemo } from 'react';
 import { WorkshopCard } from './workshop-card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
-import { Search } from 'lucide-react';
+import { Search, Loader2 } from 'lucide-react';
+import { useCollection, useFirestore, useMemoFirebase } from '@/firebase';
+import { collection, query, where } from 'firebase/firestore';
+import type { Workshop } from '@/lib/types';
+import { PlaceHolderImages } from '@/lib/placeholder-images';
+
 
 export function WorkshopFinder() {
   const [searchTerm, setSearchTerm] = useState('');
   const [showObdOnly, setShowObdOnly] = useState(false);
+  const firestore = useFirestore();
 
-  const filteredWorkshops = workshops
-    .filter(ws => ws.name.toLowerCase().includes(searchTerm.toLowerCase()))
-    .filter(ws => (showObdOnly ? ws.hasObdiiScanner : true));
+  const workshopsCollection = useMemoFirebase(() => {
+    if (!firestore) return null;
+    return collection(firestore, 'workshops');
+  }, [firestore]);
+
+  const workshopsQuery = useMemoFirebase(() => {
+    if (!workshopsCollection) return null;
+    if (showObdOnly) {
+      return query(workshopsCollection, where('obdScannerService', '==', true));
+    }
+    return workshopsCollection;
+  }, [workshopsCollection, showObdOnly]);
+
+  const { data: workshops, isLoading } = useCollection<Workshop>(workshopsQuery);
+  
+  const filteredWorkshops = useMemo(() => {
+    if (!workshops) return [];
+    // The workshop data is incomplete from Firestore, so we'll merge it with placeholder data
+    const enrichedWorkshops = workshops.map((workshop, index) => ({
+      ...workshop,
+      city: "Metropolis",
+      rating: 4.5 + (index * 0.1),
+      reviewCount: 50 + (index * 10),
+      services: ['Engine Repair', 'OBD-II Scan', 'Oil Change'],
+      image: PlaceHolderImages.find(p => p.id.startsWith('workshop')) || PlaceHolderImages[1],
+      hasObdiiScanner: workshop.obdScannerService
+    }));
+
+    return enrichedWorkshops.filter(ws => ws.name.toLowerCase().includes(searchTerm.toLowerCase()));
+  }, [workshops, searchTerm]);
+
 
   return (
     <section id="workshops" className="w-full py-12 md:py-24 lg:py-32 bg-card/50">
@@ -41,14 +74,25 @@ export function WorkshopFinder() {
                     </div>
                 </div>
             </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-                {filteredWorkshops.map(workshop => (
-                   <WorkshopCard key={workshop.id} workshop={workshop} />
-                ))}
-            </div>
-            {filteredWorkshops.length === 0 && (
-                <div className="text-center text-muted-foreground mt-12 col-span-full">
-                    <p>No se encontraron talleres que coincidan con tus criterios.</p>
+
+            {isLoading && (
+              <div className="flex justify-center items-center col-span-full h-64">
+                <Loader2 className="h-12 w-12 animate-spin text-primary" />
+              </div>
+            )}
+            
+            {!isLoading && filteredWorkshops && (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                  {filteredWorkshops.map(workshop => (
+                    <WorkshopCard key={workshop.id} workshop={workshop as any} />
+                  ))}
+              </div>
+            )}
+
+            {!isLoading && (!filteredWorkshops || filteredWorkshops.length === 0) && (
+                <div className="text-center text-muted-foreground mt-12 col-span-full h-64 flex flex-col justify-center items-center">
+                    <p className="text-lg">No se encontraron talleres.</p>
+                    <p className="text-sm">Prueba con otro término de búsqueda o ajusta los filtros.</p>
                 </div>
             )}
         </div>

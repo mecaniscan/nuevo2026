@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { MapPin, ScanLine, Star } from 'lucide-react';
 
 type WorkshopCardProps = {
-  workshop: Workshop;
+  workshop: Workshop & { hasObdiiScanner: boolean };
 };
 
 export function WorkshopCard({ workshop }: WorkshopCardProps) {
@@ -22,7 +22,7 @@ export function WorkshopCard({ workshop }: WorkshopCardProps) {
                 sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
                 data-ai-hint={workshop.image.imageHint}
             />
-            {workshop.hasObdiiScanner && (
+            {workshop.obdScannerService && (
                 <Badge variant="default" className="absolute top-2 right-2 bg-accent text-accent-foreground border-transparent shadow-md">
                     <ScanLine className="mr-1.5 h-4 w-4" /> Escáner OBD-II
                 </Badge>
@@ -36,7 +36,7 @@ export function WorkshopCard({ workshop }: WorkshopCardProps) {
         </div>
         <div className="flex items-center gap-1.5 mb-4">
             <Star className="h-5 w-5 fill-amber-400 text-amber-400" />
-            <span className="font-bold text-foreground">{workshop.rating}</span>
+            <span className="font-bold text-foreground">{workshop.rating.toFixed(1)}</span>
             <span className="text-sm text-muted-foreground">({workshop.reviewCount} reseñas)</span>
         </div>
         <div className="flex flex-wrap gap-2 mt-auto">
