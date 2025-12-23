@@ -24,6 +24,7 @@ const workshopSchema = z.object({
   description: z.string().min(10, 'La descripción debe tener al menos 10 caracteres.'),
   address: z.string().min(5, 'La dirección debe tener al menos 5 caracteres.'),
   contactNumber: z.string().min(8, 'El número de contacto no es válido.'),
+  whatsappNumber: z.string().optional(),
   email: z.string().email('El correo electrónico no es válido.'),
   obdScannerService: z.boolean().default(false),
 });
@@ -56,6 +57,7 @@ export default function EditWorkshopPage() {
       description: '',
       address: '',
       contactNumber: '',
+      whatsappNumber: '',
       email: '',
       obdScannerService: false,
     },
@@ -209,6 +211,19 @@ export default function EditWorkshopPage() {
                 />
                 <FormField
                   control={form.control}
+                  name="whatsappNumber"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Número de WhatsApp (Opcional)</FormLabel>
+                      <FormControl>
+                        <Input type="tel" placeholder="+54 9 11 1234-5678" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
                   name="email"
                   render={({ field }) => (
                     <FormItem>
@@ -260,4 +275,3 @@ export default function EditWorkshopPage() {
   );
 }
 
-    

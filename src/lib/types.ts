@@ -8,6 +8,7 @@ export type Workshop = {
     description: string;
     address: string;
     contactNumber: string;
+    whatsappNumber?: string;
     email: string;
     latitude: number;
     longitude: number;
