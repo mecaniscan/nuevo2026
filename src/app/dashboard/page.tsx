@@ -323,16 +323,6 @@ export default function DashboardPage() {
           )}
         </div>
 
-        {/* Taller Section */}
-        <div className="lg:col-span-2">
-            <ActionButton 
-                href={hasWorkshop ? "/dashboard/edit-workshop" : "/dashboard/register-workshop"}
-                icon={<Building className="h-8 w-8 text-primary"/>}
-                title={hasWorkshop ? "Gestionar mi Taller" : "Registrar mi Taller"}
-                description={hasWorkshop ? "Edita la información y servicios de tu taller." : "Añade tu taller a la plataforma."}
-            />
-        </div>
-
         {/* Citas Section */}
         <div>
             <ActionButton 
@@ -374,7 +364,7 @@ export default function DashboardPage() {
         </div>
 
         {/* AI Scanner Section */}
-        <div className="lg:col-span-3">
+        <div className="lg:col-span-2">
             <ActionButton 
                 href="/#decoder"
                 icon={<ScanLine className="h-8 w-8 text-primary"/>}
@@ -396,6 +386,11 @@ export default function DashboardPage() {
                         <Pencil className="mr-2 h-4 w-4" /> Editar Perfil
                       </Link>
                     </Button>
+                    <Button asChild variant={hasWorkshop ? "outline" : "default"} disabled={user.isAnonymous}>
+                        <Link href={hasWorkshop ? "/dashboard/edit-workshop" : "/dashboard/register-workshop"}>
+                            {hasWorkshop ? <><Wrench className="mr-2 h-4 w-4" />Gestionar mi Taller</> : <><Building className="mr-2 h-4 w-4" />Registrar mi Taller</>}
+                        </Link>
+                    </Button>
                     <AlertDialog>
                         <AlertDialogTrigger asChild>
                             <Button variant="destructive" disabled={user.isAnonymous}>
@@ -416,7 +411,7 @@ export default function DashboardPage() {
                             </AlertDialogFooter>
                         </AlertDialogContent>
                     </AlertDialog>
-                    {user.isAnonymous && <p className="text-xs text-muted-foreground">Debes tener una cuenta permanente para poder editar o eliminar tu perfil.</p>}
+                    {user.isAnonymous && <p className="text-xs text-muted-foreground">Debes tener una cuenta permanente para poder editar o eliminar tu perfil y registrar un taller.</p>}
                 </CardContent>
             </Card>
         </div>
