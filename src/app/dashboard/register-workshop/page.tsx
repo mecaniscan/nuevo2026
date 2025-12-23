@@ -10,7 +10,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { useUser, useFirestore, useMemoFirebase } from '@/firebase';
 import { addDocumentNonBlocking } from '@/firebase/non-blocking-updates';
-import { collection, query, where, writeBatch } from 'firebase/firestore';
+import { collection, query, where, writeBatch, doc } from 'firebase/firestore';
 import { useCollection } from '@/firebase/firestore/use-collection';
 import { useToast } from '@/hooks/use-toast';
 import { useRouter } from 'next/navigation';
@@ -53,7 +53,7 @@ export default function RegisterWorkshopPage() {
       const batch = writeBatch(firestore);
       defaultServices.forEach(service => {
         const docRef = doc(collection(firestore, "services"));
-        batch.set(docRef, service);
+        batch.set(docRef, {...service, id: docRef.id});
       });
       batch.commit().then(() => {
         console.log("Seeded master services list.");
