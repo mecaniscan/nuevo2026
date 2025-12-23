@@ -24,7 +24,6 @@ export type Appointment = {
     id: string;
     workshopId: string;
     userId: string;
-    serviceName?: string; // Denormalized service name
     appointmentDateTime: string;
     description: string;
     status: 'scheduled' | 'completed' | 'cancelled';
@@ -46,5 +45,3 @@ export type Review = {
     createdAt: Timestamp | string;
     authorName?: string; // Denormalized user name
 };
-
-    

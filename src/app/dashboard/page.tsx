@@ -31,6 +31,7 @@ import * as z from 'zod';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import React from 'react';
 
 
 const loginSchema = z.object({
@@ -43,6 +44,8 @@ export default function DashboardPage() {
   const firestore = useFirestore();
   const auth = useAuth();
   const { toast } = useToast();
+  const [isLoggingIn, setIsLoggingIn] = React.useState(false);
+
 
   const handleLogout = () => {
     initiateSignOut(auth);
@@ -134,7 +137,28 @@ export default function DashboardPage() {
   });
 
   async function onLoginSubmit(values: z.infer<typeof loginSchema>) {
-    initiateEmailSignIn(auth, values.email, values.password);
+    setIsLoggingIn(true);
+    try {
+      await initiateEmailSignIn(auth, values.email, values.password);
+      // Let the onAuthStateChanged handle the redirect/UI update
+    } catch (error: any) {
+      console.error("Login Error:", error.code);
+      if (error.code === 'auth/invalid-credential' || error.code === 'auth/wrong-password' || error.code === 'auth/user-not-found') {
+        toast({
+          variant: 'destructive',
+          title: 'Error de Inicio de Sesión',
+          description: 'El correo electrónico o la contraseña son incorrectos.',
+        });
+      } else {
+        toast({
+          variant: 'destructive',
+          title: 'Error Inesperado',
+          description: 'Ocurrió un error al intentar iniciar sesión. Por favor, intenta de nuevo.',
+        });
+      }
+    } finally {
+      setIsLoggingIn(false);
+    }
   }
 
   if (isUserLoading || isWorkshopsLoading || isAppointmentsLoading) {
@@ -188,8 +212,9 @@ export default function DashboardPage() {
                                 </FormItem>
                               )}
                             />
-                            <Button type="submit" className="w-full">
-                               <Lock className="mr-2"/> Iniciar Sesión
+                            <Button type="submit" className="w-full" disabled={isLoggingIn}>
+                               {isLoggingIn ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Lock className="mr-2 h-4 w-4" />}
+                               {isLoggingIn ? 'Iniciando Sesión...' : 'Iniciar Sesión'}
                             </Button>
                           </form>
                         </Form>
@@ -303,12 +328,11 @@ export default function DashboardPage() {
                                 <div className="flex justify-between items-start">
                                     <div>
                                         <p className="font-semibold capitalize">{format(new Date(appointment.appointmentDateTime), "EEEE, d 'de' MMMM", { locale: es })}</p>
-                                        <p className="text-sm text-muted-foreground">Servicio: {appointment.serviceName}</p>
                                         <p className="text-sm text-muted-foreground">Taller: ID {appointment.workshopId}</p>
                                     </div>
                                     <Badge variant={appointment.status === 'scheduled' ? 'default' : 'secondary'}>{appointment.status}</Badge>
                                 </div>
-                                <div className="flex justify-between items-end mt-2">
+                                <div className="flex justify-between items-end mt-2 gap-4">
                                   <p className="text-sm p-3 bg-muted rounded-md flex-grow">{appointment.description}</p>
                                   <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive" onClick={() => handleCancelAppointment(appointment.id)}>
                                     <Trash2 className="h-5 w-5" />

@@ -173,7 +173,7 @@ export default function WorkshopDetailPage() {
           createdAt: serverTimestamp(),
         };
 
-        await addDocumentNonBlocking(reviewCollection, reviewData);
+        addDocumentNonBlocking(reviewCollection, reviewData);
         
         // This should be a transaction in a real app to update average rating
         // For now, we will just add the review
@@ -441,7 +441,3 @@ export default function WorkshopDetailPage() {
     </div>
   );
 }
-
-    
-
-    

@@ -11,21 +11,25 @@ import {
 /** Initiate anonymous sign-in (non-blocking). */
 export function initiateAnonymousSignIn(authInstance: Auth): void {
   // CRITICAL: Call signInAnonymously directly. Do NOT use 'await signInAnonymously(...)'.
-  signInAnonymously(authInstance);
+  signInAnonymously(authInstance).catch(error => {
+    // Although less common for anonymous, good practice to catch potential errors
+    console.error("Anonymous sign-in error:", error);
+  });
   // Code continues immediately. Auth state change is handled by onAuthStateChanged listener.
 }
 
 /** Initiate email/password sign-up (non-blocking). */
-export function initiateEmailSignUp(authInstance: Auth, email: string, password: string): void {
+export function initiateEmailSignUp(authInstance: Auth, email: string, password: string): Promise<void> {
   // CRITICAL: Call createUserWithEmailAndPassword directly. Do NOT use 'await createUserWithEmailAndPassword(...)'.
-  createUserWithEmailAndPassword(authInstance, email, password);
+  return createUserWithEmailAndPassword(authInstance, email, password).then(() => {});
   // Code continues immediately. Auth state change is handled by onAuthStateChanged listener.
 }
 
 /** Initiate email/password sign-in (non-blocking). */
-export function initiateEmailSignIn(authInstance: Auth, email: string, password: string): void {
+export function initiateEmailSignIn(authInstance: Auth, email: string, password: string): Promise<void> {
   // CRITICAL: Call signInWithEmailAndPassword directly. Do NOT use 'await signInWithEmailAndPassword(...)'.
-  signInWithEmailAndPassword(authInstance, email, password);
+  // We return the promise to allow the caller to handle success/error.
+  return signInWithEmailAndPassword(authInstance, email, password).then(() => {});
   // Code continues immediately. Auth state change is handled by onAuthStateChanged listener.
 }
 
