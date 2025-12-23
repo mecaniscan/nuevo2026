@@ -19,6 +19,8 @@ const registerSchema = z.object({
   lastName: z.string().min(2, 'El apellido debe tener al menos 2 caracteres.'),
   email: z.string().email('El correo electrónico no es válido.'),
   password: z.string().min(6, 'La contraseña debe tener al menos 6 caracteres.'),
+  phoneNumber: z.string().optional(),
+  whatsappNumber: z.string().optional(),
 });
 
 export default function RegisterPage() {
@@ -35,6 +37,8 @@ export default function RegisterPage() {
       lastName: '',
       email: '',
       password: '',
+      phoneNumber: '',
+      whatsappNumber: '',
     },
   });
 
@@ -73,7 +77,7 @@ export default function RegisterPage() {
 
   return (
     <div className="container mx-auto flex min-h-screen items-center justify-center py-12">
-      <Card className="w-full max-w-md">
+      <Card className="w-full max-w-lg">
         <CardHeader>
           <CardTitle className="text-2xl font-headline text-primary">Crear una Cuenta</CardTitle>
           <CardDescription>
@@ -137,6 +141,34 @@ export default function RegisterPage() {
                   </FormItem>
                 )}
               />
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <FormField
+                  control={form.control}
+                  name="phoneNumber"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Teléfono (Opcional)</FormLabel>
+                      <FormControl>
+                        <Input type="tel" placeholder="+54 11 1234-5678" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="whatsappNumber"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>WhatsApp (Opcional)</FormLabel>
+                      <FormControl>
+                        <Input type="tel" placeholder="+54 9 11 1234-5678" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
               <Button type="submit" className="w-full" disabled={isSubmitting}>
                 {isSubmitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : 'Crear Cuenta'}
               </Button>

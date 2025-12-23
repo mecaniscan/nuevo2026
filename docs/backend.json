@@ -139,6 +139,10 @@
         "phoneNumber": {
           "type": "string",
           "description": "Phone number of the user."
+        },
+        "whatsappNumber": {
+          "type": "string",
+          "description": "WhatsApp number of the user."
         }
       },
       "required": [

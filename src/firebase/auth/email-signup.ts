@@ -8,6 +8,8 @@ interface UserInfo {
     lastName: string;
     email: string;
     password?: string; // Password is not stored in Firestore, but is needed for creation
+    phoneNumber?: string;
+    whatsappNumber?: string;
 }
 
 
@@ -24,12 +26,12 @@ export async function initiateEmailSignUpAndCreateUser(auth: Auth, firestore: Fi
     // Step 2: Create the user document in Firestore
     const userDocRef = doc(firestore, 'users', user.uid);
     
+    // Remove password before saving to Firestore
+    const { password, ...userDataToSave } = userInfo;
+
     const userData = {
+        ...userDataToSave,
         id: user.uid,
-        firstName: userInfo.firstName,
-        lastName: userInfo.lastName,
-        email: userInfo.email,
-        // Do NOT store the password in Firestore
     };
 
     // Use setDoc to create the document. This is a blocking call within this function.
