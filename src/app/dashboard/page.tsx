@@ -6,7 +6,7 @@ import { useCollection } from '@/firebase/firestore/use-collection';
 import type { Workshop, Appointment, OilChange, Vehicle } from '@/lib/types';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Loader2, Calendar, Wrench, Trash2, Settings, Pencil, LogOut, User as UserIcon, Lock, ListPlus, Building, ArrowRight, Droplets, Car, Gauge } from 'lucide-react';
+import { Loader2, Calendar, Wrench, Trash2, Settings, Pencil, LogOut, User as UserIcon, Lock, ListPlus, Building, ArrowRight, Droplets, Car, Gauge, ScanLine } from 'lucide-react';
 import Link from 'next/link';
 import { initiateAnonymousSignIn, initiateSignOut, initiateEmailSignIn } from '@/firebase/non-blocking-login';
 import { useAuth } from '@/firebase';
@@ -345,17 +345,17 @@ export default function DashboardPage() {
         </div>
 
         {/* My Vehicles Section */}
-        <div className="lg:col-span-2">
+        <div className="lg:col-span-1">
              <ActionButton 
                 href="/dashboard/my-vehicles"
                 icon={<Car className="h-8 w-8 text-primary"/>}
                 title="Mis Vehículos"
-                description="Registra y gestiona los vehículos de tu propiedad."
+                description="Registra y gestiona tus vehículos."
             />
         </div>
 
         {/* Oil Change Section */}
-        <div>
+        <div className="lg:col-span-1">
              <ActionButton 
                 href="/dashboard/oil-changes"
                 icon={<Droplets className="h-8 w-8 text-primary"/>}
@@ -363,6 +363,17 @@ export default function DashboardPage() {
                 description="Lleva un historial de los cambios de aceite."
             />
         </div>
+
+        {/* AI Scanner Section */}
+        <div className="lg:col-span-1">
+            <ActionButton 
+                href="/#decoder"
+                icon={<ScanLine className="h-8 w-8 text-primary"/>}
+                title="Scanner con IA"
+                description="Diagnostica problemas con tu cámara."
+            />
+        </div>
+
 
         {/* Account Settings */}
         <div className="lg:col-span-3">
