@@ -157,26 +157,50 @@ export default function WorkshopDetailPage() {
     };
 
 
-    function onAppointmentSubmit(values: z.infer<typeof appointmentSchema>) {
-        if (!workshop || !workshop.whatsappNumber) {
-            toast({ variant: 'destructive', title: 'Error', description: 'Este taller no ha proporcionado un número de WhatsApp.' });
+    async function onAppointmentSubmit(values: z.infer<typeof appointmentSchema>) {
+        if (!workshop || !workshop.whatsappNumber || !user || !firestore) {
+            toast({ variant: 'destructive', title: 'Error', description: 'Falta información para agendar la cita.' });
             return;
         }
 
         setIsSubmitting(true);
 
-        const date = format(values.appointmentDateTime, "eeee, dd 'de' MMMM 'de' yyyy", { locale: es });
-        const message = `Hola ${workshop.name}, me gustaría agendar una cita para el día ${date}. El motivo es: "${values.description}". ¿Tienen disponibilidad?`;
-        const whatsappUrl = `https://wa.me/${workshop.whatsappNumber.replace(/\D/g, '')}?text=${encodeURIComponent(message)}`;
+        // 1. Save appointment record to Firestore
+        const appointmentData = {
+          workshopId: workshop.id,
+          workshopName: workshop.name,
+          userId: user.uid,
+          appointmentDateTime: values.appointmentDateTime.toISOString(),
+          description: values.description,
+          status: 'scheduled',
+        };
         
-        window.open(whatsappUrl, '_blank');
-        
-        toast({
-            title: 'Redirigiendo a WhatsApp',
-            description: 'Confirma la cita enviando el mensaje.',
-        });
+        try {
+            addDocumentNonBlocking(collection(firestore, `users/${user.uid}/appointments`), appointmentData);
+            
+            // 2. Prepare and open WhatsApp link
+            const date = format(values.appointmentDateTime, "eeee, dd 'de' MMMM 'de' yyyy", { locale: es });
+            const message = `Hola ${workshop.name}, me gustaría agendar una cita para el día ${date}. El motivo es: "${values.description}". ¿Tienen disponibilidad?`;
+            const whatsappUrl = `https://wa.me/${workshop.whatsappNumber.replace(/\D/g, '')}?text=${encodeURIComponent(message)}`;
+            
+            window.open(whatsappUrl, '_blank');
+            
+            toast({
+                title: '¡Cita Registrada!',
+                description: 'Redirigiendo a WhatsApp para que confirmes tu cita con el taller.',
+            });
+            appointmentForm.reset();
 
-        setIsSubmitting(false);
+        } catch (error) {
+            console.error('Error creating appointment record:', error);
+             toast({
+                variant: 'destructive',
+                title: 'Error al Registrar',
+                description: 'No se pudo guardar el registro de la cita. Por favor, intenta de nuevo.',
+            });
+        } finally {
+             setIsSubmitting(false);
+        }
     }
     
     async function onReviewSubmit(values: z.infer<typeof reviewSchema>) {
@@ -493,3 +517,5 @@ export default function WorkshopDetailPage() {
     </div>
   );
 }
+
+    

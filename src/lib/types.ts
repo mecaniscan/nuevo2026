@@ -22,7 +22,7 @@ export type Workshop = {
 export type Appointment = {
     id: string;
     workshopId: string;
-    workshopName: string; // Denormalized for easy display
+    workshopName?: string; // Denormalized for easy display
     userId: string;
     appointmentDateTime: string;
     description: string;
@@ -84,3 +84,4 @@ export type FavoriteWorkshop = {
     
 
     
+
