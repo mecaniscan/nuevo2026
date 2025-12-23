@@ -74,6 +74,11 @@ export default function WorkshopDetailPage() {
       }, [firestore, workshopId]);
     const { data: reviews, isLoading: areReviewsLoading } = useCollection<Review>(reviewsCollection);
 
+    const userHasReviewed = useMemo(() => {
+        if (!user || !reviews) return false;
+        return reviews.some(review => review.userId === user.uid);
+    }, [user, reviews]);
+
 
     const appointmentForm = useForm<z.infer<typeof appointmentSchema>>({
         resolver: zodResolver(appointmentSchema),
@@ -151,6 +156,10 @@ export default function WorkshopDetailPage() {
     async function onReviewSubmit(values: z.infer<typeof reviewSchema>) {
       if (!user || !firestore || !workshopId) {
         toast({ variant: "destructive", title: "Error", description: "Debes iniciar sesión para dejar una reseña." });
+        return;
+      }
+      if (userHasReviewed) {
+        toast({ variant: "destructive", title: "Acción no permitida", description: "Ya has dejado una reseña para este taller." });
         return;
       }
       setIsSubmittingReview(true);
@@ -277,46 +286,54 @@ export default function WorkshopDetailPage() {
                     </CardHeader>
                     <CardContent className="space-y-6">
                         {user && !user.isAnonymous && (
-                          <Form {...reviewForm}>
-                             <form onSubmit={reviewForm.handleSubmit(onReviewSubmit)} className="space-y-4 p-4 border rounded-lg bg-card/30">
-                                <FormLabel>Deja tu reseña</FormLabel>
-                                <FormField
-                                  control={reviewForm.control}
-                                  name="rating"
-                                  render={({ field }) => (
-                                    <FormItem className="flex items-center gap-2">
-                                      <FormLabel>Calificación:</FormLabel>
-                                       <div className="flex">
-                                          {[1, 2, 3, 4, 5].map((star) => (
-                                            <Star
-                                              key={star}
-                                              className={cn("h-6 w-6 cursor-pointer", field.value >= star ? "text-amber-400 fill-amber-400" : "text-muted-foreground")}
-                                              onClick={() => field.onChange(star)}
-                                            />
-                                          ))}
-                                      </div>
-                                      <FormMessage/>
-                                    </FormItem>
-                                  )}
-                                />
-                                <FormField
-                                  control={reviewForm.control}
-                                  name="comment"
-                                  render={({ field }) => (
-                                    <FormItem>
-                                      <FormControl>
-                                        <Textarea placeholder="Comparte tu experiencia con este taller..." {...field}/>
-                                      </FormControl>
-                                      <FormMessage />
-                                    </FormItem>
-                                  )}
-                                />
-                                <Button type="submit" disabled={isSubmittingReview}>
-                                  {isSubmittingReview ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <Send className="mr-2 h-4 w-4" />}
-                                  Enviar Reseña
-                                </Button>
-                            </form>
-                          </Form>
+                          <>
+                            {userHasReviewed ? (
+                                <div className="p-4 text-center bg-muted rounded-lg">
+                                    <p className="text-muted-foreground">Ya has dejado una reseña para este taller.</p>
+                                </div>
+                            ) : (
+                              <Form {...reviewForm}>
+                                 <form onSubmit={reviewForm.handleSubmit(onReviewSubmit)} className="space-y-4 p-4 border rounded-lg bg-card/30">
+                                    <FormLabel>Deja tu reseña</FormLabel>
+                                    <FormField
+                                      control={reviewForm.control}
+                                      name="rating"
+                                      render={({ field }) => (
+                                        <FormItem className="flex items-center gap-2">
+                                          <FormLabel>Calificación:</FormLabel>
+                                           <div className="flex">
+                                              {[1, 2, 3, 4, 5].map((star) => (
+                                                <Star
+                                                  key={star}
+                                                  className={cn("h-6 w-6 cursor-pointer", field.value >= star ? "text-amber-400 fill-amber-400" : "text-muted-foreground")}
+                                                  onClick={() => field.onChange(star)}
+                                                />
+                                              ))}
+                                          </div>
+                                          <FormMessage/>
+                                        </FormItem>
+                                      )}
+                                    />
+                                    <FormField
+                                      control={reviewForm.control}
+                                      name="comment"
+                                      render={({ field }) => (
+                                        <FormItem>
+                                          <FormControl>
+                                            <Textarea placeholder="Comparte tu experiencia con este taller..." {...field}/>
+                                          </FormControl>
+                                          <FormMessage />
+                                        </FormItem>
+                                      )}
+                                    />
+                                    <Button type="submit" disabled={isSubmittingReview}>
+                                      {isSubmittingReview ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <Send className="mr-2 h-4 w-4" />}
+                                      Enviar Reseña
+                                    </Button>
+                                </form>
+                              </Form>
+                            )}
+                          </>
                         )}
                         <div className="space-y-4">
                             {reviews && reviews.length > 0 ? (
@@ -424,5 +441,7 @@ export default function WorkshopDetailPage() {
     </div>
   );
 }
+
+    
 
     
