@@ -53,8 +53,8 @@ export default function MarketplacePage() {
   const [countryFilter, setCountryFilter] = useState('');
   const [brandFilter, setBrandFilter] = useState('');
   
-  const uniqueCountries = useMemo(() => [...new Set(vehicles.map(v => v.country))], [vehicles]);
-  const uniqueBrands = useMemo(() => [...new Set(vehicles.map(v => v.brand))], [vehicles]);
+  const uniqueCountries = useMemo(() => [...new Set(vehicles.map(v => v.country).filter(Boolean))], [vehicles]);
+  const uniqueBrands = useMemo(() => [...new Set(vehicles.map(v => v.brand).filter(Boolean))], [vehicles]);
 
   useEffect(() => {
     async function fetchForSaleVehicles() {
