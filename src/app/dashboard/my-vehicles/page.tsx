@@ -48,9 +48,9 @@ const vehicleSchema = z.object({
     (a) => parseInt(z.string().parse(a), 10),
     z.number().min(0, 'El kilometraje no puede ser negativo.')
   ),
-  imageUrl1: z.string().url('URL de imagen no válida.').optional().or(z.literal('')),
-  imageUrl2: z.string().url('URL de imagen no válida.').optional().or(z.literal('')),
-  imageUrl3: z.string().url('URL de imagen no válida.').optional().or(z.literal('')),
+  imageUrl1: z.string().optional().or(z.literal('')),
+  imageUrl2: z.string().optional().or(z.literal('')),
+  imageUrl3: z.string().optional().or(z.literal('')),
   country: z.string().min(2, 'El país es muy corto.'),
   isForSale: z.boolean().default(false),
 });
