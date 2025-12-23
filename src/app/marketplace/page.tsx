@@ -6,10 +6,18 @@ import type { Vehicle } from '@/lib/types';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Loader2, MapPin, Car, Search, MessageSquare } from 'lucide-react';
+import { Loader2, MapPin, Car, Search, MessageSquare, Info } from 'lucide-react';
 import { Header } from '@/components/layout/header';
 import { Footer } from '@/components/layout/footer';
 import Link from 'next/link';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
 
 const WhatsappIcon = () => (
     <svg role="img" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 fill-current"><title>WhatsApp</title><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.297-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 2.52 5.079 3.556.718.255 1.299.408 1.74.527.534.142 1.028.12 1.425.074.446-.05 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 5.451 0 9.885 4.434 9.889 9.884.002 5.45-4.433 9.884-9.889 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892.157 14.66.965 17.165 2.63 19.05l-2.63 9.95 10.193-2.685a11.815 11.815 0 005.655 1.5l.004-.001h.004c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413Z"/></svg>
@@ -47,15 +55,70 @@ function VehicleCard({ vehicle }: { vehicle: Vehicle }) {
                 <p className="text-sm font-medium text-foreground">Vendedor:</p>
                 <p className="text-sm text-muted-foreground">{vehicle.sellerName || 'No disponible'}</p>
             </div>
-            {vehicle.sellerWhatsapp ? (
-                <Button className="w-full" onClick={handleContact}>
-                    <WhatsappIcon /> Contactar por WhatsApp
-                </Button>
-            ) : (
-                 <Button className="w-full" variant="secondary" disabled>
-                    Contacto no disponible
-                </Button>
-            )}
+            <div className="w-full flex flex-col sm:flex-row gap-2">
+                 <Dialog>
+                    <DialogTrigger asChild>
+                      <Button variant="outline" className="flex-1">
+                        <Info className="mr-2 h-4 w-4" /> Ver Detalles
+                      </Button>
+                    </DialogTrigger>
+                    <DialogContent className="sm:max-w-[425px]">
+                      <DialogHeader>
+                        <DialogTitle>{vehicle.brand} {vehicle.model} ({vehicle.year})</DialogTitle>
+                        <DialogDescription>
+                          Información detallada del vehículo.
+                        </DialogDescription>
+                      </DialogHeader>
+                      <div className="grid gap-4 py-4 text-sm">
+                        <div className="grid grid-cols-2 items-center gap-4">
+                          <span className="text-muted-foreground">Tipo:</span>
+                          <span className="font-semibold">{vehicle.type}</span>
+                        </div>
+                        <div className="grid grid-cols-2 items-center gap-4">
+                          <span className="text-muted-foreground">Marca:</span>
+                          <span className="font-semibold">{vehicle.brand}</span>
+                        </div>
+                         <div className="grid grid-cols-2 items-center gap-4">
+                          <span className="text-muted-foreground">Modelo:</span>
+                          <span className="font-semibold">{vehicle.model}</span>
+                        </div>
+                         <div className="grid grid-cols-2 items-center gap-4">
+                          <span className="text-muted-foreground">Año:</span>
+                          <span className="font-semibold">{vehicle.year}</span>
+                        </div>
+                        <div className="grid grid-cols-2 items-center gap-4">
+                          <span className="text-muted-foreground">Placa:</span>
+                          <span className="font-semibold">{vehicle.licensePlate}</span>
+                        </div>
+                        <div className="grid grid-cols-2 items-center gap-4">
+                          <span className="text-muted-foreground">VIN:</span>
+                          <span className="font-semibold">{vehicle.vin}</span>
+                        </div>
+                        <div className="grid grid-cols-2 items-center gap-4">
+                          <span className="text-muted-foreground">Kilometraje:</span>
+                          <span className="font-semibold">{vehicle.currentMileage.toLocaleString()} km</span>
+                        </div>
+                        <div className="grid grid-cols-2 items-center gap-4">
+                          <span className="text-muted-foreground">País:</span>
+                          <span className="font-semibold">{vehicle.country}</span>
+                        </div>
+                         <div className="grid grid-cols-2 items-center gap-4">
+                          <span className="text-muted-foreground">Precio:</span>
+                          <span className="font-bold text-primary">${vehicle.price.toLocaleString('es-AR')}</span>
+                        </div>
+                      </div>
+                    </DialogContent>
+                  </Dialog>
+                {vehicle.sellerWhatsapp ? (
+                    <Button className="flex-1" onClick={handleContact}>
+                        <WhatsappIcon /> Contactar
+                    </Button>
+                ) : (
+                     <Button className="flex-1" variant="secondary" disabled>
+                        Contacto no disponible
+                    </Button>
+                )}
+            </div>
         </CardFooter>
     </Card>
   )
@@ -95,7 +158,7 @@ export default function MarketplacePage() {
           </div>
 
            <div className="mx-auto max-w-6xl">
-            <div className="flex flex-col sm:flex-row gap-4 mb-8 p-4 border rounded-lg bg-card sticky top-20 z-10 backdrop-blur-md shadow-lg">
+             <div className="flex flex-col sm:flex-row gap-4 mb-8 p-4 border rounded-lg bg-card sticky top-20 z-10 backdrop-blur-md shadow-lg">
                 <div className="flex-1 relative">
                     <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
                     <Input 
@@ -116,6 +179,7 @@ export default function MarketplacePage() {
                 </div>
                  <Button variant="outline" onClick={() => {setBrandFilter(''); setCountryFilter('');}}>Limpiar Filtros</Button>
             </div>
+
 
             {isLoading ? (
               <div className="flex justify-center items-center col-span-full h-64">
