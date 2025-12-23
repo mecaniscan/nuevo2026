@@ -8,10 +8,17 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Loader2 } from 'lucide-react';
 import Link from 'next/link';
+import { initiateAnonymousSignIn } from '@/firebase/non-blocking-login';
+import { useAuth } from '@/firebase';
 
 export default function DashboardPage() {
   const { user, isUserLoading } = useUser();
   const firestore = useFirestore();
+  const auth = useAuth();
+
+  const handleLogin = () => {
+    initiateAnonymousSignIn(auth);
+  };
 
   const workshopsCollection = useMemoFirebase(() => {
     if (!firestore || !user) return null;
@@ -36,13 +43,16 @@ export default function DashboardPage() {
   if (!user) {
     return (
         <div className="flex min-h-screen items-center justify-center">
-            <Card className="w-full max-w-md">
+            <Card className="w-full max-w-md text-center">
                 <CardHeader>
                     <CardTitle>Acceso Denegado</CardTitle>
                     <CardDescription>Debes iniciar sesión para ver tu panel de control.</CardDescription>
                 </CardHeader>
-                <CardContent>
-                    <Link href="/" className="text-primary hover:underline">Volver a la página principal</Link>
+                <CardContent className="flex flex-col gap-4">
+                    <Button onClick={handleLogin}>Iniciar Sesión</Button>
+                    <Button variant="link" asChild>
+                      <Link href="/">Volver a la página principal</Link>
+                    </Button>
                 </CardContent>
             </Card>
         </div>
