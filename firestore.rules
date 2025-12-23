@@ -176,12 +176,13 @@ service cloud.firestore {
       /**
        * @description Secures a user's vehicles subcollection.
        * @path /users/{userId}/vehicles/{vehicleId}
-       * @allow (get, list, create, update, delete) A user can manage their own vehicle records.
+       * @allow (read) User can read their own vehicle records.
+       * @allow (write) User can create, update, or delete their vehicle records if the record contains their userId.
        */
       match /vehicles/{vehicleId} {
-        allow get, list, create, update, delete: if isOwner(userId) && request.resource.data.userId == userId;
+        allow get, list: if isOwner(userId);
+        allow create, update, delete: if isOwner(userId) && request.resource.data.userId == userId;
       }
     }
   }
 }
-    
