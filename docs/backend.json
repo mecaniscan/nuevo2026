@@ -1,0 +1,256 @@
+{
+  "entities": {
+    "Workshop": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Workshop",
+      "type": "object",
+      "description": "Represents a mechanic workshop registered in the application.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the workshop entity."
+        },
+        "name": {
+          "type": "string",
+          "description": "Name of the workshop."
+        },
+        "description": {
+          "type": "string",
+          "description": "Detailed description of the workshop and its services."
+        },
+        "address": {
+          "type": "string",
+          "description": "Physical address of the workshop."
+        },
+        "contactNumber": {
+          "type": "string",
+          "description": "Phone number of the workshop."
+        },
+        "email": {
+          "type": "string",
+          "description": "Email address of the workshop.",
+          "format": "email"
+        },
+        "latitude": {
+          "type": "number",
+          "description": "Latitude coordinate of the workshop's location."
+        },
+        "longitude": {
+          "type": "number",
+          "description": "Longitude coordinate of the workshop's location."
+        },
+        "obdScannerService": {
+          "type": "boolean",
+          "description": "Indicates whether the workshop offers OBDII scanner services."
+        },
+        "serviceIds": {
+          "type": "array",
+          "description": "References to Services offered by the workshop. (Relationship: Workshop 1:N Service)",
+          "items": {
+            "type": "string"
+          }
+        }
+      },
+      "required": [
+        "id",
+        "name",
+        "description",
+        "address",
+        "contactNumber",
+        "email",
+        "latitude",
+        "longitude",
+        "obdScannerService"
+      ]
+    },
+    "Appointment": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Appointment",
+      "type": "object",
+      "description": "Represents a customer appointment at a workshop.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the appointment entity."
+        },
+        "workshopId": {
+          "type": "string",
+          "description": "Reference to the Workshop. (Relationship: Workshop 1:N Appointment)"
+        },
+        "userId": {
+          "type": "string",
+          "description": "Reference to the User. (Relationship: User 1:N Appointment)"
+        },
+        "serviceId": {
+          "type": "string",
+          "description": "Reference to the Service. (Relationship: Service 1:N Appointment)"
+        },
+        "appointmentDateTime": {
+          "type": "string",
+          "description": "Date and time of the appointment.",
+          "format": "date-time"
+        },
+        "description": {
+          "type": "string",
+          "description": "Customer provided notes regarding the appointment."
+        },
+        "status": {
+          "type": "string",
+          "description": "Status of the appointment (e.g., scheduled, completed, cancelled)."
+        }
+      },
+      "required": [
+        "id",
+        "workshopId",
+        "userId",
+        "serviceId",
+        "appointmentDateTime",
+        "status"
+      ]
+    },
+    "User": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "User",
+      "type": "object",
+      "description": "Represents a user of the application.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the user entity."
+        },
+        "firstName": {
+          "type": "string",
+          "description": "First name of the user."
+        },
+        "lastName": {
+          "type": "string",
+          "description": "Last name of the user."
+        },
+        "email": {
+          "type": "string",
+          "description": "Email address of the user.",
+          "format": "email"
+        },
+        "phoneNumber": {
+          "type": "string",
+          "description": "Phone number of the user."
+        }
+      },
+      "required": [
+        "id",
+        "firstName",
+        "lastName",
+        "email"
+      ]
+    },
+    "Service": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Service",
+      "type": "object",
+      "description": "Represents a service offered by a workshop.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the service entity."
+        },
+        "name": {
+          "type": "string",
+          "description": "Name of the service (e.g., Oil Change, Tire Rotation, OBDII Scan)."
+        },
+        "description": {
+          "type": "string",
+          "description": "Detailed description of the service."
+        },
+        "price": {
+          "type": "number",
+          "description": "Price of the service."
+        }
+      },
+      "required": [
+        "id",
+        "name",
+        "description",
+        "price"
+      ]
+    }
+  },
+  "auth": {
+    "providers": [
+      "password",
+      "anonymous"
+    ]
+  },
+  "firestore": {
+    "structure": [
+      {
+        "path": "/workshops/{workshopId}",
+        "definition": {
+          "entityName": "Workshop",
+          "schema": {
+            "$ref": "#/backend/entities/Workshop"
+          },
+          "description": "Stores details of mechanic workshops. Includes denormalized 'obdScannerService' boolean to enable secure filtering for workshops offering OBDII services.",
+          "params": [
+            {
+              "name": "workshopId",
+              "description": "The unique identifier for the workshop."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/users/{userId}",
+        "definition": {
+          "entityName": "User",
+          "schema": {
+            "$ref": "#/backend/entities/User"
+          },
+          "description": "Stores user profile information. Each user has a unique ID.",
+          "params": [
+            {
+              "name": "userId",
+              "description": "The unique identifier for the user."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/users/{userId}/appointments/{appointmentId}",
+        "definition": {
+          "entityName": "Appointment",
+          "schema": {
+            "$ref": "#/backend/entities/Appointment"
+          },
+          "description": "Stores appointment data for the related User.",
+          "params": [
+            {
+              "name": "userId",
+              "description": "The unique identifier for the user."
+            },
+            {
+              "name": "appointmentId",
+              "description": "The unique identifier for the appointment."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/services/{serviceId}",
+        "definition": {
+          "entityName": "Service",
+          "schema": {
+            "$ref": "#/backend/entities/Service"
+          },
+          "description": "Stores services offered by workshops.",
+          "params": [
+            {
+              "name": "serviceId",
+              "description": "The unique identifier for the service."
+            }
+          ]
+        }
+      }
+    ],
+    "reasoning": "The Firestore data structure is designed to support the MechConnect application, focusing on mechanic workshop registration, appointment booking, and OBDII scanner service highlighting. The structure prioritizes authorization independence and supports QAPs (Rules are not Filters) to ensure secure `list` operations. Path-based ownership is used where applicable to simplify security rules. The structure is organized into collections for `Workshops`, `Users`, `Services`, and `Appointments` with subcollections to manage relationships effectively.\n\n**Authorization Independence:**\n\n*   **Appointments:** The `appointments` subcollection under each `workshop` includes the `userId` of the user who created the appointment. This denormalization is critical for authorization independence because security rules can authorize access to appointments based on the `userId` in the appointment document and/or ownership of the parent `Workshop` document. Without the `userId` on the `Appointment`, rules would need to perform a `get()` to verify the requesting user owns the parent `User` document, violating Authorization Independence.\n\n**QAPs Support:**\n\n*   **Workshops Collection:** All workshops are stored in a single `workshops` collection, but segregation is achieved via the `obdScannerService` field. List operations can be secured by filtering based on workshop attributes in the rules (e.g., `obdScannerService == true`) to highlight workshops offering OBDII scanner services, without compromising security.\n*   **User-Owned Appointments:** Storing appointments within a user's document ensures that only the user has access to their appointment data.\n\nThis design ensures that security rules can be written to validate the existence of a workshop before an appointment can be created, linking the User, Workshop, and Appointment documents together in a manageable and scalable way."
+  }
+}

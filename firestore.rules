@@ -1,0 +1,155 @@
+/**
+ * This ruleset defines the security model for the MechConnect application.
+ *
+ * Core Philosophy:
+ * The security model enforces a strict user-ownership paradigm for all user-generated
+ * content, ensuring that users can only access and manage their own data.
+ * Publicly available data, such as workshop and service listings, is readable
+ * by anyone but is not modifiable by clients. This creates a clear separation
+ * between private user spaces and the public data commons.
+ *
+ * Data Structure:
+ * The data is organized into several top-level collections: 'users', 'workshops',
+ * and 'services'. All data private to a user, such as 'appointments', is stored in
+ * a subcollection directly under that user's document in the '/users/{userId}' path.
+ * This hierarchical structure makes it simple and performant to apply ownership-based
+ * security rules.
+ *
+ * Key Security Decisions:
+ * - User Data Privacy: A user can only read, write, and query data within their
+ *   own document tree (e.g., /users/their-own-id/...).
+ * - User Enumeration Disabled: Listing documents in the top-level 'users'
+ *   collection is explicitly forbidden to protect user privacy.
+ * - Public Data is Read-Only: The 'workshops' and 'services' collections are
+ *   publicly readable to allow for discovery and browsing. However, all client-side
+ *   write operations are disabled to protect the integrity of the data. Admin-level
+ *   changes would be handled via a trusted server environment.
+ * - Default Deny: Any operation not explicitly granted is denied.
+ *
+ * Denormalization for Authorization:
+ * To ensure fast and secure authorization checks, key identifying information is
+ * denormalized. For instance, an 'Appointment' document created at
+ * '/users/{userId}/appointments/{appointmentId}' must contain a 'userId' field
+ * that matches the '{userId}' from the path. This avoids costly lookups and
+ * simplifies rule logic.
+ *
+ * Structural Segregation:
+ * The current structure uses a boolean flag ('obdScannerService') on workshop
+ * documents. While this works, a more scalable and performant pattern for list
+ * operations is to segregate data into distinct collections based on access
+ * patterns (e.g., a separate '/obdWorkshops' collection). This avoids potential
+ * security pitfalls where a rule for a single collection might accidentally expose
+ * documents that should be private.
+ */
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ------------------------------------------------------------------------
+    // Helper Functions
+    // ------------------------------------------------------------------------
+
+    /**
+     * Checks if a user is authenticated.
+     */
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    /**
+     * Checks if the currently authenticated user's ID matches the provided userId.
+     * This is the core of the ownership model.
+     * @param userId The user ID to check against the authenticated user.
+     */
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    /**
+     * Validates that the document being operated on already exists in Firestore.
+     * Essential for secure update and delete operations.
+     */
+    function isExistingDocument() {
+      return resource != null;
+    }
+
+    /**
+     * Combines ownership check with an existence check.
+     * Ensures an owner can't modify a document that doesn't exist.
+     * @param userId The user ID to check against the authenticated user.
+     */
+    function isExistingOwner(userId) {
+      return isOwner(userId) && isExistingDocument();
+    }
+
+    // ------------------------------------------------------------------------
+    // Collection Rules
+    // ------------------------------------------------------------------------
+
+    /**
+     * @description Controls access to the public directory of workshops.
+     * @path /workshops/{workshopId}
+     * @allow (get, list) Any user, signed in or not, can read workshop data.
+     * @deny (create, update, delete) Any client trying to modify workshop data.
+     * @principle Public data should be read-only for clients to prevent vandalism.
+     */
+    match /workshops/{workshopId} {
+      allow get: if true;
+      allow list: if true;
+
+      // CRITICAL: Cannot implement owner-only writes. The 'Workshop' entity is missing an 'ownerId' or 'authorId' field.
+      // Writes are disabled until an ownership field is added to the Workshop schema,
+      // which is required to securely identify who is allowed to modify a workshop document.
+      allow create: if false; // TODO: Add owner validation once the schema is updated with an ownership field.
+      allow update: if false; // TODO: Add owner validation once the schema is updated with an ownership field.
+      allow delete: if false; // TODO: Add owner validation once the schema is updated with an ownership field.
+    }
+
+    /**
+     * @description Secures user profile documents.
+     * @path /users/{userId}
+     * @allow (get, update, delete) A user can manage their own profile.
+     * @allow (create) A new user can create their own profile document.
+     * @deny (get) Another user trying to read someone else's profile.
+     * @deny (list) Any client trying to get a list of all application users.
+     * @principle Restricts access to a user's own data tree and prevents user enumeration.
+     */
+    match /users/{userId} {
+      allow get: if isOwner(userId);
+      allow list: if false;
+      allow create: if isOwner(userId) && request.resource.data.id == userId;
+      allow update: if isExistingOwner(userId) && request.resource.data.id == resource.data.id;
+      allow delete: if isExistingOwner(userId);
+
+      /**
+       * @description Secures a user's appointments subcollection.
+       * @path /users/{userId}/appointments/{appointmentId}
+       * @allow (get, list, create, update, delete) A user can manage their own appointments.
+       * @deny (get) A user trying to access another user's appointment.
+       * @principle Enforces strict data ownership for sensitive subcollections.
+       */
+      match /appointments/{appointmentId} {
+        allow get: if isOwner(userId);
+        allow list: if isOwner(userId);
+        allow create: if isOwner(userId) && request.resource.data.userId == userId;
+        allow update: if isExistingOwner(userId) && request.resource.data.userId == resource.data.userId;
+        allow delete: if isExistingOwner(userId);
+      }
+    }
+
+    /**
+     * @description Controls access to the public list of available services.
+     * @path /services/{serviceId}
+     * @allow (get, list) Any user, signed in or not, can read service data.
+     * @deny (create, update, delete) Any client trying to modify the list of services.
+     * @principle Public reference data should be immutable from the client-side.
+     */
+    match /services/{serviceId} {
+      allow get: if true;
+      allow list: if true;
+      allow create: if false;
+      allow update: if false;
+      allow delete: if false;
+    }
+  }
+}
