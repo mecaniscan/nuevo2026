@@ -19,7 +19,6 @@ import { Switch } from '@/components/ui/switch';
 import Link from 'next/link';
 import type { Workshop, Service } from '@/lib/types';
 import { masterServices as defaultServices } from '@/lib/data';
-import { Checkbox } from '@/components/ui/checkbox';
 
 const workshopSchema = z.object({
   name: z.string().min(3, 'El nombre debe tener al menos 3 caracteres.'),
@@ -28,9 +27,6 @@ const workshopSchema = z.object({
   contactNumber: z.string().min(8, 'El número de contacto no es válido.'),
   email: z.string().email('El correo electrónico no es válido.'),
   obdScannerService: z.boolean().default(false),
-  serviceIds: z.array(z.string()).refine((value) => value.some((item) => item), {
-    message: 'Debes seleccionar al menos un servicio.',
-  }),
 });
 
 export default function RegisterWorkshopPage() {
@@ -85,7 +81,6 @@ export default function RegisterWorkshopPage() {
       contactNumber: '',
       email: '',
       obdScannerService: false,
-      serviceIds: [],
     },
   });
 
@@ -116,6 +111,7 @@ export default function RegisterWorkshopPage() {
         ownerId: user.uid,
         latitude: 0, 
         longitude: 0,
+        serviceIds: [], // Initialize with empty services
       };
       
       addDocumentNonBlocking(collection(firestore, 'workshops'), workshopData);
@@ -256,61 +252,6 @@ export default function RegisterWorkshopPage() {
                   )}
                 />
               </div>
-
-               <FormField
-                  control={form.control}
-                  name="serviceIds"
-                  render={() => (
-                    <FormItem>
-                      <div className="mb-4">
-                        <FormLabel className="text-base font-semibold flex items-center gap-2">
-                          <Wrench /> Servicios Ofrecidos
-                        </FormLabel>
-                        <FormDescription>
-                          Selecciona todos los servicios que tu taller proporcionará.
-                        </FormDescription>
-                      </div>
-                      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                        {masterServices?.map((service) => (
-                          <FormField
-                            key={service.id}
-                            control={form.control}
-                            name="serviceIds"
-                            render={({ field }) => {
-                              return (
-                                <FormItem
-                                  key={service.id}
-                                  className="flex flex-row items-start space-x-3 space-y-0 rounded-md border p-4 transition-colors hover:bg-accent/50 has-[:checked]:bg-accent/80"
-                                >
-                                  <FormControl>
-                                    <Checkbox
-                                      checked={field.value?.includes(service.id)}
-                                      onCheckedChange={(checked) => {
-                                        return checked
-                                          ? field.onChange([...(field.value || []), service.id])
-                                          : field.onChange(
-                                              field.value?.filter(
-                                                (value) => value !== service.id
-                                              )
-                                            )
-                                      }}
-                                    />
-                                  </FormControl>
-                                  <FormLabel className="font-normal w-full cursor-pointer">
-                                    {service.name}
-                                    <p className="text-xs text-muted-foreground">${service.price}</p>
-                                  </FormLabel>
-                                </FormItem>
-                              )
-                            }}
-                          />
-                        ))}
-                      </div>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
 
               <FormField
                 control={form.control}
