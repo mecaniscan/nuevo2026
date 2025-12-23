@@ -55,6 +55,8 @@ export default function ProfilePage() {
       form.reset({
         ...userData,
         email: user?.email || userData.email, // Prefer email from auth object
+        phoneNumber: userData.phoneNumber || '',
+        whatsappNumber: userData.whatsappNumber || '',
       });
     } else if (user && !isUserDataLoading) {
       // Pre-fill from auth object if firestore doc is not there yet
@@ -63,6 +65,8 @@ export default function ProfilePage() {
         firstName,
         lastName,
         email: user.email || '',
+        phoneNumber: user.phoneNumber || '',
+        whatsappNumber: '', // Auth object doesn't have whatsapp
       });
     }
   }, [userData, user, isUserDataLoading, form]);
