@@ -6,9 +6,9 @@ import { useCollection } from '@/firebase/firestore/use-collection';
 import type { Workshop, Appointment } from '@/lib/types';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Loader2, Calendar, Wrench, Trash2, Settings, Pencil } from 'lucide-react';
+import { Loader2, Calendar, Wrench, Trash2, Settings, Pencil, LogOut } from 'lucide-react';
 import Link from 'next/link';
-import { initiateAnonymousSignIn } from '@/firebase/non-blocking-login';
+import { initiateAnonymousSignIn, initiateSignOut } from '@/firebase/non-blocking-login';
 import { useAuth } from '@/firebase';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
@@ -35,6 +35,10 @@ export default function DashboardPage() {
 
   const handleLogin = () => {
     initiateAnonymousSignIn(auth);
+  };
+  
+  const handleLogout = () => {
+    initiateSignOut(auth);
   };
 
   const handleCancelAppointment = (appointmentId: string) => {
@@ -263,7 +267,11 @@ export default function DashboardPage() {
                 <CardTitle className="flex items-center gap-2"><Settings /> Configuración de la Cuenta</CardTitle>
                 <CardDescription>Gestiona las opciones de tu cuenta.</CardDescription>
             </CardHeader>
-            <CardContent>
+            <CardContent className="flex flex-col items-start gap-4">
+                <Button onClick={handleLogout} variant="outline">
+                    <LogOut className="mr-2 h-4 w-4" />
+                    Cerrar Sesión
+                </Button>
                 <AlertDialog>
                     <AlertDialogTrigger asChild>
                         <Button variant="destructive">Eliminar Cuenta</Button>

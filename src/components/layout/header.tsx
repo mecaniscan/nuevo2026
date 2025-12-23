@@ -1,10 +1,17 @@
 'use client';
-import { Wrench } from 'lucide-react';
+import { Wrench, LogOut } from 'lucide-react';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { useUser } from '@/firebase/provider';
-import { initiateAnonymousSignIn } from '@/firebase/non-blocking-login';
+import { initiateAnonymousSignIn, initiateSignOut } from '@/firebase/non-blocking-login';
 import { useAuth } from '@/firebase';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+  DropdownMenuSeparator,
+} from '@/components/ui/dropdown-menu';
 
 export function Header() {
   const { user, isUserLoading } = useUser();
@@ -13,6 +20,11 @@ export function Header() {
   const handleLogin = () => {
     initiateAnonymousSignIn(auth);
   };
+
+  const handleLogout = () => {
+    initiateSignOut(auth);
+  };
+
   return (
     <header className="sticky top-0 z-50 w-full border-b border-border/40 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
       <div className="container flex h-14 max-w-screen-2xl items-center">
@@ -40,9 +52,21 @@ export function Header() {
             <Button onClick={handleLogin}>Iniciar Sesión</Button>
           )}
           {user && (
-             <Button asChild>
-                <Link href="/dashboard">Mi Cuenta</Link>
-             </Button>
+             <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button>Mi Cuenta</Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  <DropdownMenuItem asChild>
+                     <Link href="/dashboard">Panel de Control</Link>
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem onClick={handleLogout} className="text-destructive focus:text-destructive focus:bg-destructive/10">
+                    <LogOut className="mr-2 h-4 w-4" />
+                    Cerrar Sesión
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
           )}
           <Button asChild variant="secondary">
             <Link href="/dashboard/register-workshop">Registra tu Taller</Link>
