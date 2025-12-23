@@ -53,8 +53,8 @@ export default function MarketplacePage() {
   const [countryFilter, setCountryFilter] = useState('');
   const [brandFilter, setBrandFilter] = useState('');
   
-  const uniqueCountries = useMemo(() => [...new Set(vehicles.map(v => v.country).filter(c => c))], [vehicles]);
-  const uniqueBrands = useMemo(() => [...new Set(vehicles.map(v => v.brand).filter(b => b))], [vehicles]);
+  const uniqueCountries = useMemo(() => [...new Set(vehicles.map(v => v.country).filter(Boolean))], [vehicles]);
+  const uniqueBrands = useMemo(() => [...new Set(vehicles.map(v => v.brand).filter(Boolean))], [vehicles]);
 
   useEffect(() => {
     async function fetchForSaleVehicles() {
@@ -111,7 +111,7 @@ export default function MarketplacePage() {
                         <SelectTrigger><SelectValue placeholder="Filtrar por País" /></SelectTrigger>
                         <SelectContent>
                             <SelectItem value="">Todos los Países</SelectItem>
-                            {uniqueCountries.map(country => country ? <SelectItem key={country} value={country}>{country}</SelectItem> : null)}
+                            {uniqueCountries.map(country => <SelectItem key={country} value={country}>{country}</SelectItem>)}
                         </SelectContent>
                     </Select>
                 </div>
@@ -120,7 +120,7 @@ export default function MarketplacePage() {
                         <SelectTrigger><SelectValue placeholder="Filtrar por Marca" /></SelectTrigger>
                         <SelectContent>
                             <SelectItem value="">Todas las Marcas</SelectItem>
-                            {uniqueBrands.map(brand => brand ? <SelectItem key={brand} value={brand}>{brand}</SelectItem> : null)}
+                            {uniqueBrands.map(brand => <SelectItem key={brand} value={brand}>{brand}</SelectItem>)}
                         </SelectContent>
                     </Select>
                 </div>
