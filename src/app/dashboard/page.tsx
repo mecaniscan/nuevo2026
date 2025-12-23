@@ -339,8 +339,8 @@ export default function DashboardPage() {
             <ActionButton 
                 href="/dashboard/my-appointments"
                 icon={<Calendar className="h-8 w-8 text-primary"/>}
-                title="Mis Citas"
-                description={`Tienes ${appointments?.length || 0} citas. Ver o agendar.`}
+                title="Citas por WhatsApp"
+                description={`Tienes ${appointments?.length || 0} citas guardadas.`}
             />
         </div>
         

@@ -80,7 +80,7 @@ export default function MyAppointmentsPage() {
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-3xl font-bold font-headline text-primary flex items-center gap-2">
-              <Calendar /> Mis Citas
+              <Calendar /> Citas por WhatsApp
             </h1>
             <p className="text-muted-foreground">Consulta y gestiona tus citas con los talleres.</p>
           </div>
