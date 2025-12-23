@@ -31,7 +31,7 @@ import { Badge } from '@/components/ui/badge';
 
 const vehicleSchema = z.object({
   type: z.string().min(3, 'El tipo es muy corto.'),
-  brand: z.string().min(2, 'La marca es muy corta.'),
+  brand: z.string().min(2, 'La marca es requerida.'),
   model: z.string().min(1, 'El modelo es muy corto.'),
   year: z.preprocess(
     (a) => parseInt(z.string().parse(a), 10),
@@ -47,7 +47,7 @@ const vehicleSchema = z.object({
     (a) => parseInt(z.string().parse(a), 10),
     z.number().min(0, 'El kilometraje no puede ser negativo.')
   ),
-  country: z.string().min(2, 'El país es muy corto.'),
+  country: z.string().min(2, 'El país es requerido.'),
   isForSale: z.boolean().default(false),
 });
 
