@@ -7,8 +7,8 @@ import { Button } from '@/components/ui/button';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
-import { useUser, useFirestore, useMemoFirebase } from '@/firebase';
-import { collection, query, orderBy } from 'firebase/firestore';
+import { useUser, useFirestore, useMemoFirebase, deleteDocumentNonBlocking } from '@/firebase';
+import { collection, query, orderBy, doc } from 'firebase/firestore';
 import { useCollection } from '@/firebase/firestore/use-collection';
 import { addDocumentNonBlocking } from '@/firebase/non-blocking-updates';
 import { useToast } from '@/hooks/use-toast';
@@ -16,7 +16,17 @@ import { Loader2, PlusCircle, Car, Trash2 } from 'lucide-react';
 import Link from 'next/link';
 import type { Vehicle } from '@/lib/types';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog"
 
 const vehicleSchema = z.object({
   type: z.string().min(3, 'El tipo es muy corto.'),
@@ -91,6 +101,19 @@ export default function MyVehiclesPage() {
     } finally {
       setIsSubmitting(false);
     }
+  }
+
+  function handleDeleteVehicle(vehicleId: string) {
+     if (!user || !firestore) {
+      toast({ variant: 'destructive', title: 'Error', description: 'No autenticado.' });
+      return;
+    }
+    const docRef = doc(firestore, `users/${user.uid}/vehicles`, vehicleId);
+    deleteDocumentNonBlocking(docRef);
+    toast({
+        title: 'Vehículo Eliminado',
+        description: 'El vehículo ha sido eliminado de tu registro.',
+    })
   }
 
   const isLoading = isUserLoading || areVehiclesLoading;
@@ -208,6 +231,7 @@ export default function MyVehiclesPage() {
                                 <TableHead>Año</TableHead>
                                 <TableHead>Placa</TableHead>
                                 <TableHead>VIN</TableHead>
+                                <TableHead className="text-right">Acciones</TableHead>
                             </TableRow>
                         </TableHeader>
                         <TableBody>
@@ -218,11 +242,38 @@ export default function MyVehiclesPage() {
                                         <TableCell>{vehicle.year}</TableCell>
                                         <TableCell>{vehicle.licensePlate}</TableCell>
                                         <TableCell className="font-mono text-xs">{vehicle.vin}</TableCell>
+                                        <TableCell className="text-right">
+                                            <AlertDialog>
+                                                <AlertDialogTrigger asChild>
+                                                    <Button variant="ghost" size="icon" className="text-destructive hover:bg-destructive/10">
+                                                        <Trash2 className="h-4 w-4" />
+                                                    </Button>
+                                                </AlertDialogTrigger>
+                                                <AlertDialogContent>
+                                                    <AlertDialogHeader>
+                                                        <AlertDialogTitle>¿Estás seguro?</AlertDialogTitle>
+                                                        <AlertDialogDescription>
+                                                            Esta acción no se puede deshacer. Esto eliminará permanentemente
+                                                            el vehículo de tus registros.
+                                                        </AlertDialogDescription>
+                                                    </AlertDialogHeader>
+                                                    <AlertDialogFooter>
+                                                        <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                                                        <AlertDialogAction
+                                                            onClick={() => handleDeleteVehicle(vehicle.id)}
+                                                            className="bg-destructive hover:bg-destructive/90"
+                                                        >
+                                                            Eliminar
+                                                        </AlertDialogAction>
+                                                    </AlertDialogFooter>
+                                                </AlertDialogContent>
+                                            </AlertDialog>
+                                        </TableCell>
                                     </TableRow>
                                 ))
                             ) : (
                                 <TableRow>
-                                    <TableCell colSpan={4} className="text-center h-24">
+                                    <TableCell colSpan={5} className="text-center h-24">
                                         No has registrado ningún vehículo todavía.
                                     </TableCell>
                                 </TableRow>
