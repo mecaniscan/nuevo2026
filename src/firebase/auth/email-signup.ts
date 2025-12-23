@@ -1,6 +1,6 @@
 'use client';
 
-import { Auth, createUserWithEmailAndPassword } from "firebase/auth";
+import { Auth, createUserWithEmailAndPassword, updateProfile } from "firebase/auth";
 import { doc, setDoc, Firestore } from "firebase/firestore";
 
 interface UserInfo {
@@ -23,7 +23,13 @@ export async function initiateEmailSignUpAndCreateUser(auth: Auth, firestore: Fi
     const userCredential = await createUserWithEmailAndPassword(auth, userInfo.email, userInfo.password);
     const user = userCredential.user;
 
-    // Step 2: Create the user document in Firestore
+    // Step 2: Update the user's profile in Firebase Auth
+    await updateProfile(user, {
+        displayName: `${userInfo.firstName} ${userInfo.lastName}`
+    });
+
+
+    // Step 3: Create the user document in Firestore
     const userDocRef = doc(firestore, 'users', user.uid);
     
     // Remove password before saving to Firestore
@@ -34,6 +40,6 @@ export async function initiateEmailSignUpAndCreateUser(auth: Auth, firestore: Fi
         id: user.uid,
     };
 
-    // Use setDoc to create the document. This is a blocking call within this function.
+    // Use setDoc to create the document.
     await setDoc(userDocRef, userData);
 }

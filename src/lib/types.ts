@@ -72,6 +72,8 @@ export type Vehicle = {
     imageUrls?: string[];
     isForSale: boolean;
     country: string;
+    sellerName?: string;
+    sellerWhatsapp?: string;
 };
 
 export type FavoriteWorkshop = {

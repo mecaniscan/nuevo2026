@@ -8,12 +8,12 @@ import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, For
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { useUser, useFirestore, useMemoFirebase, deleteDocumentNonBlocking } from '@/firebase';
-import { collection, query, orderBy, doc, writeBatch } from 'firebase/firestore';
+import { collection, query, orderBy, doc, writeBatch, getDoc } from 'firebase/firestore';
 import { useCollection } from '@/firebase/firestore/use-collection';
 import { useToast } from '@/hooks/use-toast';
 import { Loader2, PlusCircle, Car, Trash2, Pencil, Save, Briefcase, BadgePercent } from 'lucide-react';
 import Link from 'next/link';
-import type { Vehicle } from '@/lib/types';
+import type { Vehicle, User } from '@/lib/types';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import {
   AlertDialog,
@@ -95,21 +95,34 @@ export default function MyVehiclesPage() {
 
     setIsSubmitting(true);
     
-    const vehicleDataWithUrls = { ...values, imageUrls: [] }; // No image urls
-
     try {
         const batch = writeBatch(firestore);
+
+        // Fetch user data to get seller's name and whatsapp
+        const userDocRef = doc(firestore, 'users', user.uid);
+        const userDocSnap = await getDoc(userDocRef);
+        const userData = userDocSnap.data() as User | undefined;
+
+        const sellerName = user.displayName || `${userData?.firstName} ${userData?.lastName}` || 'Vendedor Anónimo';
+        const sellerWhatsapp = userData?.whatsappNumber || '';
+
+        const vehiclePayload: Omit<Vehicle, 'id'> = {
+            ...values,
+            userId: user.uid,
+            sellerName,
+            sellerWhatsapp,
+        };
         
         if (editingVehicleId) {
             // Updating an existing vehicle
             const userVehicleRef = doc(firestore, `users/${user.uid}/vehicles`, editingVehicleId);
-            batch.update(userVehicleRef, vehicleDataWithUrls);
+            batch.update(userVehicleRef, vehiclePayload);
 
             const marketplaceVehicleRef = doc(firestore, 'marketplace', editingVehicleId);
 
             if (values.isForSale) {
                 // If it's for sale, create or update it in the marketplace
-                batch.set(marketplaceVehicleRef, { ...vehicleDataWithUrls, userId: user.uid, id: editingVehicleId });
+                batch.set(marketplaceVehicleRef, { ...vehiclePayload, id: editingVehicleId });
             } else {
                 // If it's not for sale, remove it from the marketplace
                 batch.delete(marketplaceVehicleRef);
@@ -125,12 +138,12 @@ export default function MyVehiclesPage() {
         } else {
             // Adding a new vehicle
             const userVehicleRef = doc(collection(firestore, `users/${user.uid}/vehicles`));
-            const vehicleData = { ...vehicleDataWithUrls, userId: user.uid, id: userVehicleRef.id };
-            batch.set(userVehicleRef, vehicleData);
+            const vehicleDataWithId = { ...vehiclePayload, id: userVehicleRef.id };
+            batch.set(userVehicleRef, vehicleDataWithId);
 
             if (values.isForSale) {
                 const marketplaceVehicleRef = doc(firestore, 'marketplace', userVehicleRef.id);
-                batch.set(marketplaceVehicleRef, vehicleData);
+                batch.set(marketplaceVehicleRef, vehicleDataWithId);
             }
 
             await batch.commit();
@@ -355,5 +368,3 @@ export default function MyVehiclesPage() {
     </div>
   );
 }
-
-    
