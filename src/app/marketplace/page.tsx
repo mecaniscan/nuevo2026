@@ -1,7 +1,7 @@
 'use client';
 import React, { useState, useMemo } from 'react';
-import { useFirestore, useMemoFirebase, useCollection } from '@/firebase';
-import { collection, query } from 'firebase/firestore';
+import { useFirestore, useCollection } from '@/firebase';
+import { collection } from 'firebase/firestore';
 import type { Vehicle } from '@/lib/types';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -54,7 +54,7 @@ export default function MarketplacePage() {
   const [countryFilter, setCountryFilter] = useState('');
   const [brandFilter, setBrandFilter] = useState('');
   
-  const marketplaceCollection = useMemoFirebase(() => {
+  const marketplaceCollection = useMemo(() => {
     if (!firestore) return null;
     return collection(firestore, 'marketplace');
   }, [firestore]);
@@ -101,7 +101,7 @@ export default function MarketplacePage() {
                                 <SelectTrigger><SelectValue placeholder="Filtrar por País" /></SelectTrigger>
                                 <SelectContent>
                                     <SelectItem value="">Todos los Países</SelectItem>
-                                    {uniqueCountries.map(country => <SelectItem key={country} value={country}>{country}</SelectItem>)}
+                                    {uniqueCountries.filter(c => c).map(country => <SelectItem key={country} value={country}>{country}</SelectItem>)}
                                 </SelectContent>
                             </Select>
                         </div>
@@ -110,7 +110,7 @@ export default function MarketplacePage() {
                                 <SelectTrigger><SelectValue placeholder="Filtrar por Marca" /></SelectTrigger>
                                 <SelectContent>
                                     <SelectItem value="">Todas las Marcas</SelectItem>
-                                    {uniqueBrands.map(brand => <SelectItem key={brand} value={brand}>{brand}</SelectItem>)}
+                                    {uniqueBrands.filter(b => b).map(brand => <SelectItem key={brand} value={brand}>{brand}</SelectItem>)}
                                 </SelectContent>
                             </Select>
                         </div>
