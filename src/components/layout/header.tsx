@@ -68,9 +68,6 @@ export function Header() {
                 </DropdownMenuContent>
               </DropdownMenu>
           )}
-          <Button asChild variant="secondary">
-            <Link href="/dashboard/register-workshop">Registra tu Taller</Link>
-          </Button>
         </div>
       </div>
     </header>
