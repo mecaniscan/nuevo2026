@@ -4,31 +4,31 @@
  * Core Philosophy:
  * The security model enforces a strict user-ownership paradigm for all user-generated
  * content, ensuring that users can only access and manage their own data.
- * Publicly available data, such as workshop and service listings, is readable
- * by anyone but is not modifiable by clients. This creates a clear separation
+ * Publicly available data, such as workshop and marketplace listings, is readable
+ * by anyone but is not modifiable by unauthorized clients. This creates a clear separation
  * between private user spaces and the public data commons.
  *
  * Data Structure:
- * The data is organized into several top-level collections: 'users' and 'workshops'.
+ * The data is organized into several top-level collections: 'users', 'workshops', and 'marketplace'.
  * All data private to a user, such as 'appointments', 'oilChanges', and 'vehicles',
  * is stored in a subcollection directly under that user's document in the '/users/{userId}' path.
  * Data specific to a workshop, like 'reviews' and 'services', is stored in subcollections
  * under the workshop's document.
+ * The 'marketplace' collection stores denormalized copies of vehicles for sale.
  *
  * Key Security Decisions:
  * - User Data Privacy: A user can only read, write, and query data within their
  *   own document tree (e.g., /users/their-own-id/...).
  * - User Enumeration Disabled: Listing documents in the top-level 'users'
  *   collection is explicitly forbidden to protect user privacy.
- * - Public Data is Read-Only (mostly): The 'workshops' collection is
- *   publicly readable. Workshop owners can create, update, and delete their own workshop.
+ * - Public Data is Read-Only (for most users): The 'workshops' and 'marketplace' collections are
+ *   publicly readable. Owners can manage their own listings.
  * - Default Deny: Any operation not explicitly granted is denied.
  *
  * Denormalization for Authorization:
  * To ensure fast and secure authorization checks, key identifying information is
- * denormalized. For instance, an 'Appointment' document created at
- * '/users/{userId}/appointments/{appointmentId}' must contain a 'userId' field
- * that matches the '{userId}' from the path.
+ * denormalized. For instance, a 'Vehicle' document listed in '/marketplace/{vehicleId}' must
+ * contain a 'userId' field that matches the authenticated user creating the listing.
  *
  */
 rules_version = '2';
@@ -196,6 +196,19 @@ service cloud.firestore {
       match /favorites/{workshopId} {
         allow get, list, create, update, delete: if isOwner(userId);
       }
+    }
+    
+    /**
+     * @description Secures the public marketplace for vehicles.
+     * @path /marketplace/{vehicleId}
+     * @allow (get, list) Any user, signed in or not, can view vehicle listings.
+     * @allow (create, update, delete) Only the owner of the vehicle can manage their listing.
+     * @principle Public data is read-only for most users, with write access restricted to owners.
+     */
+    match /marketplace/{vehicleId} {
+      allow get, list: if true;
+      allow create, update: if isOwner(request.resource.data.userId);
+      allow delete: if isExistingOwner(resource.data.userId);
     }
   }
 }

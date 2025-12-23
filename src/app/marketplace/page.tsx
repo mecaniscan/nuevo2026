@@ -1,13 +1,12 @@
 'use client';
-import React, { useState, useMemo, useEffect } from 'react';
-import { useFirestore, useMemoFirebase } from '@/firebase';
-import { collection, query, where, getDocs } from 'firebase/firestore';
+import React, { useState, useMemo } from 'react';
+import { useFirestore, useMemoFirebase, useCollection } from '@/firebase';
+import { collection, query } from 'firebase/firestore';
 import type { Vehicle } from '@/lib/types';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
-import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Loader2, Car, MapPin, Search } from 'lucide-react';
+import { Loader2, MapPin } from 'lucide-react';
 import Image from 'next/image';
 import { Header } from '@/components/layout/header';
 import { Footer } from '@/components/layout/footer';
@@ -52,43 +51,29 @@ function VehicleCard({ vehicle }: { vehicle: Vehicle }) {
 
 export default function MarketplacePage() {
   const firestore = useFirestore();
-  const [vehicles, setVehicles] = useState<Vehicle[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
   const [countryFilter, setCountryFilter] = useState('');
   const [brandFilter, setBrandFilter] = useState('');
   
-  const uniqueCountries = useMemo(() => [...new Set(vehicles.map(v => v.country).filter(Boolean))], [vehicles]);
-  const uniqueBrands = useMemo(() => [...new Set(vehicles.map(v => v.brand).filter(Boolean))], [vehicles]);
-
-  useEffect(() => {
-    async function fetchForSaleVehicles() {
-      if (!firestore) return;
-      setIsLoading(true);
-      try {
-        // Query users, then for each user, query their vehicles marked for sale
-        const usersSnapshot = await getDocs(collection(firestore, 'users'));
-        const vehiclesForSale: Vehicle[] = [];
-
-        for (const userDoc of usersSnapshot.docs) {
-          const vehiclesColRef = collection(firestore, `users/${userDoc.id}/vehicles`);
-          const q = query(vehiclesColRef, where("isForSale", "==", true));
-          const vehiclesSnapshot = await getDocs(q);
-          vehiclesSnapshot.forEach(doc => {
-            vehiclesForSale.push({ id: doc.id, ...doc.data() } as Vehicle);
-          });
-        }
-        setVehicles(vehiclesForSale);
-      } catch (error) {
-        console.error("Error fetching vehicles for sale:", error);
-      } finally {
-        setIsLoading(false);
-      }
-    }
-
-    fetchForSaleVehicles();
+  const marketplaceCollection = useMemoFirebase(() => {
+    if (!firestore) return null;
+    return collection(firestore, 'marketplace');
   }, [firestore]);
 
+  const { data: vehicles, isLoading } = useCollection<Vehicle>(marketplaceCollection);
+
+  const uniqueCountries = useMemo(() => {
+    if (!vehicles) return [];
+    return [...new Set(vehicles.map(v => v.country).filter(Boolean))];
+  }, [vehicles]);
+  
+  const uniqueBrands = useMemo(() => {
+    if (!vehicles) return [];
+    return [...new Set(vehicles.map(v => v.brand).filter(Boolean))];
+  }, [vehicles]);
+
+
   const filteredVehicles = useMemo(() => {
+    if (!vehicles) return [];
     return vehicles.filter(vehicle => {
       const countryMatch = countryFilter ? vehicle.country === countryFilter : true;
       const brandMatch = brandFilter ? vehicle.brand === brandFilter : true;
@@ -110,7 +95,7 @@ export default function MarketplacePage() {
 
            <div className="mx-auto max-w-6xl">
             <div className="flex flex-col sm:flex-row gap-4 mb-8 p-4 border rounded-lg bg-card sticky top-20 z-10 backdrop-blur-md shadow-lg">
-                {vehicles.length > 0 && (
+                {(vehicles && vehicles.length > 0) && (
                     <>
                         <div className="flex-1">
                             <Select value={countryFilter} onValueChange={setCountryFilter}>
@@ -139,7 +124,7 @@ export default function MarketplacePage() {
               <div className="flex justify-center items-center col-span-full h-64">
                 <Loader2 className="h-12 w-12 animate-spin text-primary" />
               </div>
-            ) : filteredVehicles.length > 0 ? (
+            ) : filteredVehicles && filteredVehicles.length > 0 ? (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
                   {filteredVehicles.map(vehicle => (
                     <VehicleCard key={vehicle.id} vehicle={vehicle} />

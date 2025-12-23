@@ -8,9 +8,8 @@ import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, For
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { useUser, useFirestore, useMemoFirebase, deleteDocumentNonBlocking } from '@/firebase';
-import { collection, query, orderBy, doc } from 'firebase/firestore';
+import { collection, query, orderBy, doc, writeBatch } from 'firebase/firestore';
 import { useCollection } from '@/firebase/firestore/use-collection';
-import { addDocumentNonBlocking, updateDocumentNonBlocking } from '@/firebase/non-blocking-updates';
 import { useToast } from '@/hooks/use-toast';
 import { Loader2, PlusCircle, Car, Trash2, Pencil, Save, Image as ImageIcon, Briefcase, BadgePercent } from 'lucide-react';
 import Link from 'next/link';
@@ -108,48 +107,94 @@ export default function MyVehiclesPage() {
     const { imageUrl1, imageUrl2, imageUrl3, ...vehicleBaseData } = values;
     const vehicleDataWithUrls = { ...vehicleBaseData, imageUrls };
 
-
     try {
-      if (editingVehicleId) {
-        const docRef = doc(firestore, `users/${user.uid}/vehicles`, editingVehicleId);
-        updateDocumentNonBlocking(docRef, vehicleDataWithUrls);
-        toast({
-          title: '¡Vehículo Actualizado!',
-          description: 'Tu vehículo ha sido actualizado.',
-        });
-        setEditingVehicleId(null);
-      } else {
-        const vehicleData = { ...vehicleDataWithUrls, userId: user.uid };
-        addDocumentNonBlocking(collection(firestore, `users/${user.uid}/vehicles`), vehicleData);
-        toast({
-          title: '¡Vehículo Añadido!',
-          description: 'Tu vehículo ha sido guardado.',
-        });
-      }
-      form.reset();
+        const batch = writeBatch(firestore);
+        
+        if (editingVehicleId) {
+            // Updating an existing vehicle
+            const userVehicleRef = doc(firestore, `users/${user.uid}/vehicles`, editingVehicleId);
+            batch.update(userVehicleRef, vehicleDataWithUrls);
+
+            const marketplaceVehicleRef = doc(firestore, 'marketplace', editingVehicleId);
+
+            if (values.isForSale) {
+                // If it's for sale, create or update it in the marketplace
+                batch.set(marketplaceVehicleRef, { ...vehicleDataWithUrls, userId: user.uid, id: editingVehicleId });
+            } else {
+                // If it's not for sale, remove it from the marketplace
+                batch.delete(marketplaceVehicleRef);
+            }
+            
+            await batch.commit();
+
+            toast({
+                title: '¡Vehículo Actualizado!',
+                description: 'Tu vehículo ha sido actualizado.',
+            });
+            setEditingVehicleId(null);
+        } else {
+            // Adding a new vehicle
+            const userVehicleRef = doc(collection(firestore, `users/${user.uid}/vehicles`));
+            const vehicleData = { ...vehicleDataWithUrls, userId: user.uid, id: userVehicleRef.id };
+            batch.set(userVehicleRef, vehicleData);
+
+            if (values.isForSale) {
+                const marketplaceVehicleRef = doc(firestore, 'marketplace', userVehicleRef.id);
+                batch.set(marketplaceVehicleRef, vehicleData);
+            }
+
+            await batch.commit();
+            
+            toast({
+                title: '¡Vehículo Añadido!',
+                description: 'Tu vehículo ha sido guardado.',
+            });
+        }
+        form.reset();
     } catch (error) {
-      console.error('Error saving vehicle:', error);
-      toast({
-        variant: 'destructive',
-        title: 'Error Inesperado',
-        description: 'No se pudo guardar el vehículo.',
-      });
+        console.error('Error saving vehicle:', error);
+        toast({
+            variant: 'destructive',
+            title: 'Error Inesperado',
+            description: 'No se pudo guardar el vehículo.',
+        });
     } finally {
-      setIsSubmitting(false);
+        setIsSubmitting(false);
     }
   }
 
-  function handleDeleteVehicle(vehicleId: string) {
+  async function handleDeleteVehicle(vehicleId: string) {
      if (!user || !firestore) {
       toast({ variant: 'destructive', title: 'Error', description: 'No autenticado.' });
       return;
     }
-    const docRef = doc(firestore, `users/${user.uid}/vehicles`, vehicleId);
-    deleteDocumentNonBlocking(docRef);
-    toast({
-        title: 'Vehículo Eliminado',
-        description: 'El vehículo ha sido eliminado de tu registro.',
-    })
+    
+    try {
+        const batch = writeBatch(firestore);
+        
+        // Reference to the document in the user's private collection
+        const userVehicleRef = doc(firestore, `users/${user.uid}/vehicles`, vehicleId);
+        batch.delete(userVehicleRef);
+
+        // Reference to the document in the public marketplace collection
+        const marketplaceVehicleRef = doc(firestore, 'marketplace', vehicleId);
+        batch.delete(marketplaceVehicleRef); // This will do nothing if it doesn't exist, which is fine.
+
+        await batch.commit();
+
+        toast({
+            title: 'Vehículo Eliminado',
+            description: 'El vehículo ha sido eliminado de tus registros y del marketplace.',
+        });
+
+    } catch (error) {
+        console.error("Error deleting vehicle:", error);
+        toast({
+            variant: 'destructive',
+            title: 'Error Inesperado',
+            description: 'No se pudo eliminar el vehículo.',
+        });
+    }
   }
 
   function handleEditVehicle(vehicle: Vehicle) {
@@ -339,7 +384,3 @@ export default function MyVehiclesPage() {
     </div>
   );
 }
-
-    
-
-    
