@@ -12,18 +12,22 @@ import Image from 'next/image';
 import { Header } from '@/components/layout/header';
 import { Footer } from '@/components/layout/footer';
 import Link from 'next/link';
+import { PlaceHolderImages } from '@/lib/placeholder-images';
 
 function VehicleCard({ vehicle }: { vehicle: Vehicle }) {
+  const vehicleImage = vehicle.imageUrls?.[0] || (PlaceHolderImages.find(p => p.id === 'workshop-5')?.imageUrl ?? 'https://picsum.photos/seed/car/600/400');
+  const vehicleImageHint = vehicle.imageUrls?.[0] ? "vehicle image" : "classic car";
+  
   return (
     <Card className="overflow-hidden transition-all duration-300 hover:shadow-xl hover:-translate-y-1">
         <CardHeader className="p-0">
              <div className="relative h-56 w-full">
                 <Image
-                    src={vehicle.imageUrls?.[0] || 'https://picsum.photos/seed/car/600/400'}
+                    src={vehicleImage}
                     alt={`${vehicle.brand} ${vehicle.model}`}
                     fill
                     className="object-cover"
-                    data-ai-hint="vehicle image"
+                    data-ai-hint={vehicleImageHint}
                 />
             </div>
         </CardHeader>
