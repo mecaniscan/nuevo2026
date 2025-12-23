@@ -1,0 +1,230 @@
+'use client';
+import React, { useEffect } from 'react';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import * as z from 'zod';
+import { Button } from '@/components/ui/button';
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
+import { Input } from '@/components/ui/input';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { useUser, useFirestore, useMemoFirebase, useDoc } from '@/firebase';
+import { updateDocumentNonBlocking } from '@/firebase/non-blocking-updates';
+import { doc } from 'firebase/firestore';
+import { useToast } from '@/hooks/use-toast';
+import { useRouter } from 'next/navigation';
+import { Loader2, Save } from 'lucide-react';
+import Link from 'next/link';
+import type { User } from '@/lib/types';
+import { updateProfile } from 'firebase/auth';
+
+const profileSchema = z.object({
+  firstName: z.string().min(2, 'El nombre debe tener al menos 2 caracteres.'),
+  lastName: z.string().min(2, 'El apellido debe tener al menos 2 caracteres.'),
+  email: z.string().email('El correo electrónico no es válido.').optional(),
+  phoneNumber: z.string().optional(),
+  whatsappNumber: z.string().optional(),
+});
+
+export default function ProfilePage() {
+  const { user, isUserLoading } = useUser();
+  const firestore = useFirestore();
+  const { toast } = useToast();
+  const router = useRouter();
+  const [isSubmitting, setIsSubmitting] = React.useState(false);
+
+  const userDocRef = useMemoFirebase(() => {
+    if (!firestore || !user) return null;
+    return doc(firestore, 'users', user.uid);
+  }, [firestore, user]);
+
+  const { data: userData, isLoading: isUserDataLoading } = useDoc<User>(userDocRef);
+
+  const form = useForm<z.infer<typeof profileSchema>>({
+    resolver: zodResolver(profileSchema),
+    defaultValues: {
+      firstName: '',
+      lastName: '',
+      email: '',
+      phoneNumber: '',
+      whatsappNumber: '',
+    },
+  });
+
+  useEffect(() => {
+    if (userData) {
+      form.reset({
+        ...userData,
+        email: user?.email || userData.email, // Prefer email from auth object
+      });
+    } else if (user && !isUserDataLoading) {
+      // Pre-fill from auth object if firestore doc is not there yet
+      const [firstName, lastName] = user.displayName?.split(' ') || ['', ''];
+      form.reset({
+        firstName,
+        lastName,
+        email: user.email || '',
+      });
+    }
+  }, [userData, user, isUserDataLoading, form]);
+
+  async function onSubmit(values: z.infer<typeof profileSchema>) {
+    if (!user || !firestore) {
+      toast({
+        variant: 'destructive',
+        title: 'Error',
+        description: 'No se pudo actualizar el perfil.',
+      });
+      return;
+    }
+
+    setIsSubmitting(true);
+    
+    try {
+      // Update Firestore document
+      const userRef = doc(firestore, 'users', user.uid);
+      const { email, ...dataToUpdate } = values; // Email is not updated here
+      updateDocumentNonBlocking(userRef, dataToUpdate);
+
+      // Update Firebase Auth profile displayName
+      const newDisplayName = `${values.firstName} ${values.lastName}`;
+      if (user.displayName !== newDisplayName) {
+        await updateProfile(user, { displayName: newDisplayName });
+      }
+
+      toast({
+        title: '¡Perfil Actualizado!',
+        description: 'Tu información ha sido guardada correctamente.',
+      });
+      router.push('/dashboard');
+    } catch (error) {
+      console.error('Error updating profile:', error);
+      toast({
+        variant: 'destructive',
+        title: 'Error Inesperado',
+        description: 'No se pudo actualizar tu perfil. Por favor, intenta de nuevo.',
+      });
+    } finally {
+        setIsSubmitting(false);
+    }
+  }
+  
+  const isLoading = isUserLoading || isUserDataLoading;
+
+  if (isLoading) {
+    return <div className="flex h-screen items-center justify-center"><Loader2 className="w-12 h-12 animate-spin text-primary" /></div>;
+  }
+
+  if (!user) {
+    return (
+      <div className="container mx-auto py-12 flex items-center justify-center">
+        <Card className="w-full max-w-lg text-center">
+            <CardHeader>
+                <CardTitle>Acceso Restringido</CardTitle>
+                <CardDescription>Debes iniciar sesión para ver tu perfil.</CardDescription>
+            </CardHeader>
+            <CardContent>
+                 <Button asChild><Link href="/dashboard">Ir a Iniciar Sesión</Link></Button>
+            </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
+  return (
+    <div className="container mx-auto py-12">
+      <Card className="max-w-2xl mx-auto">
+        <CardHeader>
+          <CardTitle className="text-2xl font-headline text-primary">Editar Perfil</CardTitle>
+          <CardDescription>
+            Actualiza tu información personal.
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <Form {...form}>
+            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <FormField
+                  control={form.control}
+                  name="firstName"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Nombre</FormLabel>
+                      <FormControl>
+                        <Input placeholder="Tu nombre" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="lastName"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Apellido</FormLabel>
+                      <FormControl>
+                        <Input placeholder="Tu apellido" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
+               <FormField
+                  control={form.control}
+                  name="email"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Correo Electrónico</FormLabel>
+                      <FormControl>
+                        <Input type="email" {...field} readOnly disabled className="cursor-not-allowed bg-muted/50" />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                 <FormField
+                    control={form.control}
+                    name="phoneNumber"
+                    render={({ field }) => (
+                        <FormItem>
+                        <FormLabel>Teléfono (Opcional)</FormLabel>
+                        <FormControl>
+                            <Input type="tel" placeholder="+54 11 1234-5678" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                        </FormItem>
+                    )}
+                    />
+                 <FormField
+                    control={form.control}
+                    name="whatsappNumber"
+                    render={({ field }) => (
+                        <FormItem>
+                        <FormLabel>WhatsApp (Opcional)</FormLabel>
+                        <FormControl>
+                            <Input type="tel" placeholder="+54 9 11 1234-5678" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                        </FormItem>
+                    )}
+                    />
+               </div>
+               <div className="flex gap-4 pt-4 border-t">
+                  <Button type="submit" disabled={isSubmitting}>
+                    {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                    <Save className="mr-2" />
+                    Guardar Cambios
+                  </Button>
+                   <Button variant="ghost" asChild>
+                    <Link href="/dashboard">Cancelar</Link>
+                  </Button>
+               </div>
+            </form>
+          </Form>
+        </CardContent>
+      </Card>
+    </div>
+  );
+}

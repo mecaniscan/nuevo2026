@@ -390,7 +390,12 @@ export default function DashboardPage() {
                 <CardHeader>
                     <CardTitle className="flex items-center gap-2"><Settings /> Configuración de la Cuenta</CardTitle>
                 </CardHeader>
-                <CardContent className="flex flex-col items-start gap-4 sm:flex-row">
+                <CardContent className="flex flex-col items-start gap-4 sm:flex-row sm:items-center">
+                    <Button asChild variant="outline" disabled={user.isAnonymous}>
+                      <Link href="/dashboard/profile">
+                        <Pencil className="mr-2 h-4 w-4" /> Editar Perfil
+                      </Link>
+                    </Button>
                     <AlertDialog>
                         <AlertDialogTrigger asChild>
                             <Button variant="destructive" disabled={user.isAnonymous}>
@@ -411,7 +416,7 @@ export default function DashboardPage() {
                             </AlertDialogFooter>
                         </AlertDialogContent>
                     </AlertDialog>
-                    {user.isAnonymous && <p className="text-xs text-muted-foreground">Debes tener una cuenta permanente para poder eliminarla.</p>}
+                    {user.isAnonymous && <p className="text-xs text-muted-foreground">Debes tener una cuenta permanente para poder editar o eliminar tu perfil.</p>}
                 </CardContent>
             </Card>
         </div>
