@@ -337,7 +337,7 @@ export default function DashboardPage() {
         {/* Citas Section */}
         <div>
             <ActionButton 
-                href="/#workshops"
+                href="/dashboard/my-appointments"
                 icon={<Calendar className="h-8 w-8 text-primary"/>}
                 title="Mis Citas"
                 description={`Tienes ${appointments?.length || 0} citas. Ver o agendar.`}

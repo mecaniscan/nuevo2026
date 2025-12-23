@@ -112,7 +112,7 @@ export default function WorkshopDetailPage() {
     };
 
     async function onAppointmentSubmit(values: z.infer<typeof appointmentSchema>) {
-        if (!user || !firestore || !workshopId) {
+        if (!user || !firestore || !workshopId || !workshop) {
             toast({ variant: 'destructive', title: 'Error', description: 'Debes iniciar sesión para agendar una cita.' });
             return;
         }
@@ -124,6 +124,7 @@ export default function WorkshopDetailPage() {
             const appointmentData: Omit<Appointment, 'id'> = {
                 appointmentDateTime: values.appointmentDateTime.toISOString(),
                 workshopId: workshopId,
+                workshopName: workshop.name, // Denormalized name
                 userId: user.uid,
                 status: 'scheduled',
                 description: values.description,
@@ -135,7 +136,7 @@ export default function WorkshopDetailPage() {
                 title: '¡Cita Agendada!',
                 description: `Tu cita en ${workshop?.name} ha sido programada.`,
             });
-            router.push('/dashboard');
+            router.push('/dashboard/my-appointments');
         } catch (error) {
             console.error('Error creating appointment:', error);
             toast({
@@ -440,5 +441,3 @@ export default function WorkshopDetailPage() {
     </div>
   );
 }
-
-    
