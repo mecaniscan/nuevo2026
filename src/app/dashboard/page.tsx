@@ -6,7 +6,7 @@ import { useCollection } from '@/firebase/firestore/use-collection';
 import type { Workshop, Appointment } from '@/lib/types';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Loader2, Calendar, Wrench, Trash2, Settings } from 'lucide-react';
+import { Loader2, Calendar, Wrench, Trash2, Settings, Pencil } from 'lucide-react';
 import Link from 'next/link';
 import { initiateAnonymousSignIn } from '@/firebase/non-blocking-login';
 import { useAuth } from '@/firebase';
@@ -53,6 +53,16 @@ export default function DashboardPage() {
         description: 'La cita ha sido eliminada de tu agenda.',
     });
   }
+
+  const handleDeleteWorkshop = () => {
+    if (!workshops || workshops.length === 0 || !firestore) {
+      toast({ variant: 'destructive', title: 'Error', description: 'No se encontró el taller para eliminar.' });
+      return;
+    }
+    const workshopRef = doc(firestore, 'workshops', workshops[0].id);
+    deleteDocumentNonBlocking(workshopRef);
+    toast({ title: 'Taller Eliminado', description: 'Tu taller ha sido eliminado de la plataforma.' });
+  };
 
   const handleDeleteAccount = async () => {
     if (!user || !firestore) {
@@ -152,18 +162,48 @@ export default function DashboardPage() {
       
       <div className="grid gap-8 lg:grid-cols-2">
         {/* My Workshops */}
-        <Card>
+        <Card className="lg:col-span-2">
             <CardHeader>
             <CardTitle className="flex items-center gap-2"><Wrench/> Mi Taller</CardTitle>
-            <CardDescription>Aquí puedes ver y gestionar el taller que has registrado.</CardDescription>
+            <CardDescription>Aquí puedes ver, editar o eliminar el taller que has registrado.</CardDescription>
             </CardHeader>
             <CardContent>
             {hasWorkshop && workshops ? (
                 <div className="grid grid-cols-1 gap-4">
                 {workshops.map((workshop) => (
-                    <Card key={workshop.id} className="p-4">
-                        <CardTitle className="text-lg">{workshop.name}</CardTitle>
-                        <p className="text-sm text-muted-foreground">{workshop.address}</p>
+                    <Card key={workshop.id} className="p-4 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+                        <div>
+                          <CardTitle className="text-lg">{workshop.name}</CardTitle>
+                          <p className="text-sm text-muted-foreground">{workshop.address}</p>
+                        </div>
+                        <div className="flex gap-2 self-end sm:self-center">
+                          <Button variant="outline" size="icon" asChild>
+                            <Link href="/dashboard/edit-workshop">
+                              <Pencil className="h-5 w-5" />
+                              <span className="sr-only">Editar Taller</span>
+                            </Link>
+                          </Button>
+                          <AlertDialog>
+                            <AlertDialogTrigger asChild>
+                              <Button variant="destructive" size="icon">
+                                <Trash2 className="h-5 w-5" />
+                                <span className="sr-only">Eliminar Taller</span>
+                              </Button>
+                            </AlertDialogTrigger>
+                            <AlertDialogContent>
+                              <AlertDialogHeader>
+                                <AlertDialogTitle>¿Estás seguro de eliminar el taller?</AlertDialogTitle>
+                                <AlertDialogDescription>
+                                  Esta acción no se puede deshacer. Esto eliminará permanentemente tu taller de nuestra plataforma.
+                                </AlertDialogDescription>
+                              </AlertDialogHeader>
+                              <AlertDialogFooter>
+                                <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                                <AlertDialogAction onClick={handleDeleteWorkshop} className="bg-destructive hover:bg-destructive/90">Eliminar</AlertDialogAction>
+                              </AlertDialogFooter>
+                            </AlertDialogContent>
+                          </AlertDialog>
+                        </div>
                     </Card>
                 ))}
                 </div>
@@ -182,7 +222,7 @@ export default function DashboardPage() {
         <Card>
             <CardHeader>
                 <CardTitle className="flex items-center gap-2"><Calendar/> Mis Citas</CardTitle>
-                <CardDescription>Aquí puedes ver tus próximas citas.</CardDescription>
+                <CardDescription>Aquí puedes ver y gestionar tus próximas citas.</CardDescription>
             </CardHeader>
             <CardContent>
                  {appointments && appointments.length > 0 ? (
@@ -217,7 +257,7 @@ export default function DashboardPage() {
             </CardContent>
         </Card>
 
-        <Card className="lg:col-span-2">
+        <Card>
             <CardHeader>
                 <CardTitle className="flex items-center gap-2"><Settings /> Configuración de la Cuenta</CardTitle>
                 <CardDescription>Gestiona las opciones de tu cuenta.</CardDescription>
