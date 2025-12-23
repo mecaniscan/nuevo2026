@@ -53,9 +53,6 @@ export function Header() {
                <Button variant="ghost" asChild>
                 <Link href="/dashboard">Iniciar Sesión</Link>
               </Button>
-              <Button asChild>
-                <Link href="/register">Crear Cuenta</Link>
-              </Button>
             </>
           )}
           {user && (
