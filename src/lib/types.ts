@@ -1,4 +1,5 @@
 import type { ImagePlaceholder } from './placeholder-images';
+import { Timestamp } from 'firebase/firestore';
 
 export type Workshop = {
     id: string;
@@ -42,6 +43,8 @@ export type Review = {
     userId: string;
     rating: number;
     comment: string;
-    createdAt: string;
+    createdAt: Timestamp | string;
     authorName?: string; // Denormalized user name
 };
+
+    

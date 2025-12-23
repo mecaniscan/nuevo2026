@@ -7,7 +7,7 @@ import * as z from 'zod';
 import { useParams, useRouter } from 'next/navigation';
 import Image from 'next/image';
 import { useDoc, useUser, useFirestore, useMemoFirebase, useCollection } from '@/firebase';
-import { doc, collection, query, where, serverTimestamp } from 'firebase/firestore';
+import { doc, collection, query, where, serverTimestamp, Timestamp } from 'firebase/firestore';
 import type { Workshop, Appointment, Service, Review } from '@/lib/types';
 import { addDocumentNonBlocking } from '@/firebase/non-blocking-updates';
 import { PlaceHolderImages } from '@/lib/placeholder-images';
@@ -25,6 +25,7 @@ import { useToast } from '@/hooks/use-toast';
 import { initiateAnonymousSignIn } from '@/firebase/non-blocking-login';
 import { useAuth } from '@/firebase';
 import Link from 'next/link';
+import { es } from 'date-fns/locale';
 
 const appointmentSchema = z.object({
     appointmentDateTime: z.date({
@@ -34,7 +35,7 @@ const appointmentSchema = z.object({
 });
 
 const reviewSchema = z.object({
-  rating: z.number().min(1).max(5),
+  rating: z.number().min(1, "Debes seleccionar al menos una estrella.").max(5),
   comment: z.string().min(10, "La reseña debe tener al menos 10 caracteres.").max(500, "La reseña no puede exceder los 500 caracteres."),
 });
 
@@ -172,7 +173,7 @@ export default function WorkshopDetailPage() {
           title: "¡Reseña Enviada!",
           description: "Gracias por compartir tu opinión.",
         });
-        reviewForm.reset();
+        reviewForm.reset({rating: 0, comment: ""});
 
       } catch (error) {
         console.error("Error submitting review:", error);
@@ -185,6 +186,12 @@ export default function WorkshopDetailPage() {
         setIsSubmittingReview(false);
       }
     }
+
+    const formatDate = (dateValue: string | Timestamp) => {
+        if (!dateValue) return '';
+        const date = (dateValue as Timestamp)?.toDate ? (dateValue as Timestamp).toDate() : new Date(dateValue);
+        return format(date, 'dd MMM yyyy', { locale: es });
+    };
 
     if (isWorkshopLoading || isUserLoading || isServicesLoading || areReviewsLoading) {
         return (
@@ -305,7 +312,7 @@ export default function WorkshopDetailPage() {
                                   )}
                                 />
                                 <Button type="submit" disabled={isSubmittingReview}>
-                                  {isSubmittingReview ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <Send className="mr-2"/>}
+                                  {isSubmittingReview ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <Send className="mr-2 h-4 w-4" />}
                                   Enviar Reseña
                                 </Button>
                             </form>
@@ -323,7 +330,7 @@ export default function WorkshopDetailPage() {
                                       </div>
                                     </div>
                                     <p className="text-muted-foreground mt-2">{review.comment}</p>
-                                    <p className="text-xs text-muted-foreground mt-2">{format(new Date(review.createdAt), 'dd MMM yyyy')}</p>
+                                    <p className="text-xs text-muted-foreground mt-2">{formatDate(review.createdAt)}</p>
                                 </div>
                                 ))
                             ) : (
@@ -417,3 +424,5 @@ export default function WorkshopDetailPage() {
     </div>
   );
 }
+
+    
