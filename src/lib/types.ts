@@ -66,6 +66,7 @@ export type Vehicle = {
     vin: string;
     licensePlate: string;
     price: number;
+    currentMileage: number;
 };
 
     

@@ -10,9 +10,9 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter }
 import { useUser, useFirestore, useMemoFirebase, deleteDocumentNonBlocking } from '@/firebase';
 import { collection, query, orderBy, doc } from 'firebase/firestore';
 import { useCollection } from '@/firebase/firestore/use-collection';
-import { addDocumentNonBlocking } from '@/firebase/non-blocking-updates';
+import { addDocumentNonBlocking, updateDocumentNonBlocking } from '@/firebase/non-blocking-updates';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2, PlusCircle, Car, Trash2 } from 'lucide-react';
+import { Loader2, PlusCircle, Car, Trash2, Pencil, Save } from 'lucide-react';
 import Link from 'next/link';
 import type { Vehicle } from '@/lib/types';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -42,13 +42,19 @@ const vehicleSchema = z.object({
     (a) => parseFloat(z.string().parse(a)),
     z.number().positive('El precio debe ser un número positivo.')
   ),
+  currentMileage: z.preprocess(
+    (a) => parseInt(z.string().parse(a), 10),
+    z.number().min(0, 'El kilometraje no puede ser negativo.')
+  ),
 });
+
 
 export default function MyVehiclesPage() {
   const { user, isUserLoading } = useUser();
   const firestore = useFirestore();
   const { toast } = useToast();
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [editingVehicleId, setEditingVehicleId] = useState<string | null>(null);
 
   const vehiclesCollection = useMemoFirebase(() => {
     if (!firestore || !user) return null;
@@ -72,6 +78,7 @@ export default function MyVehiclesPage() {
       vin: '',
       licensePlate: '',
       price: 0,
+      currentMileage: 0,
     },
   });
 
@@ -84,20 +91,25 @@ export default function MyVehiclesPage() {
     setIsSubmitting(true);
 
     try {
-      const vehicleData = {
-        ...values,
-        userId: user.uid,
-      };
-      
-      addDocumentNonBlocking(collection(firestore, `users/${user.uid}/vehicles`), vehicleData);
-      
-      toast({
-        title: '¡Vehículo Añadido!',
-        description: 'Tu vehículo ha sido guardado.',
-      });
+      if (editingVehicleId) {
+        const docRef = doc(firestore, `users/${user.uid}/vehicles`, editingVehicleId);
+        updateDocumentNonBlocking(docRef, values);
+        toast({
+          title: '¡Vehículo Actualizado!',
+          description: 'Tu vehículo ha sido actualizado.',
+        });
+        setEditingVehicleId(null);
+      } else {
+        const vehicleData = { ...values, userId: user.uid };
+        addDocumentNonBlocking(collection(firestore, `users/${user.uid}/vehicles`), vehicleData);
+        toast({
+          title: '¡Vehículo Añadido!',
+          description: 'Tu vehículo ha sido guardado.',
+        });
+      }
       form.reset();
     } catch (error) {
-      console.error('Error adding vehicle:', error);
+      console.error('Error saving vehicle:', error);
       toast({
         variant: 'destructive',
         title: 'Error Inesperado',
@@ -121,6 +133,11 @@ export default function MyVehiclesPage() {
     })
   }
 
+  function handleEditVehicle(vehicle: Vehicle) {
+    setEditingVehicleId(vehicle.id);
+    form.reset(vehicle);
+  }
+
   const isLoading = isUserLoading || areVehiclesLoading;
   
   return (
@@ -138,97 +155,32 @@ export default function MyVehiclesPage() {
 
         <Card>
           <CardHeader>
-            <CardTitle>Añadir Nuevo Vehículo</CardTitle>
+            <CardTitle>{editingVehicleId ? 'Editar Vehículo' : 'Añadir Nuevo Vehículo'}</CardTitle>
           </CardHeader>
           <CardContent>
             <Form {...form}>
               <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                  <FormField
-                    control={form.control}
-                    name="type"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Tipo</FormLabel>
-                        <FormControl><Input placeholder="Ej: Sedan, SUV" {...field} /></FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  <FormField
-                    control={form.control}
-                    name="brand"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Marca</FormLabel>
-                        <FormControl><Input placeholder="Ej: Toyota" {...field} /></FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  <FormField
-                    control={form.control}
-                    name="model"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Modelo</FormLabel>
-                        <FormControl><Input placeholder="Ej: Corolla" {...field} /></FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  <FormField
-                    control={form.control}
-                    name="year"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Año</FormLabel>
-                        <FormControl><Input type="number" placeholder="2022" {...field} /></FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                   <FormField
-                    control={form.control}
-                    name="price"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Precio ($)</FormLabel>
-                        <FormControl><Input type="number" step="0.01" placeholder="25000.00" {...field} /></FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  <FormField
-                    control={form.control}
-                    name="licensePlate"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Placa</FormLabel>
-                        <FormControl><Input placeholder="ABC-123" {...field} /></FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  <div className="lg:col-span-2">
-                    <FormField
-                      control={form.control}
-                      name="vin"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Código VIN</FormLabel>
-                          <FormControl><Input placeholder="17 caracteres" {...field} /></FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
+                  <FormField control={form.control} name="type" render={({ field }) => (<FormItem><FormLabel>Tipo</FormLabel><FormControl><Input placeholder="Ej: Sedan, SUV" {...field} /></FormControl><FormMessage /></FormItem>)} />
+                  <FormField control={form.control} name="brand" render={({ field }) => (<FormItem><FormLabel>Marca</FormLabel><FormControl><Input placeholder="Ej: Toyota" {...field} /></FormControl><FormMessage /></FormItem>)} />
+                  <FormField control={form.control} name="model" render={({ field }) => (<FormItem><FormLabel>Modelo</FormLabel><FormControl><Input placeholder="Ej: Corolla" {...field} /></FormControl><FormMessage /></FormItem>)} />
+                  <FormField control={form.control} name="year" render={({ field }) => (<FormItem><FormLabel>Año</FormLabel><FormControl><Input type="number" placeholder="2022" {...field} /></FormControl><FormMessage /></FormItem>)} />
+                  <FormField control={form.control} name="price" render={({ field }) => (<FormItem><FormLabel>Precio ($)</FormLabel><FormControl><Input type="number" step="0.01" placeholder="25000.00" {...field} /></FormControl><FormMessage /></FormItem>)} />
+                  <FormField control={form.control} name="currentMileage" render={({ field }) => (<FormItem><FormLabel>Kilometraje Actual</FormLabel><FormControl><Input type="number" placeholder="50000" {...field} /></FormControl><FormMessage /></FormItem>)} />
+                  <FormField control={form.control} name="licensePlate" render={({ field }) => (<FormItem><FormLabel>Placa</FormLabel><FormControl><Input placeholder="ABC-123" {...field} /></FormControl><FormMessage /></FormItem>)} />
+                  <div className="md:col-span-2">
+                    <FormField control={form.control} name="vin" render={({ field }) => (<FormItem><FormLabel>Código VIN</FormLabel><FormControl><Input placeholder="17 caracteres" {...field} /></FormControl><FormMessage /></FormItem>)} />
                   </div>
                 </div>
-                <Button type="submit" disabled={isSubmitting}>
-                  {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                  <PlusCircle className="mr-2" />
-                  Guardar Vehículo
-                </Button>
+                <div className="flex gap-4">
+                  <Button type="submit" disabled={isSubmitting}>
+                    {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                    {editingVehicleId ? <><Save className="mr-2" /> Actualizar Vehículo</> : <><PlusCircle className="mr-2" /> Guardar Vehículo</>}
+                  </Button>
+                  {editingVehicleId && (
+                    <Button variant="outline" onClick={() => { setEditingVehicleId(null); form.reset(); }}>Cancelar Edición</Button>
+                  )}
+                </div>
               </form>
             </Form>
           </CardContent>
@@ -248,7 +200,7 @@ export default function MyVehiclesPage() {
                                 <TableHead>Vehículo</TableHead>
                                 <TableHead>Año</TableHead>
                                 <TableHead>Placa</TableHead>
-                                <TableHead>VIN</TableHead>
+                                <TableHead>Kilometraje</TableHead>
                                 <TableHead>Precio</TableHead>
                                 <TableHead className="text-right">Acciones</TableHead>
                             </TableRow>
@@ -260,9 +212,12 @@ export default function MyVehiclesPage() {
                                         <TableCell className="font-medium">{vehicle.brand} {vehicle.model}</TableCell>
                                         <TableCell>{vehicle.year}</TableCell>
                                         <TableCell>{vehicle.licensePlate}</TableCell>
-                                        <TableCell className="font-mono text-xs">{vehicle.vin}</TableCell>
+                                        <TableCell>{vehicle.currentMileage?.toLocaleString()} km</TableCell>
                                         <TableCell>${vehicle.price?.toFixed(2)}</TableCell>
                                         <TableCell className="text-right">
+                                            <Button variant="ghost" size="icon" className="text-primary hover:bg-primary/10" onClick={() => handleEditVehicle(vehicle)}>
+                                                <Pencil className="h-4 w-4" />
+                                            </Button>
                                             <AlertDialog>
                                                 <AlertDialogTrigger asChild>
                                                     <Button variant="ghost" size="icon" className="text-destructive hover:bg-destructive/10">
@@ -307,5 +262,3 @@ export default function MyVehiclesPage() {
     </div>
   );
 }
-
-    

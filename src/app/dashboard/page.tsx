@@ -1,12 +1,12 @@
 'use client';
 
 import { useUser, useFirestore, useMemoFirebase, deleteDocumentNonBlocking } from '@/firebase';
-import { collection, query, where, doc } from 'firebase/firestore';
+import { collection, query, where, doc, orderBy, limit } from 'firebase/firestore';
 import { useCollection } from '@/firebase/firestore/use-collection';
-import type { Workshop, Appointment } from '@/lib/types';
+import type { Workshop, Appointment, OilChange, Vehicle } from '@/lib/types';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Loader2, Calendar, Wrench, Trash2, Settings, Pencil, LogOut, User as UserIcon, Lock, ListPlus, Building, ArrowRight, Droplets, Car } from 'lucide-react';
+import { Loader2, Calendar, Wrench, Trash2, Settings, Pencil, LogOut, User as UserIcon, Lock, ListPlus, Building, ArrowRight, Droplets, Car, Gauge, OilCan } from 'lucide-react';
 import Link from 'next/link';
 import { initiateAnonymousSignIn, initiateSignOut, initiateEmailSignIn } from '@/firebase/non-blocking-login';
 import { useAuth } from '@/firebase';
@@ -29,12 +29,53 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '
 import { Input } from '@/components/ui/input';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import React from 'react';
+import { Progress } from '@/components/ui/progress';
 
 
 const loginSchema = z.object({
   email: z.string().email('El correo electrónico no es válido.'),
   password: z.string().min(1, 'La contraseña es obligatoria.'),
 });
+
+const VehicleSummaryCard = ({ vehicle, oilChange }: { vehicle: Vehicle, oilChange: OilChange }) => {
+    const mileageProgress = oilChange.nextChangeMileage > 0 
+        ? (vehicle.currentMileage / oilChange.nextChangeMileage) * 100 
+        : 0;
+
+    return (
+        <Card className="bg-gradient-to-br from-primary/10 to-card">
+            <CardHeader>
+                <CardTitle className="flex items-center gap-2 text-xl font-bold text-primary">
+                    <Car />
+                    {vehicle.brand} {vehicle.model} ({vehicle.year})
+                </CardTitle>
+                <CardDescription>Resumen de tu vehículo principal</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+                <div className="flex items-center justify-between p-3 rounded-lg bg-card">
+                    <div className='flex items-center gap-2'>
+                        <Gauge className="text-primary"/>
+                        <span className="font-semibold">Kilometraje Actual</span>
+                    </div>
+                    <span className="font-bold text-lg">{vehicle.currentMileage?.toLocaleString() ?? 'N/A'} km</span>
+                </div>
+                <div className="space-y-2">
+                    <div className="flex justify-between items-baseline">
+                         <div className='flex items-center gap-2'>
+                            <OilCan className="text-primary"/>
+                            <span className="text-sm font-medium">Próximo Cambio de Aceite</span>
+                        </div>
+                        <span className="text-sm font-semibold">{oilChange.nextChangeMileage.toLocaleString()} km</span>
+                    </div>
+                    <Progress value={mileageProgress} />
+                    <p className="text-xs text-muted-foreground text-right">
+                       Faltan {(oilChange.nextChangeMileage - vehicle.currentMileage).toLocaleString()} km
+                    </p>
+                </div>
+            </CardContent>
+        </Card>
+    );
+};
 
 export default function DashboardPage() {
   const { user, isUserLoading } = useUser();
@@ -43,6 +84,7 @@ export default function DashboardPage() {
   const { toast } = useToast();
   const [isLoggingIn, setIsLoggingIn] = React.useState(false);
 
+  // --- Data Fetching ---
   const workshopsCollection = useMemoFirebase(() => {
     if (!firestore) return null;
     return collection(firestore, 'workshops');
@@ -62,7 +104,21 @@ export default function DashboardPage() {
 
   const { data: appointments, isLoading: isAppointmentsLoading } = useCollection<Appointment>(appointmentsCollection);
 
+  const oilChangesQuery = useMemoFirebase(() => {
+    if (!firestore || !user) return null;
+    return query(collection(firestore, `users/${user.uid}/oilChanges`), orderBy('nextChangeMileage', 'asc'), limit(1));
+  }, [firestore, user]);
+  const { data: nextOilChanges, isLoading: isOilChangesLoading } = useCollection<OilChange>(oilChangesQuery);
+  const nextOilChange = nextOilChanges?.[0];
 
+  const vehicleQuery = useMemoFirebase(() => {
+    if (!firestore || !nextOilChange) return null;
+    return doc(firestore, `users/${user.uid}/vehicles`, nextOilChange.vehicleId);
+  }, [firestore, nextOilChange]);
+  const { data: mainVehicle, isLoading: isVehicleLoading } = useCollection<Vehicle>(vehicleQuery);
+
+
+  // --- Event Handlers ---
   const handleLogout = () => {
     initiateSignOut(auth);
   };
@@ -130,7 +186,9 @@ export default function DashboardPage() {
     }
   }
 
-  if (isUserLoading || isWorkshopsLoading || isAppointmentsLoading) {
+  // --- Loading and Auth States ---
+  const isLoading = isUserLoading || isWorkshopsLoading || isAppointmentsLoading || isOilChangesLoading || isVehicleLoading;
+  if (isLoading) {
     return (
       <div className="flex min-h-screen items-center justify-center">
         <Loader2 className="h-12 w-12 animate-spin text-primary" />
@@ -214,6 +272,7 @@ export default function DashboardPage() {
     );
   }
 
+  // --- Render ---
   const hasWorkshop = workshops && workshops.length > 0;
   
   const ActionButton = ({ href, icon, title, description }: { href: string; icon: React.ReactNode; title: string; description: string }) => (
@@ -246,7 +305,24 @@ export default function DashboardPage() {
         </Button>
       </div>
       
-      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+      <div className="grid gap-6 lg:grid-cols-3">
+        <div className="lg:col-span-3">
+          {mainVehicle && nextOilChange ? (
+              <VehicleSummaryCard vehicle={mainVehicle as Vehicle} oilChange={nextOilChange} />
+          ) : (
+             <Card className="flex flex-col items-center justify-center p-8 text-center">
+                <CardHeader>
+                    <CardTitle>Comienza a registrar tu actividad</CardTitle>
+                    <CardDescription>Añade tu vehículo y tu primer cambio de aceite para ver un resumen aquí.</CardDescription>
+                </CardHeader>
+                <CardContent>
+                     <Button asChild>
+                        <Link href="/dashboard/my-vehicles">Añadir Vehículo</Link>
+                    </Button>
+                </CardContent>
+            </Card>
+          )}
+        </div>
 
         {/* Taller Section */}
         <div className="lg:col-span-2">
@@ -254,17 +330,17 @@ export default function DashboardPage() {
                 href={hasWorkshop ? "/dashboard/edit-workshop" : "/dashboard/register-workshop"}
                 icon={<Building className="h-8 w-8 text-primary"/>}
                 title={hasWorkshop ? "Gestionar mi Taller" : "Registrar mi Taller"}
-                description={hasWorkshop ? "Edita la información, servicios y detalles de tu taller." : "Añade tu taller a la plataforma para que los clientes te encuentren."}
+                description={hasWorkshop ? "Edita la información y servicios de tu taller." : "Añade tu taller a la plataforma."}
             />
         </div>
 
         {/* Citas Section */}
         <div>
             <ActionButton 
-                href="/#workshops" // Future: /dashboard/appointments
+                href="/#workshops"
                 icon={<Calendar className="h-8 w-8 text-primary"/>}
                 title="Mis Citas"
-                description={`Tienes ${appointments?.length || 0} citas agendadas. Ver o agendar nuevas.`}
+                description={`Tienes ${appointments?.length || 0} citas. Ver o agendar.`}
             />
         </div>
 
@@ -293,7 +369,6 @@ export default function DashboardPage() {
              <Card>
                 <CardHeader>
                     <CardTitle className="flex items-center gap-2"><Settings /> Configuración de la Cuenta</CardTitle>
-                    <CardDescription>Gestiona las opciones de tu cuenta y datos personales.</CardDescription>
                 </CardHeader>
                 <CardContent className="flex flex-col items-start gap-4 sm:flex-row">
                     <AlertDialog>
