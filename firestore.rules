@@ -9,19 +9,19 @@
  * between private user spaces and the public data commons.
  *
  * Data Structure:
- * The data is organized into several top-level collections: 'users', 'workshops',
- * and 'services'. All data private to a user, such as 'appointments', is stored in
+ * The data is organized into several top-level collections: 'users' and 'workshops'.
+ * All data private to a user, such as 'appointments', is stored in
  * a subcollection directly under that user's document in the '/users/{userId}' path.
+ * Data specific to a workshop, like 'reviews' and 'services', is stored in subcollections
+ * under the workshop's document.
  *
  * Key Security Decisions:
  * - User Data Privacy: A user can only read, write, and query data within their
  *   own document tree (e.g., /users/their-own-id/...).
  * - User Enumeration Disabled: Listing documents in the top-level 'users'
  *   collection is explicitly forbidden to protect user privacy.
- * - Public Data is Read-Only: The 'workshops' and 'services' collections are
- *   publicly readable to allow for discovery and browsing. However, all client-side
- *   write operations are disabled to protect the integrity of the data. Admin-level
- *   changes would be handled via a trusted server environment.
+ * - Public Data is Read-Only (mostly): The 'workshops' collection is
+ *   publicly readable. Workshop owners can create, update, and delete their own workshop.
  * - Default Deny: Any operation not explicitly granted is denied.
  *
  * Denormalization for Authorization:
@@ -30,13 +30,6 @@
  * '/users/{userId}/appointments/{appointmentId}' must contain a 'userId' field
  * that matches the '{userId}' from the path.
  *
- * Structural Segregation:
- * The current structure uses a boolean flag ('obdScannerService') on workshop
- * documents. While this works, a more scalable and performant pattern for list
- * operations is to segregate data into distinct collections based on access
- * patterns (e.g., a separate '/obdWorkshops' collection). This avoids potential
- * security pitfalls where a rule for a single collection might accidentally expose
- * documents that should be private.
  */
 rules_version = '2';
 service cloud.firestore {
@@ -127,6 +120,17 @@ service cloud.firestore {
         allow create: if isSignedIn() && request.resource.data.userId == request.auth.uid;
         allow update, delete: if isExistingOwner(resource.data.userId);
       }
+      
+      /**
+       * @description Secures workshop services.
+       * @path /workshops/{workshopId}/services/{serviceId}
+       * @allow (list, get) Any user can read services for a workshop.
+       * @allow (create, update, delete) Only the workshop owner can manage their services.
+       */
+       match /services/{serviceId} {
+         allow list, get: if true;
+         allow create, update, delete: if isOwner(get(/databases/$(database)/documents/workshops/$(workshopId)).data.ownerId);
+       }
     }
 
     /**
@@ -160,20 +164,7 @@ service cloud.firestore {
         allow delete: if isExistingOwner(userId);
       }
     }
-
-    /**
-     * @description Controls access to the public list of available services.
-     * @path /services/{serviceId}
-     * @allow (get, list) Any user, signed in or not, can read service data.
-     * @deny (create, update, delete) Any client trying to modify the list of services.
-     * @principle Public reference data should be immutable from the client-side.
-     */
-    match /services/{serviceId} {
-      allow get: if true;
-      allow list: if true;
-      allow create: if false;
-      allow update: if false;
-      allow delete: if false;
-    }
   }
 }
+
+    

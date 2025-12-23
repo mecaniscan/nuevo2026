@@ -43,13 +43,6 @@
           "type": "boolean",
           "description": "Indicates whether the workshop offers OBDII scanner services."
         },
-        "serviceIds": {
-          "type": "array",
-          "description": "References to Services offered by the workshop. (Relationship: Workshop 1:N Service)",
-          "items": {
-            "type": "string"
-          }
-        },
         "ownerId": {
           "type": "string",
           "description": "The UID of the user who owns this workshop."
@@ -152,10 +145,10 @@
       ]
     },
     "Service": {
-      "$schema": "http://json-schema.org/draft-07/schema#",
+      "$schema": "http://json-schema.org-07/schema#",
       "title": "Service",
       "type": "object",
-      "description": "Represents a service offered by a workshop.",
+      "description": "Represents a service offered by a specific workshop.",
       "properties": {
         "id": {
           "type": "string",
@@ -163,7 +156,7 @@
         },
         "name": {
           "type": "string",
-          "description": "Name of the service (e.g., Oil Change, Tire Rotation, OBDII Scan)."
+          "description": "Name of the service (e.g., Oil Change, Tire Rotation)."
         },
         "description": {
           "type": "string",
@@ -177,7 +170,6 @@
       "required": [
         "id",
         "name",
-        "description",
         "price"
       ]
     },
@@ -268,6 +260,26 @@
         }
       },
       {
+        "path": "/workshops/{workshopId}/services/{serviceId}",
+        "definition": {
+          "entityName": "Service",
+          "schema": {
+            "$ref": "#/backend/entities/Service"
+          },
+          "description": "Stores the services offered by a specific workshop.",
+          "params": [
+            {
+              "name": "workshopId",
+              "description": "The unique identifier for the workshop."
+            },
+            {
+              "name": "serviceId",
+              "description": "The unique identifier for the service."
+            }
+          ]
+        }
+      },
+      {
         "path": "/users/{userId}",
         "definition": {
           "entityName": "User",
@@ -302,24 +314,9 @@
             }
           ]
         }
-      },
-      {
-        "path": "/services/{serviceId}",
-        "definition": {
-          "entityName": "Service",
-          "schema": {
-            "$ref": "#/backend/entities/Service"
-          },
-          "description": "Stores services offered by workshops.",
-          "params": [
-            {
-              "name": "serviceId",
-              "description": "The unique identifier for the service."
-            }
-          ]
-        }
       }
     ],
-    "reasoning": "The Firestore data structure is designed to support the MechConnect application, focusing on mechanic workshop registration, appointment booking, and OBDII scanner service highlighting. The structure prioritizes authorization independence and supports QAPs (Rules are not Filters) to ensure secure `list` operations. Path-based ownership is used where applicable to simplify security rules. The structure is organized into collections for `Workshops`, `Users`, `Services`, and `Appointments` with subcollections to manage relationships effectively.\n\n**Authorization Independence:**\n\n*   **Appointments:** The `appointments` subcollection under each `user` document includes the `userId` of the user who created the appointment. This denormalization is critical for authorization independence because security rules can authorize access to appointments based on the `userId` in the appointment document and/or ownership of the parent `User` document. Without the `userId` on the `Appointment`, rules would need to perform a `get()` to verify the requesting user owns the parent `User` document, violating Authorization Independence.\n*   **Reviews**: Reviews are stored in a subcollection under each workshop (`/workshops/{workshopId}/reviews`). This allows for easy retrieval of all reviews for a specific workshop and enables security rules that grant write access only to authenticated users.\n\n**QAPs Support:**\n\n*   **Workshops Collection:** All workshops are stored in a single `workshops` collection, but segregation is achieved via the `obdScannerService` field. List operations can be secured by filtering based on workshop attributes in the rules (e.g., `obdScannerService == true`) to highlight workshops offering OBDII scanner services, without compromising security.\n*   **User-Owned Appointments:** Storing appointments within a user's document ensures that only the user has access to their appointment data.\n\nThis design ensures that security rules can be written to validate the existence of a workshop before an appointment or review can be created, linking the User, Workshop, and Appointment/Review documents together in a manageable and scalable way."
+    "reasoning": "The Firestore data structure is designed to support the MechConnect application, focusing on mechanic workshop registration, appointment booking, and OBDII scanner service highlighting. The structure prioritizes authorization independence and supports QAPs (Rules are not Filters) to ensure secure `list` operations. Path-based ownership is used where applicable to simplify security rules. The structure is organized into collections for `Workshops` and `Users`, with subcollections to manage relationships effectively.\n\n**Authorization Independence:**\n\n*   **Appointments:** The `appointments` subcollection under each `user` document includes the `userId` of the user who created the appointment. This denormalization is critical for authorization independence because security rules can authorize access to appointments based on the `userId` in the appointment document and/or ownership of the parent `User` document. Without the `userId` on the `Appointment`, rules would need to perform a `get()` to verify the requesting user owns the parent `User` document, violating Authorization Independence.\n*   **Reviews**: Reviews are stored in a subcollection under each workshop (`/workshops/{workshopId}/reviews`). This allows for easy retrieval of all reviews for a specific workshop and enables security rules that grant write access only to authenticated users.\n* **Services**: Services are stored in a subcollection under each workshop (`/workshops/{workshopId}/services`). This allows each workshop to manage its own list of services and prices, and makes it easy to retrieve all services for a specific workshop.\n\n**QAPs Support:**\n\n*   **Workshops Collection:** All workshops are stored in a single `workshops` collection, but segregation is achieved via the `obdScannerService` field. List operations can be secured by filtering based on workshop attributes in the rules (e.g., `obdScannerService == true`) to highlight workshops offering OBDII scanner services, without compromising security.\n*   **User-Owned Appointments:** Storing appointments within a user's document ensures that only the user has access to their appointment data.\n\nThis design ensures that security rules can be written to validate the existence of a workshop before an appointment or review can be created, linking the User, Workshop, and Appointment/Review documents together in a manageable and scalable way."
   }
 }
+    

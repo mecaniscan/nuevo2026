@@ -60,12 +60,12 @@ export default function WorkshopDetailPage() {
     }, [firestore, workshopId]);
     const { data: workshopData, isLoading: isWorkshopLoading } = useDoc<Workshop>(workshopRef);
     
-    // Fetch Master Services
-    const servicesCollection = useMemoFirebase(() => {
-        if (!firestore) return null;
-        return collection(firestore, 'services');
-      }, [firestore]);
-    const { data: masterServices, isLoading: isServicesLoading } = useCollection<Service>(servicesCollection);
+    // Fetch Workshop Services
+    const workshopServicesCollection = useMemoFirebase(() => {
+        if (!firestore || !workshopId) return null;
+        return collection(firestore, `workshops/${workshopId}/services`);
+      }, [firestore, workshopId]);
+    const { data: workshopServices, isLoading: isServicesLoading } = useCollection<Service>(workshopServicesCollection);
     
     // Fetch Reviews
     const reviewsCollection = useMemoFirebase(() => {
@@ -95,19 +95,14 @@ export default function WorkshopDetailPage() {
       }
     });
 
-    const workshopServices = useMemo(() => {
-        if (!workshopData || !masterServices) return [];
-        return masterServices.filter(service => workshopData.serviceIds?.includes(service.id));
-    }, [workshopData, masterServices]);
-
     const workshop = useMemo(() => {
         if (!workshopData) return null;
         return {
           ...workshopData,
           city: "Metropolis",
           rating: workshopData.averageRating || 4.5,
-          reviewCount: workshopData.reviewCount || 50,
-          services: workshopServices,
+          reviewCount: workshopData.reviewCount || 0,
+          services: workshopServices || [],
           image: PlaceHolderImages.find(p => p.id.startsWith('workshop')) || PlaceHolderImages[1],
         };
     }, [workshopData, workshopServices]);

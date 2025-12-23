@@ -6,7 +6,7 @@ import { useCollection } from '@/firebase/firestore/use-collection';
 import type { Workshop, Appointment } from '@/lib/types';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Loader2, Calendar, Wrench, Trash2, Settings, Pencil, LogOut, User as UserIcon, Lock } from 'lucide-react';
+import { Loader2, Calendar, Wrench, Trash2, Settings, Pencil, LogOut, User as UserIcon, Lock, ListPlus } from 'lucide-react';
 import Link from 'next/link';
 import { initiateAnonymousSignIn, initiateSignOut, initiateEmailSignIn } from '@/firebase/non-blocking-login';
 import { useAuth } from '@/firebase';
@@ -246,6 +246,7 @@ export default function DashboardPage() {
   }
 
   const hasWorkshop = workshops && workshops.length > 0;
+  const workshopId = hasWorkshop ? workshops[0].id : null;
 
   return (
     <div className="container mx-auto py-12">
@@ -273,25 +274,31 @@ export default function DashboardPage() {
                           <CardTitle className="text-lg">{workshop.name}</CardTitle>
                           <p className="text-sm text-muted-foreground">{workshop.address}</p>
                         </div>
-                        <div className="flex gap-2 self-end sm:self-center">
-                          <Button variant="outline" size="icon" asChild>
+                        <div className="flex flex-wrap gap-2 self-end sm:self-center">
+                          <Button variant="outline" size="sm" asChild>
                             <Link href="/dashboard/edit-workshop">
-                              <Pencil className="h-5 w-5" />
-                              <span className="sr-only">Editar Taller</span>
+                              <Pencil className="mr-2 h-4 w-4" />
+                              Editar Taller
+                            </Link>
+                          </Button>
+                          <Button variant="outline" size="sm" asChild>
+                            <Link href={`/dashboard/edit-services`}>
+                              <ListPlus className="mr-2 h-4 w-4" />
+                              Editar Servicios
                             </Link>
                           </Button>
                           <AlertDialog>
                             <AlertDialogTrigger asChild>
-                              <Button variant="destructive" size="icon">
-                                <Trash2 className="h-5 w-5" />
-                                <span className="sr-only">Eliminar Taller</span>
+                              <Button variant="destructive" size="sm">
+                                <Trash2 className="mr-2 h-4 w-4" />
+                                Eliminar Taller
                               </Button>
                             </AlertDialogTrigger>
                             <AlertDialogContent>
                               <AlertDialogHeader>
                                 <AlertDialogTitle>¿Estás seguro de eliminar el taller?</AlertDialogTitle>
                                 <AlertDialogDescription>
-                                  Esta acción no se puede deshacer. Esto eliminará permanentemente tu taller de nuestra plataforma.
+                                  Esta acción no se puede deshacer. Esto eliminará permanentemente tu taller y todos sus servicios de nuestra plataforma.
                                 </AlertDialogDescription>
                               </AlertDialogHeader>
                               <AlertDialogFooter>
@@ -389,3 +396,5 @@ export default function DashboardPage() {
     </div>
   );
 }
+
+    

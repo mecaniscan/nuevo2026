@@ -7,9 +7,10 @@ import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { Search, Loader2 } from 'lucide-react';
 import { useCollection, useFirestore, useMemoFirebase } from '@/firebase';
-import { collection, query, where } from 'firebase/firestore';
+import { collection, query, where, getDocs } from 'firebase/firestore';
 import type { Workshop, Service } from '@/lib/types';
 import { PlaceHolderImages } from '@/lib/placeholder-images';
+import React from 'react';
 
 
 export function WorkshopFinder() {
@@ -32,35 +33,52 @@ export function WorkshopFinder() {
   }, [workshopsCollection, showObdOnly]);
 
   const { data: workshops, isLoading: isWorkshopsLoading } = useCollection<Workshop>(workshopsQuery);
+  const [allServices, setAllServices] = React.useState<Map<string, Service[]>>(new Map());
+  const [areServicesLoading, setAreServicesLoading] = React.useState(true);
   
-  // Fetch Master Services List
-  const servicesCollection = useMemoFirebase(() => {
-    if (!firestore) return null;
-    return collection(firestore, 'services');
-  }, [firestore]);
+  React.useEffect(() => {
+    async function fetchAllServices() {
+        if (!workshops || workshops.length === 0 || !firestore) {
+            setAreServicesLoading(false);
+            return;
+        };
 
-  const { data: masterServices, isLoading: isServicesLoading } = useCollection<Service>(servicesCollection);
+        setAreServicesLoading(true);
+        const servicesMap = new Map<string, Service[]>();
+        
+        for (const workshop of workshops) {
+            const servicesColRef = collection(firestore, `workshops/${workshop.id}/services`);
+            const servicesSnapshot = await getDocs(servicesColRef);
+            const services = servicesSnapshot.docs.map(doc => ({ ...doc.data(), id: doc.id } as Service));
+            servicesMap.set(workshop.id, services);
+        }
+
+        setAllServices(servicesMap);
+        setAreServicesLoading(false);
+    }
+    fetchAllServices();
+  }, [workshops, firestore]);
 
 
   const filteredWorkshops = useMemo(() => {
-    if (!workshops || !masterServices) return [];
+    if (!workshops) return [];
     
     const enrichedWorkshops = workshops.map((workshop, index) => {
-      const workshopServices = masterServices.filter(service => workshop.serviceIds?.includes(service.id));
+      const workshopServices = allServices.get(workshop.id) || [];
       return {
         ...workshop,
         city: "Metropolis",
         averageRating: workshop.averageRating || 4.5 + (index * 0.1),
-        reviewCount: workshop.reviewCount || 50 + (index * 10),
+        reviewCount: workshop.reviewCount || 0,
         services: workshopServices,
         image: PlaceHolderImages.find(p => p.id.startsWith('workshop')) || PlaceHolderImages[1],
       }
     });
 
     return enrichedWorkshops.filter(ws => ws.name.toLowerCase().includes(searchTerm.toLowerCase()));
-  }, [workshops, masterServices, searchTerm]);
+  }, [workshops, allServices, searchTerm]);
 
-  const isLoading = isWorkshopsLoading || isServicesLoading;
+  const isLoading = isWorkshopsLoading || areServicesLoading;
 
   return (
     <section id="workshops" className="w-full py-12 md:py-24 lg:py-32 bg-card/50">
@@ -113,3 +131,5 @@ export function WorkshopFinder() {
     </section>
   );
 }
+
+    

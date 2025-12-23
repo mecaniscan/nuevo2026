@@ -10,15 +10,14 @@ import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { useUser, useFirestore, useMemoFirebase } from '@/firebase';
 import { addDocumentNonBlocking } from '@/firebase/non-blocking-updates';
-import { collection, query, where, writeBatch, doc } from 'firebase/firestore';
+import { collection, query, where } from 'firebase/firestore';
 import { useCollection } from '@/firebase/firestore/use-collection';
 import { useToast } from '@/hooks/use-toast';
 import { useRouter } from 'next/navigation';
 import { Loader2, Car, Wrench } from 'lucide-react';
 import { Switch } from '@/components/ui/switch';
 import Link from 'next/link';
-import type { Workshop, Service } from '@/lib/types';
-import { masterServices as defaultServices } from '@/lib/data';
+import type { Workshop } from '@/lib/types';
 
 const workshopSchema = z.object({
   name: z.string().min(3, 'El nombre debe tener al menos 3 caracteres.'),
@@ -35,29 +34,6 @@ export default function RegisterWorkshopPage() {
   const { toast } = useToast();
   const router = useRouter();
   const [isSubmitting, setIsSubmitting] = React.useState(false);
-
-  // Fetch Master Services List
-  const servicesCollection = useMemoFirebase(() => {
-    if (!firestore) return null;
-    return collection(firestore, 'services');
-  }, [firestore]);
-  const { data: masterServices, isLoading: isServicesLoading } = useCollection<Service>(servicesCollection);
-
-  // Check if services collection is empty and seed if needed
-  React.useEffect(() => {
-    if (firestore && !isServicesLoading && masterServices && masterServices.length === 0) {
-      const batch = writeBatch(firestore);
-      defaultServices.forEach(service => {
-        const docRef = doc(collection(firestore, "services"));
-        batch.set(docRef, {...service, id: docRef.id});
-      });
-      batch.commit().then(() => {
-        console.log("Seeded master services list.");
-      }).catch(err => {
-        console.error("Error seeding services: ", err);
-      });
-    }
-  }, [firestore, isServicesLoading, masterServices]);
 
   // Fetch User's Workshops
   const workshopsCollection = useMemoFirebase(() => {
@@ -111,16 +87,17 @@ export default function RegisterWorkshopPage() {
         ownerId: user.uid,
         latitude: 0, 
         longitude: 0,
-        serviceIds: [], // Initialize with empty services
+        averageRating: 0,
+        reviewCount: 0,
       };
       
-      addDocumentNonBlocking(collection(firestore, 'workshops'), workshopData);
+      const docRef = await addDocumentNonBlocking(collection(firestore, 'workshops'), workshopData);
 
       toast({
         title: '¡Taller Registrado!',
         description: 'Tu taller ha sido añadido a nuestra plataforma.',
       });
-      router.push('/dashboard');
+      router.push('/dashboard/edit-services');
     } catch (error) {
       console.error('Error registering workshop:', error);
       toast({
@@ -132,7 +109,7 @@ export default function RegisterWorkshopPage() {
     }
   }
   
-  if (isUserLoading || isWorkshopsLoading || isServicesLoading) {
+  if (isUserLoading || isWorkshopsLoading) {
     return <div className="flex h-screen items-center justify-center"><Loader2 className="w-12 h-12 animate-spin text-primary" /></div>;
   }
 
@@ -277,7 +254,7 @@ export default function RegisterWorkshopPage() {
               />
               <Button type="submit" disabled={isSubmitting}>
                 {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                {isSubmitting ? 'Registrando...' : 'Registrar Taller'}
+                {isSubmitting ? 'Registrando...' : 'Registrar y Añadir Servicios'}
               </Button>
             </form>
           </Form>

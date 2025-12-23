@@ -12,10 +12,8 @@ export type Workshop = {
     latitude: number;
     longitude: number;
     obdScannerService: boolean;
-    serviceIds: string[]; // List of service IDs offered by the workshop
     averageRating: number;
     reviewCount: number;
-    services: Service[]; // Populated placeholder for service details
     image: ImagePlaceholder; // Placeholder for image
     city: string; // Placeholder
 };
