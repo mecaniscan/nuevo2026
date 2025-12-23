@@ -35,8 +35,8 @@ export function HeroSection() {
                             </Link>
                         </Button>
                         <Button asChild size="lg" variant="outline" className="bg-background/50 border-white/20 hover:bg-background/80">
-                             <Link href="#decoder">
-                                Decodificar un Problema
+                             <Link href="/register">
+                                Crear cuenta
                             </Link>
                         </Button>
                     </div>
