@@ -11,9 +11,8 @@ import { useUser, useFirestore, useMemoFirebase, deleteDocumentNonBlocking } fro
 import { collection, query, orderBy, doc, writeBatch } from 'firebase/firestore';
 import { useCollection } from '@/firebase/firestore/use-collection';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2, PlusCircle, Car, Trash2, Pencil, Save, Image as ImageIcon, Briefcase, BadgePercent } from 'lucide-react';
+import { Loader2, PlusCircle, Car, Trash2, Pencil, Save, Briefcase, BadgePercent } from 'lucide-react';
 import Link from 'next/link';
-import Image from 'next/image';
 import type { Vehicle } from '@/lib/types';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import {
@@ -48,9 +47,6 @@ const vehicleSchema = z.object({
     (a) => parseInt(z.string().parse(a), 10),
     z.number().min(0, 'El kilometraje no puede ser negativo.')
   ),
-  imageUrl1: z.string().optional().or(z.literal('')),
-  imageUrl2: z.string().optional().or(z.literal('')),
-  imageUrl3: z.string().optional().or(z.literal('')),
   country: z.string().min(2, 'El país es muy corto.'),
   isForSale: z.boolean().default(false),
 });
@@ -86,9 +82,6 @@ export default function MyVehiclesPage() {
       licensePlate: '',
       price: 0,
       currentMileage: 0,
-      imageUrl1: '',
-      imageUrl2: '',
-      imageUrl3: '',
       country: '',
       isForSale: false,
     },
@@ -101,11 +94,8 @@ export default function MyVehiclesPage() {
     }
 
     setIsSubmitting(true);
-
-    const imageUrls = [values.imageUrl1, values.imageUrl2, values.imageUrl3].filter(url => url && url.trim() !== '');
     
-    const { imageUrl1, imageUrl2, imageUrl3, ...vehicleBaseData } = values;
-    const vehicleDataWithUrls = { ...vehicleBaseData, imageUrls };
+    const vehicleDataWithUrls = { ...values, imageUrls: [] }; // No image urls
 
     try {
         const batch = writeBatch(firestore);
@@ -199,13 +189,7 @@ export default function MyVehiclesPage() {
 
   function handleEditVehicle(vehicle: Vehicle) {
     setEditingVehicleId(vehicle.id);
-    const formValues = {
-        ...vehicle,
-        imageUrl1: vehicle.imageUrls?.[0] || '',
-        imageUrl2: vehicle.imageUrls?.[1] || '',
-        imageUrl3: vehicle.imageUrls?.[2] || '',
-    };
-    form.reset(formValues);
+    form.reset(vehicle);
   }
 
   const isLoading = isUserLoading || areVehiclesLoading;
@@ -244,15 +228,6 @@ export default function MyVehiclesPage() {
                   </div>
                 </div>
 
-                <div className="space-y-4 pt-4 border-t">
-                    <FormLabel className="flex items-center gap-2"><ImageIcon /> Imágenes del Vehículo (Opcional)</FormLabel>
-                    <FormDescription>Añade hasta 3 URLs de imágenes para tu vehículo.</FormDescription>
-                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                        <FormField control={form.control} name="imageUrl1" render={({ field }) => (<FormItem><FormLabel>URL Imagen 1</FormLabel><FormControl><Input placeholder="https://ejemplo.com/imagen1.jpg" {...field} /></FormControl><FormMessage /></FormItem>)} />
-                        <FormField control={form.control} name="imageUrl2" render={({ field }) => (<FormItem><FormLabel>URL Imagen 2</FormLabel><FormControl><Input placeholder="https://ejemplo.com/imagen2.jpg" {...field} /></FormControl><FormMessage /></FormItem>)} />
-                        <FormField control={form.control} name="imageUrl3" render={({ field }) => (<FormItem><FormLabel>URL Imagen 3</FormLabel><FormControl><Input placeholder="https://ejemplo.com/imagen3.jpg" {...field} /></FormControl><FormMessage /></FormItem>)} />
-                    </div>
-                </div>
                  <div className="space-y-4 pt-4 border-t">
                     <FormField
                       control={form.control}
@@ -318,11 +293,7 @@ export default function MyVehiclesPage() {
                                 vehicles.map((vehicle) => (
                                     <TableRow key={vehicle.id}>
                                         <TableCell className="font-medium flex items-center gap-3">
-                                            {vehicle.imageUrls && vehicle.imageUrls[0] ? (
-                                                <Image src={vehicle.imageUrls[0]} alt={`${vehicle.brand} ${vehicle.model}`} width={64} height={40} className="rounded-md object-cover w-16 h-10"/>
-                                            ) : (
-                                                <div className="w-16 h-10 rounded-md bg-muted flex items-center justify-center text-muted-foreground"><Car/></div>
-                                            )}
+                                            <div className="w-16 h-10 rounded-md bg-muted flex items-center justify-center text-muted-foreground"><Car/></div>
                                             {vehicle.brand} {vehicle.model}
                                         </TableCell>
                                         <TableCell>{vehicle.year}</TableCell>
@@ -384,3 +355,5 @@ export default function MyVehiclesPage() {
     </div>
   );
 }
+
+    

@@ -6,28 +6,18 @@ import type { Vehicle } from '@/lib/types';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Loader2, MapPin } from 'lucide-react';
-import Image from 'next/image';
+import { Loader2, MapPin, Car } from 'lucide-react';
 import { Header } from '@/components/layout/header';
 import { Footer } from '@/components/layout/footer';
 import Link from 'next/link';
-import { PlaceHolderImages } from '@/lib/placeholder-images';
 
 function VehicleCard({ vehicle }: { vehicle: Vehicle }) {
-  const vehicleImage = vehicle.imageUrls?.[0] || (PlaceHolderImages.find(p => p.id === 'workshop-5')?.imageUrl ?? 'https://picsum.photos/seed/car/600/400');
-  const vehicleImageHint = vehicle.imageUrls?.[0] ? "vehicle image" : "classic car";
   
   return (
     <Card className="overflow-hidden transition-all duration-300 hover:shadow-xl hover:-translate-y-1">
         <CardHeader className="p-0">
-             <div className="relative h-56 w-full">
-                <Image
-                    src={vehicleImage}
-                    alt={`${vehicle.brand} ${vehicle.model}`}
-                    fill
-                    className="object-cover"
-                    data-ai-hint={vehicleImageHint}
-                />
+             <div className="relative h-56 w-full bg-muted flex items-center justify-center">
+                <Car className="w-24 h-24 text-muted-foreground" />
             </div>
         </CardHeader>
         <CardContent className="p-4 space-y-2">
@@ -101,7 +91,7 @@ export default function MarketplacePage() {
                                 <SelectTrigger><SelectValue placeholder="Filtrar por País" /></SelectTrigger>
                                 <SelectContent>
                                     <SelectItem value="">Todos los Países</SelectItem>
-                                    {uniqueCountries.filter(c => c).map(country => <SelectItem key={country} value={country}>{country}</SelectItem>)}
+                                    {uniqueCountries.map(country => <SelectItem key={country} value={country}>{country}</SelectItem>)}
                                 </SelectContent>
                             </Select>
                         </div>
@@ -110,7 +100,7 @@ export default function MarketplacePage() {
                                 <SelectTrigger><SelectValue placeholder="Filtrar por Marca" /></SelectTrigger>
                                 <SelectContent>
                                     <SelectItem value="">Todas las Marcas</SelectItem>
-                                    {uniqueBrands.filter(b => b).map(brand => <SelectItem key={brand} value={brand}>{brand}</SelectItem>)}
+                                    {uniqueBrands.map(brand => <SelectItem key={brand} value={brand}>{brand}</SelectItem>)}
                                 </SelectContent>
                             </Select>
                         </div>
@@ -142,3 +132,5 @@ export default function MarketplacePage() {
     </div>
   );
 }
+
+    
