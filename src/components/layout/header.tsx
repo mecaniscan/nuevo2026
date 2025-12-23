@@ -39,6 +39,9 @@ export function Header() {
             <Link href="/#workshops" className="transition-colors hover:text-primary">
               Encontrar un Taller
             </Link>
+             <Link href="/marketplace" className="transition-colors hover:text-primary">
+              Marketplace
+            </Link>
             <Link href="/#decoder" className="transition-colors hover:text-primary">
               Decodificador OBD-II
             </Link>
@@ -77,3 +80,5 @@ export function Header() {
     </header>
   );
 }
+
+    

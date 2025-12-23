@@ -12,7 +12,7 @@ import { collection, query, orderBy, doc } from 'firebase/firestore';
 import { useCollection } from '@/firebase/firestore/use-collection';
 import { addDocumentNonBlocking, updateDocumentNonBlocking } from '@/firebase/non-blocking-updates';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2, PlusCircle, Car, Trash2, Pencil, Save, Image as ImageIcon } from 'lucide-react';
+import { Loader2, PlusCircle, Car, Trash2, Pencil, Save, Image as ImageIcon, Briefcase, BadgePercent } from 'lucide-react';
 import Link from 'next/link';
 import Image from 'next/image';
 import type { Vehicle } from '@/lib/types';
@@ -27,7 +27,9 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
   AlertDialogTrigger,
-} from "@/components/ui/alert-dialog"
+} from "@/components/ui/alert-dialog";
+import { Switch } from '@/components/ui/switch';
+import { Badge } from '@/components/ui/badge';
 
 const vehicleSchema = z.object({
   type: z.string().min(3, 'El tipo es muy corto.'),
@@ -50,6 +52,8 @@ const vehicleSchema = z.object({
   imageUrl1: z.string().url('URL de imagen no válida.').optional().or(z.literal('')),
   imageUrl2: z.string().url('URL de imagen no válida.').optional().or(z.literal('')),
   imageUrl3: z.string().url('URL de imagen no válida.').optional().or(z.literal('')),
+  country: z.string().min(2, 'El país es muy corto.'),
+  isForSale: z.boolean().default(false),
 });
 
 
@@ -86,6 +90,8 @@ export default function MyVehiclesPage() {
       imageUrl1: '',
       imageUrl2: '',
       imageUrl3: '',
+      country: '',
+      isForSale: false,
     },
   });
 
@@ -97,10 +103,8 @@ export default function MyVehiclesPage() {
 
     setIsSubmitting(true);
 
-    // Filter out empty URLs and create the imageUrls array
     const imageUrls = [values.imageUrl1, values.imageUrl2, values.imageUrl3].filter(url => url && url.trim() !== '');
     
-    // Create the data object without the individual imageUrl fields
     const { imageUrl1, imageUrl2, imageUrl3, ...vehicleBaseData } = values;
     const vehicleDataWithUrls = { ...vehicleBaseData, imageUrls };
 
@@ -189,7 +193,8 @@ export default function MyVehiclesPage() {
                   <FormField control={form.control} name="price" render={({ field }) => (<FormItem><FormLabel>Precio ($)</FormLabel><FormControl><Input type="number" step="0.01" placeholder="25000.00" {...field} /></FormControl><FormMessage /></FormItem>)} />
                   <FormField control={form.control} name="currentMileage" render={({ field }) => (<FormItem><FormLabel>Kilometraje Actual</FormLabel><FormControl><Input type="number" placeholder="50000" {...field} /></FormControl><FormMessage /></FormItem>)} />
                   <FormField control={form.control} name="licensePlate" render={({ field }) => (<FormItem><FormLabel>Placa</FormLabel><FormControl><Input placeholder="ABC-123" {...field} /></FormControl><FormMessage /></FormItem>)} />
-                  <div className="md:col-span-2">
+                  <FormField control={form.control} name="country" render={({ field }) => (<FormItem><FormLabel>País</FormLabel><FormControl><Input placeholder="Ej: Argentina" {...field} /></FormControl><FormMessage /></FormItem>)} />
+                  <div className="lg:col-span-2">
                     <FormField control={form.control} name="vin" render={({ field }) => (<FormItem><FormLabel>Código VIN</FormLabel><FormControl><Input placeholder="17 caracteres" {...field} /></FormControl><FormMessage /></FormItem>)} />
                   </div>
                 </div>
@@ -203,6 +208,31 @@ export default function MyVehiclesPage() {
                         <FormField control={form.control} name="imageUrl3" render={({ field }) => (<FormItem><FormLabel>URL Imagen 3</FormLabel><FormControl><Input placeholder="https://ejemplo.com/imagen3.jpg" {...field} /></FormControl><FormMessage /></FormItem>)} />
                     </div>
                 </div>
+                 <div className="space-y-4 pt-4 border-t">
+                    <FormField
+                      control={form.control}
+                      name="isForSale"
+                      render={({ field }) => (
+                        <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
+                          <div className="space-y-0.5">
+                            <FormLabel className="text-base flex items-center gap-2">
+                              <Briefcase /> Poner a la Venta
+                            </FormLabel>
+                            <FormDescription>
+                              Marca esta casilla para listar este vehículo en el Marketplace.
+                            </FormDescription>
+                          </div>
+                          <FormControl>
+                            <Switch
+                              checked={field.value}
+                              onCheckedChange={field.onChange}
+                            />
+                          </FormControl>
+                        </FormItem>
+                      )}
+                    />
+                </div>
+
 
                 <div className="flex gap-4">
                   <Button type="submit" disabled={isSubmitting}>
@@ -232,6 +262,7 @@ export default function MyVehiclesPage() {
                                 <TableHead>Vehículo</TableHead>
                                 <TableHead>Año</TableHead>
                                 <TableHead>Placa</TableHead>
+                                <TableHead>Estado</TableHead>
                                 <TableHead>Kilometraje</TableHead>
                                 <TableHead>Precio</TableHead>
                                 <TableHead className="text-right">Acciones</TableHead>
@@ -251,6 +282,13 @@ export default function MyVehiclesPage() {
                                         </TableCell>
                                         <TableCell>{vehicle.year}</TableCell>
                                         <TableCell>{vehicle.licensePlate}</TableCell>
+                                        <TableCell>
+                                          {vehicle.isForSale ? (
+                                            <Badge><BadgePercent className="mr-1 h-3 w-3"/> A la venta</Badge>
+                                          ) : (
+                                            <Badge variant="secondary">Personal</Badge>
+                                          )}
+                                        </TableCell>
                                         <TableCell>{vehicle.currentMileage?.toLocaleString()} km</TableCell>
                                         <TableCell>${vehicle.price?.toFixed(2)}</TableCell>
                                         <TableCell className="text-right">
@@ -287,7 +325,7 @@ export default function MyVehiclesPage() {
                                 ))
                             ) : (
                                 <TableRow>
-                                    <TableCell colSpan={6} className="text-center h-24">
+                                    <TableCell colSpan={7} className="text-center h-24">
                                         No has registrado ningún vehículo todavía.
                                     </TableCell>
                                 </TableRow>
@@ -301,5 +339,7 @@ export default function MyVehiclesPage() {
     </div>
   );
 }
+
+    
 
     

@@ -70,6 +70,8 @@ export type Vehicle = {
     price: number;
     currentMileage: number;
     imageUrls?: string[];
+    isForSale: boolean;
+    country: string;
 };
 
 export type FavoriteWorkshop = {
@@ -85,3 +87,6 @@ export type FavoriteWorkshop = {
 
     
 
+
+
+    
