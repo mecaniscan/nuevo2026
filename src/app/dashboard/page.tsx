@@ -1,14 +1,14 @@
 'use client';
 
 import { useUser, useFirestore, useMemoFirebase, deleteDocumentNonBlocking } from '@/firebase';
-import { collection, query, where, doc } from 'firebase/firestore';
+import { collection, query, where, doc, setDoc } from 'firebase/firestore';
 import { useCollection } from '@/firebase/firestore/use-collection';
 import type { Workshop, Appointment } from '@/lib/types';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Loader2, Calendar, Wrench, Trash2, Settings, Pencil, LogOut } from 'lucide-react';
+import { Loader2, Calendar, Wrench, Trash2, Settings, Pencil, LogOut, User as UserIcon, Lock } from 'lucide-react';
 import Link from 'next/link';
-import { initiateAnonymousSignIn, initiateSignOut } from '@/firebase/non-blocking-login';
+import { initiateAnonymousSignIn, initiateSignOut, initiateEmailSignIn } from '@/firebase/non-blocking-login';
 import { useAuth } from '@/firebase';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
@@ -25,7 +25,18 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog"
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import * as z from 'zod';
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
+import { Input } from '@/components/ui/input';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
+
+const loginSchema = z.object({
+  email: z.string().email('El correo electrónico no es válido.'),
+  password: z.string().min(1, 'La contraseña es obligatoria.'),
+});
 
 export default function DashboardPage() {
   const { user, isUserLoading } = useUser();
@@ -33,10 +44,6 @@ export default function DashboardPage() {
   const auth = useAuth();
   const { toast } = useToast();
 
-  const handleLogin = () => {
-    initiateAnonymousSignIn(auth);
-  };
-  
   const handleLogout = () => {
     initiateSignOut(auth);
   };
@@ -74,13 +81,11 @@ export default function DashboardPage() {
       return;
     }
     try {
-      // Delete user's workshops
       if (workshops && workshops.length > 0) {
         const workshopRef = doc(firestore, 'workshops', workshops[0].id);
         deleteDocumentNonBlocking(workshopRef);
       }
       
-      // Delete user's appointments
       if (appointments && appointments.length > 0) {
         appointments.forEach(apt => {
           const appointmentRef = doc(firestore, 'users', user.uid, 'appointments', apt.id);
@@ -88,11 +93,9 @@ export default function DashboardPage() {
         });
       }
 
-      // Delete user document from firestore
       const userDocRef = doc(firestore, 'users', user.uid);
       deleteDocumentNonBlocking(userDocRef);
 
-      // Delete user from auth
       await user.delete();
 
       toast({ title: 'Cuenta Eliminada', description: 'Tu cuenta y todos tus datos han sido eliminados.' });
@@ -103,7 +106,6 @@ export default function DashboardPage() {
     }
   };
 
-  // Fetch Workshops
   const workshopsCollection = useMemoFirebase(() => {
     if (!firestore) return null;
     return collection(firestore, 'workshops');
@@ -116,13 +118,24 @@ export default function DashboardPage() {
 
   const { data: workshops, isLoading: isWorkshopsLoading } = useCollection<Workshop>(userWorkshopsQuery);
 
-  // Fetch Appointments
   const appointmentsCollection = useMemoFirebase(() => {
     if (!firestore || !user) return null;
     return collection(firestore, 'users', user.uid, 'appointments');
   }, [firestore, user]);
 
   const { data: appointments, isLoading: isAppointmentsLoading } = useCollection<Appointment>(appointmentsCollection);
+
+  const loginForm = useForm<z.infer<typeof loginSchema>>({
+    resolver: zodResolver(loginSchema),
+    defaultValues: {
+      email: '',
+      password: '',
+    },
+  });
+
+  async function onLoginSubmit(values: z.infer<typeof loginSchema>) {
+    initiateEmailSignIn(auth, values.email, values.password);
+  }
 
   if (isUserLoading || isWorkshopsLoading || isAppointmentsLoading) {
     return (
@@ -135,13 +148,69 @@ export default function DashboardPage() {
   if (!user) {
     return (
         <div className="flex min-h-screen items-center justify-center">
-            <Card className="w-full max-w-md text-center">
-                <CardHeader>
-                    <CardTitle>Acceso Denegado</CardTitle>
-                    <CardDescription>Debes iniciar sesión para ver tu panel de control.</CardDescription>
+            <Card className="w-full max-w-md">
+                <CardHeader className="text-center">
+                    <CardTitle>Bienvenido de Nuevo</CardTitle>
+                    <CardDescription>Inicia sesión para acceder a tu panel.</CardDescription>
                 </CardHeader>
-                <CardContent className="flex flex-col gap-4">
-                    <Button onClick={handleLogin}>Iniciar Sesión</Button>
+                <CardContent>
+                  <Tabs defaultValue="email">
+                    <TabsList className="grid w-full grid-cols-2">
+                      <TabsTrigger value="email">Correo</TabsTrigger>
+                      <TabsTrigger value="anonymous">Invitado</TabsTrigger>
+                    </TabsList>
+                    <TabsContent value="email" className="pt-4">
+                        <Form {...loginForm}>
+                          <form onSubmit={loginForm.handleSubmit(onLoginSubmit)} className="space-y-4">
+                            <FormField
+                              control={loginForm.control}
+                              name="email"
+                              render={({ field }) => (
+                                <FormItem>
+                                  <FormLabel>Correo Electrónico</FormLabel>
+                                  <FormControl>
+                                    <Input type="email" placeholder="tu@correo.com" {...field} />
+                                  </FormControl>
+                                  <FormMessage />
+                                </FormItem>
+                              )}
+                            />
+                            <FormField
+                              control={loginForm.control}
+                              name="password"
+                              render={({ field }) => (
+                                <FormItem>
+                                  <FormLabel>Contraseña</FormLabel>
+                                  <FormControl>
+                                    <Input type="password" placeholder="••••••••" {...field} />
+                                  </FormControl>
+                                  <FormMessage />
+                                </FormItem>
+                              )}
+                            />
+                            <Button type="submit" className="w-full">
+                               <Lock className="mr-2"/> Iniciar Sesión
+                            </Button>
+                          </form>
+                        </Form>
+                    </TabsContent>
+                    <TabsContent value="anonymous" className="pt-4">
+                       <div className="flex flex-col items-center justify-center text-center space-y-4 p-4 border-2 border-dashed rounded-lg">
+                          <p className="text-muted-foreground text-sm">Explora la app como invitado. Podrás ver talleres pero no guardar citas o registrar tu propio taller de forma permanente.</p>
+                          <Button onClick={() => initiateAnonymousSignIn(auth)} className="w-full">
+                              <UserIcon className="mr-2"/> Continuar como Invitado
+                          </Button>
+                        </div>
+                    </TabsContent>
+                  </Tabs>
+                </CardContent>
+                <CardContent className="flex flex-col gap-2 text-center">
+                     <p className="text-sm text-muted-foreground">
+                        ¿No tienes una cuenta?{' '}
+                        <Button variant="link" className="p-0 h-auto" asChild>
+                            <Link href="/register">Regístrate aquí</Link>
+                        </Button>
+                    </p>
                     <Button variant="link" asChild>
                       <Link href="/">Volver a la página principal</Link>
                     </Button>
@@ -165,7 +234,6 @@ export default function DashboardPage() {
       </div>
       
       <div className="grid gap-8 lg:grid-cols-2">
-        {/* My Workshops */}
         <Card className="lg:col-span-2">
             <CardHeader>
             <CardTitle className="flex items-center gap-2"><Wrench/> Mi Taller</CardTitle>
@@ -222,7 +290,6 @@ export default function DashboardPage() {
             </CardContent>
         </Card>
 
-        {/* My Appointments */}
         <Card>
             <CardHeader>
                 <CardTitle className="flex items-center gap-2"><Calendar/> Mis Citas</CardTitle>
@@ -274,7 +341,7 @@ export default function DashboardPage() {
                 </Button>
                 <AlertDialog>
                     <AlertDialogTrigger asChild>
-                        <Button variant="destructive">Eliminar Cuenta</Button>
+                        <Button variant="destructive" disabled={user.isAnonymous}>Eliminar Cuenta</Button>
                     </AlertDialogTrigger>
                     <AlertDialogContent>
                         <AlertDialogHeader>
@@ -290,6 +357,7 @@ export default function DashboardPage() {
                         </AlertDialogFooter>
                     </AlertDialogContent>
                 </AlertDialog>
+                {user.isAnonymous && <p className="text-xs text-muted-foreground">Debes tener una cuenta permanente para poder eliminarla.</p>}
             </CardContent>
         </Card>
       </div>

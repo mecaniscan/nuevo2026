@@ -47,9 +47,16 @@ export function Header() {
             </Link>
           </nav>
         </div>
-        <div className="flex flex-1 items-center justify-end space-x-4">
+        <div className="flex flex-1 items-center justify-end space-x-2">
           {!user && !isUserLoading && (
-            <Button onClick={handleLogin}>Iniciar Sesión</Button>
+            <>
+               <Button variant="ghost" asChild>
+                <Link href="/dashboard">Iniciar Sesión</Link>
+              </Button>
+              <Button asChild>
+                <Link href="/register">Crear Cuenta</Link>
+              </Button>
+            </>
           )}
           {user && (
              <DropdownMenu>
