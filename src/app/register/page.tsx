@@ -60,7 +60,6 @@ export default function RegisterPage() {
       });
       router.push('/dashboard');
     } catch (error: any) {
-      console.error('Error registering user:', error);
       let description = 'No se pudo completar el registro. Por favor, intenta de nuevo.';
       if (error.code === 'auth/email-already-in-use') {
         description = 'Este correo electrónico ya está en uso. Por favor, utiliza otro.';
