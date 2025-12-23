@@ -8,14 +8,16 @@ import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, For
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { useUser, useFirestore } from '@/firebase';
+import { useUser, useFirestore, useMemoFirebase } from '@/firebase';
 import { addDocumentNonBlocking } from '@/firebase/non-blocking-updates';
-import { collection } from 'firebase/firestore';
+import { collection, query, where } from 'firebase/firestore';
+import { useCollection } from '@/firebase/firestore/use-collection';
 import { useToast } from '@/hooks/use-toast';
 import { useRouter } from 'next/navigation';
 import { Loader2 } from 'lucide-react';
 import { Switch } from '@/components/ui/switch';
 import Link from 'next/link';
+import type { Workshop } from '@/lib/types';
 
 const workshopSchema = z.object({
   name: z.string().min(3, 'El nombre debe tener al menos 3 caracteres.'),
@@ -32,6 +34,18 @@ export default function RegisterWorkshopPage() {
   const { toast } = useToast();
   const router = useRouter();
   const [isSubmitting, setIsSubmitting] = React.useState(false);
+
+  const workshopsCollection = useMemoFirebase(() => {
+    if (!firestore) return null;
+    return collection(firestore, 'workshops');
+  }, [firestore]);
+
+  const userWorkshopsQuery = useMemoFirebase(() => {
+    if (!workshopsCollection || !user) return null;
+    return query(workshopsCollection, where('ownerId', '==', user.uid));
+  }, [workshopsCollection, user]);
+
+  const { data: workshops, isLoading: isWorkshopsLoading } = useCollection<Workshop>(userWorkshopsQuery);
 
   const form = useForm<z.infer<typeof workshopSchema>>({
     resolver: zodResolver(workshopSchema),
@@ -54,10 +68,19 @@ export default function RegisterWorkshopPage() {
       });
       return;
     }
+
+    if (workshops && workshops.length > 0) {
+      toast({
+        variant: 'destructive',
+        title: 'Límite alcanzado',
+        description: 'Ya has registrado un taller. Solo puedes tener uno.',
+      });
+      return;
+    }
+
     setIsSubmitting(true);
     
     try {
-      const workshopsCollection = collection(firestore, 'workshops');
       // Latitude and longitude are hardcoded for now
       const workshopData = {
         ...values,
@@ -66,7 +89,7 @@ export default function RegisterWorkshopPage() {
         longitude: 0,
       };
       
-      addDocumentNonBlocking(workshopsCollection, workshopData);
+      addDocumentNonBlocking(collection(firestore, 'workshops'), workshopData);
 
       toast({
         title: '¡Taller Registrado!',
@@ -84,7 +107,7 @@ export default function RegisterWorkshopPage() {
     }
   }
   
-  if (isUserLoading) {
+  if (isUserLoading || isWorkshopsLoading) {
     return <div className="flex h-screen items-center justify-center"><Loader2 className="w-12 h-12 animate-spin text-primary" /></div>;
   }
 
@@ -99,6 +122,24 @@ export default function RegisterWorkshopPage() {
           <CardContent>
             <Button asChild>
               <Link href="/">Volver al Inicio</Link>
+            </Button>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
+  if (workshops && workshops.length > 0) {
+     return (
+      <div className="container mx-auto py-12 flex items-center justify-center">
+        <Card className="w-full max-w-lg text-center">
+          <CardHeader>
+            <CardTitle>Ya tienes un taller registrado</CardTitle>
+            <CardDescription>Solo puedes registrar un taller por cuenta. Puedes gestionar tu taller existente desde el panel de control.</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <Button asChild>
+              <Link href="/dashboard">Ir al Panel de Control</Link>
             </Button>
           </CardContent>
         </Card>
