@@ -139,7 +139,7 @@ export default function WorkshopDetailPage() {
                     name: workshop.name,
                     address: workshop.address,
                     imageUrl: workshop.image.imageUrl,
-                    averageRating: workshop.averageRating,
+                    averageRating: workshop.averageRating || 0,
                     addedAt: serverTimestamp(),
                 };
                 batch.set(favRef, favoriteData);
