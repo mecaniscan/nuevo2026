@@ -158,7 +158,7 @@ export default function RegisterWorkshopPage() {
         <CardHeader>
           <CardTitle className="text-2xl font-headline text-primary">Registra tu Taller</CardTitle>
           <CardDescription>
-            Completa el siguiente formulario para añadir tu taller a MechConnect y llegar a más clientes.
+            Completa el siguiente formulario para añadir tu taller a MecaniScan y llegar a más clientes.
           </CardDescription>
         </CardHeader>
         <CardContent>

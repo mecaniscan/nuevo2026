@@ -1,5 +1,5 @@
 /**
- * This ruleset defines the security model for the MechConnect application.
+ * This ruleset defines the security model for the MecaniScan application.
  *
  * Core Philosophy:
  * The security model enforces a strict user-ownership paradigm for all user-generated

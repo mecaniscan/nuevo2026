@@ -80,7 +80,7 @@ export default function RegisterPage() {
         <CardHeader>
           <CardTitle className="text-2xl font-headline text-primary">Crear una Cuenta</CardTitle>
           <CardDescription>
-            Únete a MechConnect para gestionar tu taller y citas.
+            Únete a MecaniScan para gestionar tu taller y citas.
           </CardDescription>
         </CardHeader>
         <CardContent>

@@ -5,7 +5,7 @@ import { FirebaseClientProvider } from '@/firebase/client-provider';
 import { FirebaseErrorListener } from '@/components/FirebaseErrorListener';
 
 export const metadata: Metadata = {
-  title: 'MechConnect',
+  title: 'MecaniScan',
   description: "Decodifica al instante las luces de check engine y conéctate con mecánicos locales de confianza.",
 };
 

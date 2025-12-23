@@ -8,7 +8,7 @@ export function Footer() {
                 <div className="flex items-center space-x-2">
                     <Wrench className="h-6 w-6 text-primary" />
                     <p className="text-center text-sm leading-loose text-muted-foreground md:text-left">
-                        Creado por MechConnect. &copy; {new Date().getFullYear()} Todos los derechos reservados.
+                        Creado por MecaniScan. &copy; {new Date().getFullYear()} Todos los derechos reservados.
                     </p>
                 </div>
                 <div className="flex space-x-4">

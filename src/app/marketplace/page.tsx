@@ -20,7 +20,7 @@ function VehicleCard({ vehicle }: { vehicle: Vehicle }) {
   
   const handleContact = () => {
     if (vehicle.sellerWhatsapp) {
-      const message = `Hola, estoy interesado/a en tu ${vehicle.brand} ${vehicle.model} que vi en MechConnect.`;
+      const message = `Hola, estoy interesado/a en tu ${vehicle.brand} ${vehicle.model} que vi en MecaniScan.`;
       const whatsappUrl = `https://wa.me/${vehicle.sellerWhatsapp.replace(/\D/g, '')}?text=${encodeURIComponent(message)}`;
       window.open(whatsappUrl, '_blank');
     }

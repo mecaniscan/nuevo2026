@@ -32,7 +32,7 @@ export function Header() {
           <Link href="/" className="mr-6 flex items-center space-x-2">
             <Wrench className="h-6 w-6 text-primary" />
             <span className="font-bold sm:inline-block">
-              MechConnect
+              MecaniScan
             </span>
           </Link>
           <nav className="hidden items-center space-x-6 text-sm font-medium md:flex">
