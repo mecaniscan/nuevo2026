@@ -213,6 +213,51 @@
         "comment",
         "createdAt"
       ]
+    },
+    "OilChange": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "OilChange",
+      "type": "object",
+      "description": "Represents an oil change record for a user's vehicle.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the oil change record."
+        },
+        "userId": {
+          "type": "string",
+          "description": "Reference to the User. (Relationship: User 1:N OilChange)"
+        },
+        "date": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Date of the oil change."
+        },
+        "oilType": {
+          "type": "string",
+          "description": "Type of oil used (e.g., '5W-30 Synthetic')."
+        },
+        "oilPrice": {
+          "type": "number",
+          "description": "Price of the oil."
+        },
+        "mileage": {
+          "type": "number",
+          "description": "Vehicle mileage at the time of the change."
+        },
+        "nextChangeMileage": {
+          "type": "number",
+          "description": "Recommended mileage for the next oil change."
+        }
+      },
+      "required": [
+        "id",
+        "userId",
+        "date",
+        "oilType",
+        "mileage",
+        "nextChangeMileage"
+      ]
     }
   },
   "auth": {
@@ -311,6 +356,26 @@
             {
               "name": "appointmentId",
               "description": "The unique identifier for the appointment."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/users/{userId}/oilChanges/{oilChangeId}",
+        "definition": {
+          "entityName": "OilChange",
+          "schema": {
+            "$ref": "#/backend/entities/OilChange"
+          },
+          "description": "Stores oil change records for a user's vehicle.",
+          "params": [
+            {
+              "name": "userId",
+              "description": "The unique identifier for the user."
+            },
+            {
+              "name": "oilChangeId",
+              "description": "The unique identifier for the oil change record."
             }
           ]
         }

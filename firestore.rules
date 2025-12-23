@@ -163,8 +163,16 @@ service cloud.firestore {
         allow update: if isExistingOwner(userId) && request.resource.data.userId == resource.data.userId;
         allow delete: if isExistingOwner(userId);
       }
+      
+      /**
+       * @description Secures a user's oil changes subcollection.
+       * @path /users/{userId}/oilChanges/{oilChangeId}
+       * @allow (get, list, create, update, delete) A user can manage their own oil change records.
+       */
+      match /oilChanges/{oilChangeId} {
+        allow get, list, create, update, delete: if isOwner(userId);
+      }
     }
   }
 }
-
     

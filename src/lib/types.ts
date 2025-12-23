@@ -43,3 +43,13 @@ export type Review = {
     createdAt: Timestamp | string;
     authorName?: string; // Denormalized user name
 };
+
+export type OilChange = {
+    id: string;
+    userId: string;
+    date: string | Timestamp;
+    oilType: string;
+    oilPrice: number;
+    mileage: number;
+    nextChangeMileage: number;
+};
