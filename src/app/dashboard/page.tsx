@@ -1,18 +1,15 @@
 'use client';
 
 import { useUser, useFirestore, useMemoFirebase, deleteDocumentNonBlocking } from '@/firebase';
-import { collection, query, where, doc, setDoc } from 'firebase/firestore';
+import { collection, query, where, doc } from 'firebase/firestore';
 import { useCollection } from '@/firebase/firestore/use-collection';
 import type { Workshop, Appointment } from '@/lib/types';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Loader2, Calendar, Wrench, Trash2, Settings, Pencil, LogOut, User as UserIcon, Lock, ListPlus } from 'lucide-react';
+import { Loader2, Calendar, Wrench, Trash2, Settings, Pencil, LogOut, User as UserIcon, Lock, ListPlus, Building, ArrowRight } from 'lucide-react';
 import Link from 'next/link';
 import { initiateAnonymousSignIn, initiateSignOut, initiateEmailSignIn } from '@/firebase/non-blocking-login';
 import { useAuth } from '@/firebase';
-import { format } from 'date-fns';
-import { es } from 'date-fns/locale';
-import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
 import {
   AlertDialog,
@@ -46,36 +43,28 @@ export default function DashboardPage() {
   const { toast } = useToast();
   const [isLoggingIn, setIsLoggingIn] = React.useState(false);
 
+  const workshopsCollection = useMemoFirebase(() => {
+    if (!firestore) return null;
+    return collection(firestore, 'workshops');
+  }, [firestore]);
+
+  const userWorkshopsQuery = useMemoFirebase(() => {
+    if (!workshopsCollection || !user) return null;
+    return query(workshopsCollection, where('ownerId', '==', user.uid));
+  }, [workshopsCollection, user]);
+
+  const { data: workshops, isLoading: isWorkshopsLoading } = useCollection<Workshop>(userWorkshopsQuery);
+    
+  const appointmentsCollection = useMemoFirebase(() => {
+    if (!firestore || !user) return null;
+    return collection(firestore, 'users', user.uid, 'appointments');
+  }, [firestore, user]);
+
+  const { data: appointments, isLoading: isAppointmentsLoading } = useCollection<Appointment>(appointmentsCollection);
+
 
   const handleLogout = () => {
     initiateSignOut(auth);
-  };
-
-  const handleCancelAppointment = (appointmentId: string) => {
-    if (!firestore || !user) {
-        toast({
-            variant: 'destructive',
-            title: 'Error',
-            description: 'Debes iniciar sesión para cancelar una cita.',
-        });
-        return;
-    }
-    const appointmentRef = doc(firestore, 'users', user.uid, 'appointments', appointmentId);
-    deleteDocumentNonBlocking(appointmentRef);
-    toast({
-        title: 'Cita Cancelada',
-        description: 'La cita ha sido eliminada de tu agenda.',
-    });
-  }
-
-  const handleDeleteWorkshop = () => {
-    if (!workshops || workshops.length === 0 || !firestore) {
-      toast({ variant: 'destructive', title: 'Error', description: 'No se encontró el taller para eliminar.' });
-      return;
-    }
-    const workshopRef = doc(firestore, 'workshops', workshops[0].id);
-    deleteDocumentNonBlocking(workshopRef);
-    toast({ title: 'Taller Eliminado', description: 'Tu taller ha sido eliminado de la plataforma.' });
   };
 
   const handleDeleteAccount = async () => {
@@ -109,25 +98,6 @@ export default function DashboardPage() {
     }
   };
 
-  const workshopsCollection = useMemoFirebase(() => {
-    if (!firestore) return null;
-    return collection(firestore, 'workshops');
-  }, [firestore]);
-
-  const userWorkshopsQuery = useMemoFirebase(() => {
-    if (!workshopsCollection || !user) return null;
-    return query(workshopsCollection, where('ownerId', '==', user.uid));
-  }, [workshopsCollection, user]);
-
-  const { data: workshops, isLoading: isWorkshopsLoading } = useCollection<Workshop>(userWorkshopsQuery);
-
-  const appointmentsCollection = useMemoFirebase(() => {
-    if (!firestore || !user) return null;
-    return collection(firestore, 'users', user.uid, 'appointments');
-  }, [firestore, user]);
-
-  const { data: appointments, isLoading: isAppointmentsLoading } = useCollection<Appointment>(appointmentsCollection);
-
   const loginForm = useForm<z.infer<typeof loginSchema>>({
     resolver: zodResolver(loginSchema),
     defaultValues: {
@@ -140,7 +110,6 @@ export default function DashboardPage() {
     setIsLoggingIn(true);
     try {
       await initiateEmailSignIn(auth, values.email, values.password);
-      // Let the onAuthStateChanged handle the redirect/UI update
     } catch (error: any) {
       console.error("Login Error:", error.code);
       if (error.code === 'auth/invalid-credential' || error.code === 'auth/wrong-password' || error.code === 'auth/user-not-found') {
@@ -171,10 +140,10 @@ export default function DashboardPage() {
 
   if (!user) {
     return (
-        <div className="flex min-h-screen items-center justify-center">
-            <Card className="w-full max-w-md">
+        <div className="flex min-h-screen items-center justify-center bg-muted/40">
+            <Card className="w-full max-w-md shadow-lg">
                 <CardHeader className="text-center">
-                    <CardTitle>Bienvenido de Nuevo</CardTitle>
+                    <CardTitle className="text-2xl font-headline">Bienvenido de Nuevo</CardTitle>
                     <CardDescription>Inicia sesión para acceder a tu panel.</CardDescription>
                 </CardHeader>
                 <CardContent>
@@ -246,155 +215,93 @@ export default function DashboardPage() {
   }
 
   const hasWorkshop = workshops && workshops.length > 0;
-  const workshopId = hasWorkshop ? workshops[0].id : null;
+  
+  const ActionButton = ({ href, icon, title, description }: { href: string; icon: React.ReactNode; title: string; description: string }) => (
+    <Link href={href} className="group block">
+        <Card className="h-full transition-all duration-300 hover:border-primary hover:shadow-xl hover:-translate-y-1">
+            <CardHeader className="flex flex-row items-center gap-4">
+                <div className="bg-primary/10 p-3 rounded-full">
+                    {icon}
+                </div>
+                <div>
+                    <CardTitle className="text-xl font-semibold">{title}</CardTitle>
+                    <CardDescription>{description}</CardDescription>
+                </div>
+                <ArrowRight className="ml-auto h-5 w-5 text-muted-foreground transition-transform group-hover:translate-x-1"/>
+            </CardHeader>
+        </Card>
+    </Link>
+  );
 
   return (
     <div className="container mx-auto py-12">
-      <div className="flex justify-between items-center mb-8">
-        <h1 className="text-3xl font-bold font-headline text-primary">Tu Panel de Control</h1>
-        {!hasWorkshop && (
-            <Button asChild>
-                <Link href="/dashboard/register-workshop">Añadir Nuevo Taller</Link>
-            </Button>
-        )}
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-8">
+        <div>
+          <h1 className="text-3xl font-bold font-headline text-primary">Panel de Control</h1>
+          <p className="text-muted-foreground">Bienvenido, {user.displayName || user.email}. Aquí puedes gestionar tu actividad.</p>
+        </div>
+        <Button onClick={handleLogout} variant="outline" className="mt-4 sm:mt-0">
+          <LogOut className="mr-2 h-4 w-4" />
+          Cerrar Sesión
+        </Button>
       </div>
       
-      <div className="grid gap-8 lg:grid-cols-2">
-        <Card className="lg:col-span-2">
-            <CardHeader>
-            <CardTitle className="flex items-center gap-2"><Wrench/> Mi Taller</CardTitle>
-            <CardDescription>Aquí puedes ver, editar o eliminar el taller que has registrado.</CardDescription>
-            </CardHeader>
-            <CardContent>
-            {hasWorkshop && workshops ? (
-                <div className="grid grid-cols-1 gap-4">
-                {workshops.map((workshop) => (
-                    <Card key={workshop.id} className="p-4 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-                        <div>
-                          <CardTitle className="text-lg">{workshop.name}</CardTitle>
-                          <p className="text-sm text-muted-foreground">{workshop.address}</p>
-                        </div>
-                        <div className="flex flex-wrap gap-2 self-end sm:self-center">
-                          <Button variant="outline" size="sm" asChild>
-                            <Link href="/dashboard/edit-workshop">
-                              <Pencil className="mr-2 h-4 w-4" />
-                              Editar Taller
-                            </Link>
-                          </Button>
-                          <Button variant="outline" size="sm" asChild>
-                            <Link href={`/dashboard/edit-services`}>
-                              <ListPlus className="mr-2 h-4 w-4" />
-                              Editar Servicios
-                            </Link>
-                          </Button>
-                          <AlertDialog>
-                            <AlertDialogTrigger asChild>
-                              <Button variant="destructive" size="sm">
-                                <Trash2 className="mr-2 h-4 w-4" />
-                                Eliminar Taller
-                              </Button>
-                            </AlertDialogTrigger>
-                            <AlertDialogContent>
-                              <AlertDialogHeader>
-                                <AlertDialogTitle>¿Estás seguro de eliminar el taller?</AlertDialogTitle>
-                                <AlertDialogDescription>
-                                  Esta acción no se puede deshacer. Esto eliminará permanentemente tu taller y todos sus servicios de nuestra plataforma.
-                                </AlertDialogDescription>
-                              </AlertDialogHeader>
-                              <AlertDialogFooter>
-                                <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                                <AlertDialogAction onClick={handleDeleteWorkshop} className="bg-destructive hover:bg-destructive/90">Eliminar</AlertDialogAction>
-                              </AlertDialogFooter>
-                            </AlertDialogContent>
-                          </AlertDialog>
-                        </div>
-                    </Card>
-                ))}
-                </div>
-            ) : (
-                <div className="text-center py-12 border-2 border-dashed rounded-lg">
-                    <p className="text-muted-foreground">Aún no has registrado ningún taller.</p>
-                    <Button asChild variant="link">
-                        <Link href="/dashboard/register-workshop">¡Registra tu taller!</Link>
-                    </Button>
-                </div>
-            )}
-            </CardContent>
-        </Card>
+      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
 
-        <Card>
-            <CardHeader>
-                <CardTitle className="flex items-center gap-2"><Calendar/> Mis Citas</CardTitle>
-                <CardDescription>Aquí puedes ver y gestionar tus próximas citas.</CardDescription>
-            </CardHeader>
-            <CardContent>
-                 {appointments && appointments.length > 0 ? (
-                    <div className="space-y-4">
-                        {appointments.sort((a, b) => new Date(a.appointmentDateTime).getTime() - new Date(b.appointmentDateTime).getTime()).map((appointment) => (
-                            <Card key={appointment.id} className="p-4">
-                                <div className="flex justify-between items-start">
-                                    <div>
-                                        <p className="font-semibold capitalize">{format(new Date(appointment.appointmentDateTime), "EEEE, d 'de' MMMM", { locale: es })}</p>
-                                        <p className="text-sm text-muted-foreground">Taller: ID {appointment.workshopId}</p>
-                                    </div>
-                                    <Badge variant={appointment.status === 'scheduled' ? 'default' : 'secondary'}>{appointment.status}</Badge>
-                                </div>
-                                <div className="flex justify-between items-end mt-2 gap-4">
-                                  <p className="text-sm p-3 bg-muted rounded-md flex-grow">{appointment.description}</p>
-                                  <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive" onClick={() => handleCancelAppointment(appointment.id)}>
-                                    <Trash2 className="h-5 w-5" />
-                                    <span className="sr-only">Cancelar Cita</span>
-                                  </Button>
-                                </div>
-                            </Card>
-                        ))}
-                    </div>
-                ) : (
-                    <div className="text-center py-12 border-2 border-dashed rounded-lg">
-                        <p className="text-muted-foreground">No tienes ninguna cita programada.</p>
-                         <Button asChild variant="link">
-                            <Link href="/#workshops">¡Busca un taller y agenda una!</Link>
-                        </Button>
-                    </div>
-                )}
-            </CardContent>
-        </Card>
+        {/* Taller Section */}
+        <div className="lg:col-span-2">
+            <ActionButton 
+                href={hasWorkshop ? "/dashboard/edit-workshop" : "/dashboard/register-workshop"}
+                icon={<Building className="h-8 w-8 text-primary"/>}
+                title={hasWorkshop ? "Gestionar mi Taller" : "Registrar mi Taller"}
+                description={hasWorkshop ? "Edita la información, servicios y detalles de tu taller." : "Añade tu taller a la plataforma para que los clientes te encuentren."}
+            />
+        </div>
 
-        <Card>
-            <CardHeader>
-                <CardTitle className="flex items-center gap-2"><Settings /> Configuración de la Cuenta</CardTitle>
-                <CardDescription>Gestiona las opciones de tu cuenta.</CardDescription>
-            </CardHeader>
-            <CardContent className="flex flex-col items-start gap-4">
-                <Button onClick={handleLogout} variant="outline">
-                    <LogOut className="mr-2 h-4 w-4" />
-                    Cerrar Sesión
-                </Button>
-                <AlertDialog>
-                    <AlertDialogTrigger asChild>
-                        <Button variant="destructive" disabled={user.isAnonymous}>Eliminar Cuenta</Button>
-                    </AlertDialogTrigger>
-                    <AlertDialogContent>
-                        <AlertDialogHeader>
-                        <AlertDialogTitle>¿Estás absolutamente seguro?</AlertDialogTitle>
-                        <AlertDialogDescription>
-                            Esta acción no se puede deshacer. Esto eliminará permanentemente tu cuenta,
-                            tu taller registrado (si existe) y todas tus citas de nuestros servidores.
-                        </AlertDialogDescription>
-                        </AlertDialogHeader>
-                        <AlertDialogFooter>
-                        <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                        <AlertDialogAction onClick={handleDeleteAccount} className="bg-destructive hover:bg-destructive/90">Continuar</AlertDialogAction>
-                        </AlertDialogFooter>
-                    </AlertDialogContent>
-                </AlertDialog>
-                {user.isAnonymous && <p className="text-xs text-muted-foreground">Debes tener una cuenta permanente para poder eliminarla.</p>}
-            </CardContent>
-        </Card>
+        {/* Citas Section */}
+        <div>
+            <ActionButton 
+                href="/#workshops" // Future: /dashboard/appointments
+                icon={<Calendar className="h-8 w-8 text-primary"/>}
+                title="Mis Citas"
+                description={`Tienes ${appointments?.length || 0} citas agendadas. Ver o agendar nuevas.`}
+            />
+        </div>
+
+        {/* Account Settings */}
+        <div className="lg:col-span-3">
+             <Card>
+                <CardHeader>
+                    <CardTitle className="flex items-center gap-2"><Settings /> Configuración de la Cuenta</CardTitle>
+                    <CardDescription>Gestiona las opciones de tu cuenta y datos personales.</CardDescription>
+                </CardHeader>
+                <CardContent className="flex flex-col items-start gap-4 sm:flex-row">
+                    <AlertDialog>
+                        <AlertDialogTrigger asChild>
+                            <Button variant="destructive" disabled={user.isAnonymous}>
+                               <Trash2/> Eliminar Cuenta
+                            </Button>
+                        </AlertDialogTrigger>
+                        <AlertDialogContent>
+                            <AlertDialogHeader>
+                            <AlertDialogTitle>¿Estás absolutamente seguro?</AlertDialogTitle>
+                            <AlertDialogDescription>
+                                Esta acción no se puede deshacer. Esto eliminará permanentemente tu cuenta,
+                                tu taller registrado (si existe) y todas tus citas de nuestros servidores.
+                            </AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                            <AlertDialogAction onClick={handleDeleteAccount} className="bg-destructive hover:bg-destructive/90">Continuar</AlertDialogAction>
+                            </AlertDialogFooter>
+                        </AlertDialogContent>
+                    </AlertDialog>
+                    {user.isAnonymous && <p className="text-xs text-muted-foreground">Debes tener una cuenta permanente para poder eliminarla.</p>}
+                </CardContent>
+            </Card>
+        </div>
       </div>
 
     </div>
   );
 }
-
-    
