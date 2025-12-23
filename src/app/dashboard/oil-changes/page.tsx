@@ -7,18 +7,29 @@ import { Button } from '@/components/ui/button';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
-import { useUser, useFirestore, useMemoFirebase } from '@/firebase';
-import { collection, query, orderBy, serverTimestamp, Timestamp } from 'firebase/firestore';
+import { useUser, useFirestore, useMemoFirebase, deleteDocumentNonBlocking } from '@/firebase';
+import { collection, query, orderBy, serverTimestamp, Timestamp, doc } from 'firebase/firestore';
 import { useCollection } from '@/firebase/firestore/use-collection';
 import { addDocumentNonBlocking } from '@/firebase/non-blocking-updates';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2, PlusCircle, Droplets } from 'lucide-react';
+import { Loader2, PlusCircle, Droplets, Trash2 } from 'lucide-react';
 import Link from 'next/link';
 import type { OilChange, Vehicle } from '@/lib/types';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog"
 
 
 const oilChangeSchema = z.object({
@@ -121,6 +132,19 @@ export default function OilChangesPage() {
     }
   }
 
+  function handleDeleteOilChange(oilChangeId: string) {
+    if (!user || !firestore) {
+      toast({ variant: 'destructive', title: 'Error', description: 'No autenticado.' });
+      return;
+    }
+    const docRef = doc(firestore, `users/${user.uid}/oilChanges`, oilChangeId);
+    deleteDocumentNonBlocking(docRef);
+    toast({
+        title: 'Registro Eliminado',
+        description: 'El registro de cambio de aceite ha sido eliminado.',
+    })
+  }
+
   const isLoading = isUserLoading || areOilChangesLoading || areVehiclesLoading;
   
   const formatDate = (dateValue: string | Timestamp | undefined) => {
@@ -131,7 +155,7 @@ export default function OilChangesPage() {
 
   return (
     <div className="container mx-auto py-12">
-      <div className="max-w-4xl mx-auto space-y-8">
+      <div className="max-w-6xl mx-auto space-y-8">
         <div className="flex items-center justify-between">
             <div>
                 <h1 className="text-3xl font-bold font-headline text-primary flex items-center gap-2"><Droplets />Registro de Cambios de Aceite</h1>
@@ -249,6 +273,7 @@ export default function OilChangesPage() {
                                 <TableHead>Kilometraje</TableHead>
                                 <TableHead>Próximo Cambio</TableHead>
                                 <TableHead className="text-right">Precio</TableHead>
+                                <TableHead className="text-right">Acciones</TableHead>
                             </TableRow>
                         </TableHeader>
                         <TableBody>
@@ -261,11 +286,38 @@ export default function OilChangesPage() {
                                         <TableCell>{change.mileage.toLocaleString()} km</TableCell>
                                         <TableCell>{change.nextChangeMileage.toLocaleString()} km</TableCell>
                                         <TableCell className="text-right">${change.oilPrice.toFixed(2)}</TableCell>
+                                        <TableCell className="text-right">
+                                            <AlertDialog>
+                                                <AlertDialogTrigger asChild>
+                                                    <Button variant="ghost" size="icon" className="text-destructive hover:bg-destructive/10">
+                                                        <Trash2 className="h-4 w-4" />
+                                                    </Button>
+                                                </AlertDialogTrigger>
+                                                <AlertDialogContent>
+                                                    <AlertDialogHeader>
+                                                        <AlertDialogTitle>¿Estás seguro?</AlertDialogTitle>
+                                                        <AlertDialogDescription>
+                                                            Esta acción no se puede deshacer. Esto eliminará permanentemente
+                                                            el registro del cambio de aceite.
+                                                        </AlertDialogDescription>
+                                                    </AlertDialogHeader>
+                                                    <AlertDialogFooter>
+                                                        <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                                                        <AlertDialogAction
+                                                            onClick={() => handleDeleteOilChange(change.id)}
+                                                            className="bg-destructive hover:bg-destructive/90"
+                                                        >
+                                                            Eliminar
+                                                        </AlertDialogAction>
+                                                    </AlertDialogFooter>
+                                                </AlertDialogContent>
+                                            </AlertDialog>
+                                        </TableCell>
                                     </TableRow>
                                 ))
                             ) : (
                                 <TableRow>
-                                    <TableCell colSpan={6} className="text-center h-24">
+                                    <TableCell colSpan={7} className="text-center h-24">
                                         No hay registros de cambios de aceite.
                                     </TableCell>
                                 </TableRow>
@@ -279,5 +331,3 @@ export default function OilChangesPage() {
     </div>
   );
 }
-
-    
