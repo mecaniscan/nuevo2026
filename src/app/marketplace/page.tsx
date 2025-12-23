@@ -1,6 +1,6 @@
 'use client';
 import React, { useState, useMemo } from 'react';
-import { useFirestore, useCollection } from '@/firebase';
+import { useFirestore, useCollection, useMemoFirebase } from '@/firebase';
 import { collection } from 'firebase/firestore';
 import type { Vehicle } from '@/lib/types';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
@@ -44,7 +44,7 @@ export default function MarketplacePage() {
   const [countryFilter, setCountryFilter] = useState('');
   const [brandFilter, setBrandFilter] = useState('');
   
-  const marketplaceCollection = useMemo(() => {
+  const marketplaceCollection = useMemoFirebase(() => {
     if (!firestore) return null;
     return collection(firestore, 'marketplace');
   }, [firestore]);
@@ -132,5 +132,3 @@ export default function MarketplacePage() {
     </div>
   );
 }
-
-    
