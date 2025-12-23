@@ -2,10 +2,10 @@
 
 import { decodeObdiiError } from '@/ai/flows/obdii-error-decoder';
 import { decodeObdiiErrorFromImage, type ObdiiVisualDecoderInput } from '@/ai/flows/obdii-visual-decoder';
-import { type ObdiiErrorDecoderInput } from '@/ai/schemas';
+import { type ObdiiErrorDecoderInput, type ObdiiErrorDecoderOutput } from '@/ai/schemas';
 
 
-export async function decodeObdiiErrorAction(input: ObdiiErrorDecoderInput) {
+export async function decodeObdiiErrorAction(input: ObdiiErrorDecoderInput): Promise<ObdiiErrorDecoderOutput> {
   const result = await decodeObdiiError(input);
   if (!result || !result.code) {
     throw new Error('Invalid response from AI decoder.');
@@ -13,7 +13,7 @@ export async function decodeObdiiErrorAction(input: ObdiiErrorDecoderInput) {
   return result;
 }
 
-export async function decodeObdiiErrorFromImageAction(input: ObdiiVisualDecoderInput) {
+export async function decodeObdiiErrorFromImageAction(input: ObdiiVisualDecoderInput): Promise<ObdiiErrorDecoderOutput> {
   const result = await decodeObdiiErrorFromImage(input);
   if (!result || !result.code) {
     throw new Error('Invalid response from AI visual decoder.');
