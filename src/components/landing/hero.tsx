@@ -1,5 +1,5 @@
 import { Button } from "@/components/ui/button";
-import { ArrowRight } from "lucide-react";
+import { ArrowRight, ShoppingCart } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import { PlaceHolderImages } from '@/lib/placeholder-images';
@@ -32,6 +32,11 @@ export function HeroSection() {
                         <Button asChild size="lg" className="bg-accent text-accent-foreground hover:bg-accent/90">
                             <Link href="#workshops">
                                 Encontrar un Taller <ArrowRight className="ml-2 h-5 w-5" />
+                            </Link>
+                        </Button>
+                        <Button asChild size="lg" variant="default">
+                            <Link href="/marketplace">
+                                Marketplace <ShoppingCart className="ml-2 h-5 w-5" />
                             </Link>
                         </Button>
                         <Button asChild size="lg" variant="outline" className="bg-background/50 border-white/20 hover:bg-background/80">
