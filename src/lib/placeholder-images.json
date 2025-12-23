@@ -1,3 +1,46 @@
 {
-  "placeholderImages": []
+  "placeholderImages": [
+    {
+      "id": "hero-image",
+      "description": "A modern car engine bay, clean and detailed",
+      "imageUrl": "https://images.unsplash.com/photo-1527383418406-f85a3b146499?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwyfHxjYXIlMjBlbmdpbmV8ZW58MHx8fHwxNzY2Mzg5OTY2fDA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "car engine"
+    },
+    {
+      "id": "workshop-1",
+      "description": "Interior of a clean and modern auto repair shop",
+      "imageUrl": "https://images.unsplash.com/photo-1702146713858-8e7d1cc29fe8?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwxMHx8YXV0byUyMHJlcGFpcnxlbnwwfHx8fDE3NjYzOTE1Mjl8MA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "auto repair"
+    },
+    {
+      "id": "workshop-2",
+      "description": "Mechanic working under a car on a lift",
+      "imageUrl": "https://images.unsplash.com/photo-1604068105030-06d82bb48fd1?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwyfHxtZWNoYW5pYyUyMGNhcnxlbnwwfHx8fDE3NjY0NTMyMjN8MA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "mechanic car"
+    },
+    {
+      "id": "workshop-3",
+      "description": "Close up of diagnostic tools connected to a car",
+      "imageUrl": "https://images.unsplash.com/photo-1702146713858-8e7d1cc29fe8?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw2fHxjYXIlMjBkaWFnbm9zdGljc3xlbnwwfHx8fDE3NjY0NTMyMjN8MA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "car diagnostics"
+    },
+    {
+      "id": "workshop-4",
+      "description": "A well-organized wall of tools in a garage",
+      "imageUrl": "https://images.unsplash.com/photo-1655754334636-800032b58c47?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwyfHxnYXJhZ2UlMjB0b29sc3xlbnwwfHx8fDE3NjY0NTMyMjN8MA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "garage tools"
+    },
+    {
+      "id": "workshop-5",
+      "description": "A classic car being restored in a garage",
+      "imageUrl": "https://images.unsplash.com/photo-1489008777659-ad1fc8e07097?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw0fHxjbGFzc2ljJTIwY2FyfGVufDB8fHx8MTc2NjM4NDE0OHww&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "classic car"
+    },
+    {
+      "id": "workshop-6",
+      "description": "An electric vehicle being serviced",
+      "imageUrl": "https://images.unsplash.com/photo-1593941707874-ef25b8b4a92b?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwyfHxlbGVjdHJpYyUyMHZlaGljbGV8ZW58MHx8fHwxNzY2NDUzMjIzfDA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "electric vehicle"
+    }
+  ]
 }
