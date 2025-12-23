@@ -15,19 +15,19 @@ export function Header() {
           </Link>
           <nav className="hidden items-center space-x-6 text-sm font-medium md:flex">
             <Link href="#workshops" className="transition-colors hover:text-primary">
-              Find a Workshop
+              Encontrar un Taller
             </Link>
             <Link href="#decoder" className="transition-colors hover:text-primary">
-              OBD-II Decoder
+              Decodificador OBD-II
             </Link>
             <Link href="#" className="transition-colors hover:text-primary">
-              Account
+              Cuenta
             </Link>
           </nav>
         </div>
         <div className="flex flex-1 items-center justify-end space-x-4">
-          <Button variant="outline" className="hidden sm:inline-flex">Sign In</Button>
-          <Button className="bg-accent text-accent-foreground hover:bg-accent/90">Register Your Workshop</Button>
+          <Button variant="outline" className="hidden sm:inline-flex">Iniciar Sesión</Button>
+          <Button className="bg-accent text-accent-foreground hover:bg-accent/90">Registra tu Taller</Button>
         </div>
       </div>
     </header>

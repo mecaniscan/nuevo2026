@@ -8,12 +8,12 @@ export function Footer() {
                 <div className="flex items-center space-x-2">
                     <Wrench className="h-6 w-6 text-primary" />
                     <p className="text-center text-sm leading-loose text-muted-foreground md:text-left">
-                        Built by MechConnect. &copy; {new Date().getFullYear()} All rights reserved.
+                        Creado por MechConnect. &copy; {new Date().getFullYear()} Todos los derechos reservados.
                     </p>
                 </div>
                 <div className="flex space-x-4">
-                    <Link href="#" className="text-sm text-muted-foreground hover:text-primary">Privacy Policy</Link>
-                    <Link href="#" className="text-sm text-muted-foreground hover:text-primary">Terms of Service</Link>
+                    <Link href="#" className="text-sm text-muted-foreground hover:text-primary">Política de Privacidad</Link>
+                    <Link href="#" className="text-sm text-muted-foreground hover:text-primary">Términos de Servicio</Link>
                 </div>
             </div>
         </footer>

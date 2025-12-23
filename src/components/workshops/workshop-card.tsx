@@ -24,7 +24,7 @@ export function WorkshopCard({ workshop }: WorkshopCardProps) {
             />
             {workshop.hasObdiiScanner && (
                 <Badge variant="default" className="absolute top-2 right-2 bg-accent text-accent-foreground border-transparent shadow-md">
-                    <ScanLine className="mr-1.5 h-4 w-4" /> OBD-II Scanner
+                    <ScanLine className="mr-1.5 h-4 w-4" /> Escáner OBD-II
                 </Badge>
             )}
         </div>
@@ -37,19 +37,19 @@ export function WorkshopCard({ workshop }: WorkshopCardProps) {
         <div className="flex items-center gap-1.5 mb-4">
             <Star className="h-5 w-5 fill-amber-400 text-amber-400" />
             <span className="font-bold text-foreground">{workshop.rating}</span>
-            <span className="text-sm text-muted-foreground">({workshop.reviewCount} reviews)</span>
+            <span className="text-sm text-muted-foreground">({workshop.reviewCount} reseñas)</span>
         </div>
         <div className="flex flex-wrap gap-2 mt-auto">
             {workshop.services.slice(0, 3).map(service => (
                 <Badge key={service} variant="secondary">{service}</Badge>
             ))}
             {workshop.services.length > 3 && (
-                <Badge variant="outline">+{workshop.services.length-3} more</Badge>
+                <Badge variant="outline">+{workshop.services.length-3} más</Badge>
             )}
         </div>
       </div>
       <CardFooter>
-        <Button className="w-full">Book Appointment</Button>
+        <Button className="w-full">Reservar Cita</Button>
       </CardFooter>
     </Card>
   );

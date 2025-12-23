@@ -15,7 +15,7 @@ import { Loader2, ScanLine } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 
 const FormSchema = z.object({
-  errorCode: z.string().min(4, { message: 'Error code must be at least 4 characters.' }).regex(/^[A-Z0-9]+$/, { message: 'Invalid characters in error code.' }),
+  errorCode: z.string().min(4, { message: 'El código de error debe tener al menos 4 caracteres.' }).regex(/^[A-Z0-9]+$/, { message: 'Caracteres inválidos en el código de error.' }),
 });
 
 export function OBDII_Decoder() {
@@ -39,7 +39,7 @@ export function OBDII_Decoder() {
       toast({
         variant: "destructive",
         title: "Error",
-        description: "Failed to decode error code. Please check the code and try again.",
+        description: "No se pudo decodificar el código de error. Por favor, verifica el código e intenta de nuevo.",
       });
       console.error(e);
     } finally {
@@ -52,10 +52,10 @@ export function OBDII_Decoder() {
       <div className="container px-4 md:px-6">
         <div className="grid gap-10 lg:grid-cols-2 lg:gap-16">
           <div className="space-y-4">
-            <div className="inline-block rounded-lg bg-secondary px-3 py-1 text-sm">AI-Powered Diagnostics</div>
-            <h2 className="text-3xl font-bold tracking-tighter sm:text-4xl md:text-5xl font-headline text-primary">Decode Your Car's Problems</h2>
+            <div className="inline-block rounded-lg bg-secondary px-3 py-1 text-sm">Diagnóstico con IA</div>
+            <h2 className="text-3xl font-bold tracking-tighter sm:text-4xl md:text-5xl font-headline text-primary">Decodifica los Problemas de tu Auto</h2>
             <p className="max-w-[600px] text-muted-foreground md:text-xl/relaxed lg:text-base/relaxed xl:text-xl/relaxed">
-              Enter the error code from your OBD-II scanner to get an instant analysis of the issue, potential causes, and common solutions. Take control of your car maintenance.
+              Ingresa el código de error de tu escáner OBD-II para obtener un análisis instantáneo del problema, las posibles causas y las soluciones comunes. Toma el control del mantenimiento de tu auto.
             </p>
           </div>
           <div className="flex items-center justify-center">
@@ -63,8 +63,8 @@ export function OBDII_Decoder() {
               <Form {...form}>
                 <form onSubmit={form.handleSubmit(onSubmit)}>
                   <CardHeader>
-                    <CardTitle>OBD-II Error Code Decoder</CardTitle>
-                    <CardDescription>Enter your code (e.g., P0171)</CardDescription>
+                    <CardTitle>Decodificador de Códigos de Error OBD-II</CardTitle>
+                    <CardDescription>Ingresa tu código (ej. P0171)</CardDescription>
                   </CardHeader>
                   <CardContent className="space-y-4">
                     <FormField
@@ -72,7 +72,7 @@ export function OBDII_Decoder() {
                       name="errorCode"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>Error Code</FormLabel>
+                          <FormLabel>Código de Error</FormLabel>
                           <FormControl>
                             <Input placeholder="P0171" {...field} className="uppercase" />
                           </FormControl>
@@ -84,25 +84,25 @@ export function OBDII_Decoder() {
                   <CardFooter>
                     <Button type="submit" disabled={isLoading} className="w-full bg-accent text-accent-foreground hover:bg-accent/90">
                       {isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <ScanLine className="mr-2 h-4 w-4" />}
-                      Decode
+                      Decodificar
                     </Button>
                   </CardFooter>
                 </form>
               </Form>
               {result && (
                 <CardContent className="animate-in fade-in-50 duration-500">
-                  <h3 className="text-lg font-semibold mt-4">Results for {result.code}</h3>
+                  <h3 className="text-lg font-semibold mt-4">Resultados para {result.code}</h3>
                   <Accordion type="single" collapsible className="w-full mt-2" defaultValue="description">
                     <AccordionItem value="description">
-                      <AccordionTrigger>Description</AccordionTrigger>
+                      <AccordionTrigger>Descripción</AccordionTrigger>
                       <AccordionContent>{result.description}</AccordionContent>
                     </AccordionItem>
                     <AccordionItem value="causes">
-                      <AccordionTrigger>Potential Causes</AccordionTrigger>
+                      <AccordionTrigger>Causas Potenciales</AccordionTrigger>
                       <AccordionContent className="whitespace-pre-line">{result.potentialCauses}</AccordionContent>
                     </AccordionItem>
                     <AccordionItem value="solutions">
-                      <AccordionTrigger>Common Solutions</AccordionTrigger>
+                      <AccordionTrigger>Soluciones Comunes</AccordionTrigger>
                       <AccordionContent className="whitespace-pre-line">{result.commonSolutions}</AccordionContent>
                     </AccordionItem>
                   </Accordion>

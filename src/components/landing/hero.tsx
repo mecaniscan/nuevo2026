@@ -23,20 +23,20 @@ export function HeroSection() {
             <div className="relative z-10 flex flex-col items-center justify-center h-full text-center text-foreground px-4">
                  <div className="bg-black/30 backdrop-blur-sm p-8 rounded-xl border border-white/10">
                     <h1 className="text-4xl font-bold tracking-tight text-primary sm:text-5xl md:text-6xl lg:text-7xl font-headline">
-                        Your Car's Best Friend
+                        El Mejor Amigo de tu Auto
                     </h1>
                     <p className="mt-4 max-w-2xl text-lg text-foreground/80 md:text-xl">
-                        Instantly decode check engine lights and connect with trusted local mechanics.
+                        Decodifica al instante las luces de check engine y conéctate con mecánicos locales de confianza.
                     </p>
                     <div className="mt-8 flex flex-wrap justify-center gap-4">
                         <Button asChild size="lg" className="bg-accent text-accent-foreground hover:bg-accent/90">
                             <Link href="#workshops">
-                                Find a Workshop <ArrowRight className="ml-2 h-5 w-5" />
+                                Encontrar un Taller <ArrowRight className="ml-2 h-5 w-5" />
                             </Link>
                         </Button>
                         <Button asChild size="lg" variant="outline" className="bg-background/50 border-white/20 hover:bg-background/80">
                              <Link href="#decoder">
-                                Decode a Problem
+                                Decodificar un Problema
                             </Link>
                         </Button>
                     </div>
