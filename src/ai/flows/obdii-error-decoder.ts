@@ -7,11 +7,9 @@
  */
 
 import {ai} from '@/ai/genkit';
-import { ObdiiErrorDecoderInputSchema, ObdiiErrorDecoderOutputSchema, type ObdiiErrorDecoderInput } from '../schemas';
+import { ObdiiErrorDecoderInputSchema, ObdiiErrorDecoderOutputSchema, type ObdiiErrorDecoderInput, type ObdiiErrorDecoderOutput } from '../schemas';
 
-export { type ObdiiErrorDecoderOutput } from '../schemas';
-
-export async function decodeObdiiError(input: ObdiiErrorDecoderInput): Promise<import("../schemas").ObdiiErrorDecoderOutput> {
+export async function decodeObdiiError(input: ObdiiErrorDecoderInput): Promise<ObdiiErrorDecoderOutput> {
   return decodeObdiiErrorFlow(input);
 }
 

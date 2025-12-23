@@ -31,7 +31,7 @@ export async function decodeObdiiErrorFromImage(input: ObdiiVisualDecoderInput):
 
 const obdiiVisualDecoderPrompt = ai.definePrompt({
   name: 'obdiiVisualDecoderPrompt',
-  input: { schema: z.object({ imageDataUri: z.string() }) },
+  input: { schema: ObdiiVisualDecoderInputSchema },
   output: { schema: z.object({ errorCode: z.string().describe('El código de error OBD-II encontrado en la imagen. Por ejemplo, P0171.') }) },
   prompt: `Analiza la siguiente imagen de un escáner OBD-II o del tablero de un vehículo. Tu única tarea es identificar y extraer el código de error OBD-II. El código generalmente comienza con una letra (P, B, C, U) seguida de cuatro números. Devuelve solo el código. Si no se puede encontrar un código claro, devuelve "NONE".
 
