@@ -37,14 +37,14 @@ export function Header() {
         </div>
         <div className="flex flex-1 items-center justify-end space-x-4">
           {!user && !isUserLoading && (
-            <Button variant="outline" className="hidden sm:inline-flex" onClick={handleLogin}>Iniciar Sesión</Button>
+            <Button onClick={handleLogin}>Iniciar Sesión</Button>
           )}
           {user && (
-             <Button asChild variant="outline" className="hidden sm:inline-flex">
+             <Button asChild>
                 <Link href="/dashboard">Mi Cuenta</Link>
              </Button>
           )}
-          <Button asChild className="bg-accent text-accent-foreground hover:bg-accent/90">
+          <Button asChild variant="secondary">
             <Link href="/dashboard/register-workshop">Registra tu Taller</Link>
           </Button>
         </div>
