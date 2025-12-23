@@ -4,7 +4,7 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { Button } from '@/components/ui/button';
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
+import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { useUser, useFirestore, useMemoFirebase, deleteDocumentNonBlocking } from '@/firebase';
@@ -12,8 +12,9 @@ import { collection, query, orderBy, doc } from 'firebase/firestore';
 import { useCollection } from '@/firebase/firestore/use-collection';
 import { addDocumentNonBlocking, updateDocumentNonBlocking } from '@/firebase/non-blocking-updates';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2, PlusCircle, Car, Trash2, Pencil, Save } from 'lucide-react';
+import { Loader2, PlusCircle, Car, Trash2, Pencil, Save, Image as ImageIcon } from 'lucide-react';
 import Link from 'next/link';
+import Image from 'next/image';
 import type { Vehicle } from '@/lib/types';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import {
@@ -46,6 +47,9 @@ const vehicleSchema = z.object({
     (a) => parseInt(z.string().parse(a), 10),
     z.number().min(0, 'El kilometraje no puede ser negativo.')
   ),
+  imageUrl1: z.string().url('URL de imagen no válida.').optional().or(z.literal('')),
+  imageUrl2: z.string().url('URL de imagen no válida.').optional().or(z.literal('')),
+  imageUrl3: z.string().url('URL de imagen no válida.').optional().or(z.literal('')),
 });
 
 
@@ -79,6 +83,9 @@ export default function MyVehiclesPage() {
       licensePlate: '',
       price: 0,
       currentMileage: 0,
+      imageUrl1: '',
+      imageUrl2: '',
+      imageUrl3: '',
     },
   });
 
@@ -90,17 +97,25 @@ export default function MyVehiclesPage() {
 
     setIsSubmitting(true);
 
+    // Filter out empty URLs and create the imageUrls array
+    const imageUrls = [values.imageUrl1, values.imageUrl2, values.imageUrl3].filter(url => url && url.trim() !== '');
+    
+    // Create the data object without the individual imageUrl fields
+    const { imageUrl1, imageUrl2, imageUrl3, ...vehicleBaseData } = values;
+    const vehicleDataWithUrls = { ...vehicleBaseData, imageUrls };
+
+
     try {
       if (editingVehicleId) {
         const docRef = doc(firestore, `users/${user.uid}/vehicles`, editingVehicleId);
-        updateDocumentNonBlocking(docRef, values);
+        updateDocumentNonBlocking(docRef, vehicleDataWithUrls);
         toast({
           title: '¡Vehículo Actualizado!',
           description: 'Tu vehículo ha sido actualizado.',
         });
         setEditingVehicleId(null);
       } else {
-        const vehicleData = { ...values, userId: user.uid };
+        const vehicleData = { ...vehicleDataWithUrls, userId: user.uid };
         addDocumentNonBlocking(collection(firestore, `users/${user.uid}/vehicles`), vehicleData);
         toast({
           title: '¡Vehículo Añadido!',
@@ -135,7 +150,13 @@ export default function MyVehiclesPage() {
 
   function handleEditVehicle(vehicle: Vehicle) {
     setEditingVehicleId(vehicle.id);
-    form.reset(vehicle);
+    const formValues = {
+        ...vehicle,
+        imageUrl1: vehicle.imageUrls?.[0] || '',
+        imageUrl2: vehicle.imageUrls?.[1] || '',
+        imageUrl3: vehicle.imageUrls?.[2] || '',
+    };
+    form.reset(formValues);
   }
 
   const isLoading = isUserLoading || areVehiclesLoading;
@@ -172,6 +193,17 @@ export default function MyVehiclesPage() {
                     <FormField control={form.control} name="vin" render={({ field }) => (<FormItem><FormLabel>Código VIN</FormLabel><FormControl><Input placeholder="17 caracteres" {...field} /></FormControl><FormMessage /></FormItem>)} />
                   </div>
                 </div>
+
+                <div className="space-y-4 pt-4 border-t">
+                    <FormLabel className="flex items-center gap-2"><ImageIcon /> Imágenes del Vehículo (Opcional)</FormLabel>
+                    <FormDescription>Añade hasta 3 URLs de imágenes para tu vehículo.</FormDescription>
+                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <FormField control={form.control} name="imageUrl1" render={({ field }) => (<FormItem><FormLabel>URL Imagen 1</FormLabel><FormControl><Input placeholder="https://ejemplo.com/imagen1.jpg" {...field} /></FormControl><FormMessage /></FormItem>)} />
+                        <FormField control={form.control} name="imageUrl2" render={({ field }) => (<FormItem><FormLabel>URL Imagen 2</FormLabel><FormControl><Input placeholder="https://ejemplo.com/imagen2.jpg" {...field} /></FormControl><FormMessage /></FormItem>)} />
+                        <FormField control={form.control} name="imageUrl3" render={({ field }) => (<FormItem><FormLabel>URL Imagen 3</FormLabel><FormControl><Input placeholder="https://ejemplo.com/imagen3.jpg" {...field} /></FormControl><FormMessage /></FormItem>)} />
+                    </div>
+                </div>
+
                 <div className="flex gap-4">
                   <Button type="submit" disabled={isSubmitting}>
                     {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
@@ -209,7 +241,14 @@ export default function MyVehiclesPage() {
                             {vehicles && vehicles.length > 0 ? (
                                 vehicles.map((vehicle) => (
                                     <TableRow key={vehicle.id}>
-                                        <TableCell className="font-medium">{vehicle.brand} {vehicle.model}</TableCell>
+                                        <TableCell className="font-medium flex items-center gap-3">
+                                            {vehicle.imageUrls && vehicle.imageUrls[0] ? (
+                                                <Image src={vehicle.imageUrls[0]} alt={`${vehicle.brand} ${vehicle.model}`} width={64} height={40} className="rounded-md object-cover w-16 h-10"/>
+                                            ) : (
+                                                <div className="w-16 h-10 rounded-md bg-muted flex items-center justify-center text-muted-foreground"><Car/></div>
+                                            )}
+                                            {vehicle.brand} {vehicle.model}
+                                        </TableCell>
                                         <TableCell>{vehicle.year}</TableCell>
                                         <TableCell>{vehicle.licensePlate}</TableCell>
                                         <TableCell>{vehicle.currentMileage?.toLocaleString()} km</TableCell>
@@ -262,3 +301,5 @@ export default function MyVehiclesPage() {
     </div>
   );
 }
+
+    

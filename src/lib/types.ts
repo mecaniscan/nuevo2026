@@ -68,6 +68,7 @@ export type Vehicle = {
     licensePlate: string;
     price: number;
     currentMileage: number;
+    imageUrls?: string[];
 };
 
 export type FavoriteWorkshop = {
@@ -79,4 +80,6 @@ export type FavoriteWorkshop = {
     addedAt: Timestamp;
 }
     
+    
+
     
