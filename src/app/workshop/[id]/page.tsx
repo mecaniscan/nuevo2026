@@ -190,6 +190,7 @@ export default function WorkshopDetailPage() {
                 description: 'Redirigiendo a WhatsApp para que confirmes tu cita con el taller.',
             });
             appointmentForm.reset();
+            router.push('/dashboard');
 
         } catch (error) {
             console.error('Error creating appointment record:', error);
@@ -507,6 +508,7 @@ export default function WorkshopDetailPage() {
                         ) : (
                             <div className="flex flex-col items-center justify-center text-center space-y-4 p-8 border-2 border-dashed rounded-lg">
                                 <p className="text-muted-foreground">Debes iniciar sesión para poder agendar una cita.</p>
+
                                 <Button onClick={handleLogin}>Iniciar Sesión</Button>
                             </div>
                         )}
@@ -517,5 +519,3 @@ export default function WorkshopDetailPage() {
     </div>
   );
 }
-
-    
