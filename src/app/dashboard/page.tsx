@@ -167,7 +167,6 @@ export default function DashboardPage() {
     try {
       await initiateEmailSignIn(auth, values.email, values.password);
     } catch (error: any) {
-      console.error("Login Error:", error.code);
       if (error.code === 'auth/invalid-credential' || error.code === 'auth/wrong-password' || error.code === 'auth/user-not-found') {
         toast({
           variant: 'destructive',
