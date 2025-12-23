@@ -1,6 +1,6 @@
 'use client';
 
-import { useUser, useFirestore, useMemoFirebase, deleteDocumentNonBlocking } from '@/firebase';
+import { useUser, useFirestore, useMemoFirebase, deleteDocumentNonBlocking, useDoc } from '@/firebase';
 import { collection, query, where, doc, orderBy, limit } from 'firebase/firestore';
 import { useCollection } from '@/firebase/firestore/use-collection';
 import type { Workshop, Appointment, OilChange, Vehicle } from '@/lib/types';
@@ -112,10 +112,10 @@ export default function DashboardPage() {
   const nextOilChange = nextOilChanges?.[0];
 
   const vehicleQuery = useMemoFirebase(() => {
-    if (!firestore || !nextOilChange) return null;
+    if (!firestore || !user || !nextOilChange) return null;
     return doc(firestore, `users/${user.uid}/vehicles`, nextOilChange.vehicleId);
-  }, [firestore, nextOilChange]);
-  const { data: mainVehicle, isLoading: isVehicleLoading } = useCollection<Vehicle>(vehicleQuery);
+  }, [firestore, user, nextOilChange]);
+  const { data: mainVehicle, isLoading: isVehicleLoading } = useDoc<Vehicle>(vehicleQuery);
 
 
   // --- Event Handlers ---
