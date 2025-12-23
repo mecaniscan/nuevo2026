@@ -37,8 +37,7 @@ const appointmentSchema = z.object({
     appointmentDateTime: z.date({
         required_error: 'Se requiere una fecha para la cita.',
     }),
-    serviceId: z.string({ required_error: 'Debes seleccionar un servicio.'}),
-    description: z.string().optional(),
+    description: z.string().min(10, 'La descripción debe tener al menos 10 caracteres.'),
 });
 
 
@@ -104,30 +103,22 @@ export default function WorkshopDetailPage() {
         }
         setIsSubmitting(true);
         
-        const selectedService = workshopServices.find(s => s.id === values.serviceId);
-        if (!selectedService) {
-            toast({ variant: 'destructive', title: 'Error', description: 'Servicio no válido seleccionado.' });
-            setIsSubmitting(false);
-            return;
-        }
 
         try {
             const appointmentsCollection = collection(firestore, 'users', user.uid, 'appointments');
-            const appointmentData: Omit<Appointment, 'id'> = {
+            const appointmentData: Omit<Appointment, 'id' | 'serviceId' | 'serviceName'> = {
                 appointmentDateTime: values.appointmentDateTime.toISOString(),
                 workshopId: workshopId,
                 userId: user.uid,
-                serviceId: values.serviceId,
-                serviceName: selectedService.name,
                 status: 'scheduled',
-                description: values.description || "Cita para " + selectedService.name,
+                description: values.description,
             };
             
             addDocumentNonBlocking(appointmentsCollection, appointmentData);
 
             toast({
                 title: '¡Cita Agendada!',
-                description: `Tu cita para ${selectedService.name} en ${workshop?.name} ha sido programada.`,
+                description: `Tu cita en ${workshop?.name} ha sido programada.`,
             });
             router.push('/dashboard');
         } catch (error) {
@@ -226,36 +217,12 @@ export default function WorkshopDetailPage() {
                 <Card className="sticky top-24 shadow-xl">
                     <CardHeader>
                         <CardTitle>Agendar una Cita</CardTitle>
-                        <CardDescription>Selecciona un servicio, fecha y describe tu problema.</CardDescription>
+                        <CardDescription>Selecciona una fecha y describe el problema de tu vehículo.</CardDescription>
                     </CardHeader>
                     <CardContent>
                         {user ? (
                         <Form {...form}>
                             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-                                <FormField
-                                    control={form.control}
-                                    name="serviceId"
-                                    render={({ field }) => (
-                                        <FormItem>
-                                        <FormLabel>Servicio</FormLabel>
-                                        <Select onValueChange={field.onChange} defaultValue={field.value}>
-                                            <FormControl>
-                                            <SelectTrigger>
-                                                <SelectValue placeholder="Selecciona un servicio" />
-                                            </SelectTrigger>
-                                            </FormControl>
-                                            <SelectContent>
-                                            {workshopServices.map(service => (
-                                                <SelectItem key={service.id} value={service.id}>
-                                                    {service.name} - ${service.price}
-                                                </SelectItem>
-                                            ))}
-                                            </SelectContent>
-                                        </Select>
-                                        <FormMessage />
-                                        </FormItem>
-                                    )}
-                                />
                                  <FormField
                                     control={form.control}
                                     name="appointmentDateTime"
@@ -302,9 +269,9 @@ export default function WorkshopDetailPage() {
                                     name="description"
                                     render={({ field }) => (
                                     <FormItem>
-                                        <FormLabel>Notas Adicionales (Opcional)</FormLabel>
+                                        <FormLabel>Describe el servicio que necesitas</FormLabel>
                                         <FormControl>
-                                        <Textarea placeholder="Ej: El ruido es más fuerte al girar a la derecha." {...field} />
+                                        <Textarea placeholder="Ej: El auto hace un ruido extraño al frenar, necesito una revisión de frenos." {...field} />
                                         </FormControl>
                                         <FormMessage />
                                     </FormItem>

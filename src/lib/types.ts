@@ -23,8 +23,8 @@ export type Appointment = {
     id: string;
     workshopId: string;
     userId: string;
-    serviceId: string; 
-    serviceName: string; // Denormalized service name
+    serviceId?: string; 
+    serviceName?: string; // Denormalized service name
     appointmentDateTime: string;
     description: string;
     status: 'scheduled' | 'completed' | 'cancelled';
