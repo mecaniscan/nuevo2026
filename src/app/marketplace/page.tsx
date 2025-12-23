@@ -5,8 +5,8 @@ import { collection } from 'firebase/firestore';
 import type { Vehicle } from '@/lib/types';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Loader2, MapPin, Car } from 'lucide-react';
+import { Input } from '@/components/ui/input';
+import { Loader2, MapPin, Car, Search } from 'lucide-react';
 import { Header } from '@/components/layout/header';
 import { Footer } from '@/components/layout/footer';
 import Link from 'next/link';
@@ -30,7 +30,6 @@ function VehicleCard({ vehicle }: { vehicle: Vehicle }) {
             <p className="text-2xl font-bold text-primary pt-2">${vehicle.price.toLocaleString('es-AR')}</p>
         </CardContent>
         <CardFooter>
-            {/* The link could lead to a detailed vehicle page in the future */}
             <Button className="w-full" asChild>
                 <Link href="#">Ver Detalles</Link> 
             </Button>
@@ -50,22 +49,12 @@ export default function MarketplacePage() {
   }, [firestore]);
 
   const { data: vehicles, isLoading } = useCollection<Vehicle>(marketplaceCollection);
-
-  const uniqueCountries = useMemo(() => {
-    if (!vehicles) return [];
-    return [...new Set(vehicles.map(v => v.country).filter(Boolean))];
-  }, [vehicles]);
   
-  const uniqueBrands = useMemo(() => {
-    if (!vehicles) return [];
-    return [...new Set(vehicles.map(v => v.brand).filter(Boolean))];
-  }, [vehicles]);
-
   const filteredVehicles = useMemo(() => {
     if (!vehicles) return [];
     return vehicles.filter(vehicle => {
-      const countryMatch = countryFilter ? vehicle.country === countryFilter : true;
-      const brandMatch = brandFilter ? vehicle.brand === brandFilter : true;
+      const countryMatch = countryFilter ? vehicle.country.toLowerCase().includes(countryFilter.toLowerCase()) : true;
+      const brandMatch = brandFilter ? vehicle.brand.toLowerCase().includes(brandFilter.toLowerCase()) : true;
       return countryMatch && brandMatch;
     });
   }, [vehicles, countryFilter, brandFilter]);
@@ -84,28 +73,24 @@ export default function MarketplacePage() {
 
            <div className="mx-auto max-w-6xl">
             <div className="flex flex-col sm:flex-row gap-4 mb-8 p-4 border rounded-lg bg-card sticky top-20 z-10 backdrop-blur-md shadow-lg">
-                {(vehicles && vehicles.length > 0) && (
-                    <>
-                        <div className="flex-1">
-                            <Select value={countryFilter} onValueChange={setCountryFilter}>
-                                <SelectTrigger><SelectValue placeholder="Filtrar por País" /></SelectTrigger>
-                                <SelectContent>
-                                    <SelectItem value="">Todos los Países</SelectItem>
-                                    {uniqueCountries.map(country => <SelectItem key={country} value={country}>{country}</SelectItem>)}
-                                </SelectContent>
-                            </Select>
-                        </div>
-                        <div className="flex-1">
-                            <Select value={brandFilter} onValueChange={setBrandFilter}>
-                                <SelectTrigger><SelectValue placeholder="Filtrar por Marca" /></SelectTrigger>
-                                <SelectContent>
-                                    <SelectItem value="">Todas las Marcas</SelectItem>
-                                    {uniqueBrands.map(brand => <SelectItem key={brand} value={brand}>{brand}</SelectItem>)}
-                                </SelectContent>
-                            </Select>
-                        </div>
-                    </>
-                )}
+                <div className="flex-1 relative">
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+                    <Input 
+                        placeholder="Filtrar por País..." 
+                        value={countryFilter}
+                        onChange={(e) => setCountryFilter(e.target.value)}
+                        className="pl-10"
+                    />
+                </div>
+                <div className="flex-1 relative">
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+                    <Input 
+                        placeholder="Filtrar por Marca..." 
+                        value={brandFilter}
+                        onChange={(e) => setBrandFilter(e.target.value)}
+                        className="pl-10"
+                    />
+                </div>
                  <Button variant="outline" onClick={() => {setBrandFilter(''); setCountryFilter('');}}>Limpiar Filtros</Button>
             </div>
 
@@ -132,5 +117,3 @@ export default function MarketplacePage() {
     </div>
   );
 }
-
-    
