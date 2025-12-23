@@ -6,7 +6,7 @@ import { useCollection } from '@/firebase/firestore/use-collection';
 import type { Workshop, Appointment, OilChange, Vehicle } from '@/lib/types';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Loader2, Calendar, Wrench, Trash2, Settings, Pencil, LogOut, User as UserIcon, Lock, ListPlus, Building, ArrowRight, Droplets, Car, Gauge, OilCan } from 'lucide-react';
+import { Loader2, Calendar, Wrench, Trash2, Settings, Pencil, LogOut, User as UserIcon, Lock, ListPlus, Building, ArrowRight, Droplets, Car, Gauge } from 'lucide-react';
 import Link from 'next/link';
 import { initiateAnonymousSignIn, initiateSignOut, initiateEmailSignIn } from '@/firebase/non-blocking-login';
 import { useAuth } from '@/firebase';
@@ -62,7 +62,7 @@ const VehicleSummaryCard = ({ vehicle, oilChange }: { vehicle: Vehicle, oilChang
                 <div className="space-y-2">
                     <div className="flex justify-between items-baseline">
                          <div className='flex items-center gap-2'>
-                            <OilCan className="text-primary"/>
+                            <Droplets className="text-primary"/>
                             <span className="text-sm font-medium">Próximo Cambio de Aceite</span>
                         </div>
                         <span className="text-sm font-semibold">{oilChange.nextChangeMileage.toLocaleString()} km</span>
