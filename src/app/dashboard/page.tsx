@@ -232,6 +232,7 @@ export default function DashboardPage() {
                                 <div className="flex justify-between items-start">
                                     <div>
                                         <p className="font-semibold capitalize">{format(new Date(appointment.appointmentDateTime), "EEEE, d 'de' MMMM", { locale: es })}</p>
+                                        <p className="text-sm text-muted-foreground">Servicio: {appointment.serviceName}</p>
                                         <p className="text-sm text-muted-foreground">Taller: ID {appointment.workshopId}</p>
                                     </div>
                                     <Badge variant={appointment.status === 'scheduled' ? 'default' : 'secondary'}>{appointment.status}</Badge>

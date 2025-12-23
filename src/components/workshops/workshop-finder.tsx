@@ -8,7 +8,7 @@ import { Switch } from '@/components/ui/switch';
 import { Search, Loader2 } from 'lucide-react';
 import { useCollection, useFirestore, useMemoFirebase } from '@/firebase';
 import { collection, query, where } from 'firebase/firestore';
-import type { Workshop } from '@/lib/types';
+import type { Workshop, Service } from '@/lib/types';
 import { PlaceHolderImages } from '@/lib/placeholder-images';
 
 
@@ -17,6 +17,7 @@ export function WorkshopFinder() {
   const [showObdOnly, setShowObdOnly] = useState(false);
   const firestore = useFirestore();
 
+  // Fetch Workshops
   const workshopsCollection = useMemoFirebase(() => {
     if (!firestore) return null;
     return collection(firestore, 'workshops');
@@ -30,24 +31,36 @@ export function WorkshopFinder() {
     return workshopsCollection;
   }, [workshopsCollection, showObdOnly]);
 
-  const { data: workshops, isLoading } = useCollection<Workshop>(workshopsQuery);
+  const { data: workshops, isLoading: isWorkshopsLoading } = useCollection<Workshop>(workshopsQuery);
   
+  // Fetch Master Services List
+  const servicesCollection = useMemoFirebase(() => {
+    if (!firestore) return null;
+    return collection(firestore, 'services');
+  }, [firestore]);
+
+  const { data: masterServices, isLoading: isServicesLoading } = useCollection<Service>(servicesCollection);
+
+
   const filteredWorkshops = useMemo(() => {
-    if (!workshops) return [];
-    // The workshop data is incomplete from Firestore, so we'll merge it with placeholder data
-    const enrichedWorkshops = workshops.map((workshop, index) => ({
-      ...workshop,
-      city: "Metropolis",
-      rating: 4.5 + (index * 0.1),
-      reviewCount: 50 + (index * 10),
-      services: ['Engine Repair', 'OBD-II Scan', 'Oil Change'],
-      image: PlaceHolderImages.find(p => p.id.startsWith('workshop')) || PlaceHolderImages[1],
-      hasObdiiScanner: workshop.obdScannerService
-    }));
+    if (!workshops || !masterServices) return [];
+    
+    const enrichedWorkshops = workshops.map((workshop, index) => {
+      const workshopServices = masterServices.filter(service => workshop.serviceIds?.includes(service.id));
+      return {
+        ...workshop,
+        city: "Metropolis",
+        rating: 4.5 + (index * 0.1),
+        reviewCount: 50 + (index * 10),
+        services: workshopServices,
+        image: PlaceHolderImages.find(p => p.id.startsWith('workshop')) || PlaceHolderImages[1],
+      }
+    });
 
     return enrichedWorkshops.filter(ws => ws.name.toLowerCase().includes(searchTerm.toLowerCase()));
-  }, [workshops, searchTerm]);
+  }, [workshops, masterServices, searchTerm]);
 
+  const isLoading = isWorkshopsLoading || isServicesLoading;
 
   return (
     <section id="workshops" className="w-full py-12 md:py-24 lg:py-32 bg-card/50">

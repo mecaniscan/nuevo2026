@@ -1,5 +1,5 @@
 import Image from 'next/image';
-import type { Workshop } from '@/lib/types';
+import type { Workshop, Service } from '@/lib/types';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -7,7 +7,7 @@ import { MapPin, ScanLine, Star } from 'lucide-react';
 import Link from 'next/link';
 
 type WorkshopCardProps = {
-  workshop: Workshop & { hasObdiiScanner: boolean };
+  workshop: Workshop & { services: Service[] };
 };
 
 export function WorkshopCard({ workshop }: WorkshopCardProps) {
@@ -42,7 +42,7 @@ export function WorkshopCard({ workshop }: WorkshopCardProps) {
         </div>
         <div className="flex flex-wrap gap-2 mt-auto">
             {workshop.services.slice(0, 3).map(service => (
-                <Badge key={service} variant="secondary">{service}</Badge>
+                <Badge key={service.id} variant="secondary">{service.name}</Badge>
             ))}
             {workshop.services.length > 3 && (
                 <Badge variant="outline">+{workshop.services.length-3} más</Badge>

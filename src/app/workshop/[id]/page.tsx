@@ -7,9 +7,9 @@ import * as z from 'zod';
 import { useParams, useRouter } from 'next/navigation';
 import Image from 'next/image';
 import Link from 'next/link';
-import { useDoc, useUser, useFirestore, useMemoFirebase } from '@/firebase';
+import { useDoc, useUser, useFirestore, useMemoFirebase, useCollection } from '@/firebase';
 import { doc, collection } from 'firebase/firestore';
-import type { Workshop, Appointment } from '@/lib/types';
+import type { Workshop, Appointment, Service } from '@/lib/types';
 import { addDocumentNonBlocking } from '@/firebase/non-blocking-updates';
 import { PlaceHolderImages } from '@/lib/placeholder-images';
 import { Loader2, MapPin, ScanLine, Star, Calendar as CalendarIcon, Wrench } from 'lucide-react';
@@ -25,12 +25,20 @@ import { format } from 'date-fns';
 import { useToast } from '@/hooks/use-toast';
 import { initiateAnonymousSignIn } from '@/firebase/non-blocking-login';
 import { useAuth } from '@/firebase';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
 
 const appointmentSchema = z.object({
     appointmentDateTime: z.date({
-        required_error: 'Se requiere una fecha y hora.',
+        required_error: 'Se requiere una fecha para la cita.',
     }),
-    description: z.string().min(10, 'La descripción debe tener al menos 10 caracteres.'),
+    serviceId: z.string({ required_error: 'Debes seleccionar un servicio.'}),
+    description: z.string().optional(),
 });
 
 
@@ -46,13 +54,21 @@ export default function WorkshopDetailPage() {
 
     const [isSubmitting, setIsSubmitting] = React.useState(false);
 
+    // Fetch Workshop
     const workshopRef = useMemoFirebase(() => {
         if (!firestore || !workshopId) return null;
         return doc(firestore, 'workshops', workshopId);
     }, [firestore, workshopId]);
-
     const { data: workshopData, isLoading: isWorkshopLoading } = useDoc<Workshop>(workshopRef);
     
+    // Fetch Master Services
+    const servicesCollection = useMemoFirebase(() => {
+        if (!firestore) return null;
+        return collection(firestore, 'services');
+      }, [firestore]);
+    const { data: masterServices, isLoading: isServicesLoading } = useCollection<Service>(servicesCollection);
+
+
     const form = useForm<z.infer<typeof appointmentSchema>>({
         resolver: zodResolver(appointmentSchema),
         defaultValues: {
@@ -60,18 +76,22 @@ export default function WorkshopDetailPage() {
         },
     });
 
+    const workshopServices = useMemo(() => {
+        if (!workshopData || !masterServices) return [];
+        return masterServices.filter(service => workshopData.serviceIds?.includes(service.id));
+    }, [workshopData, masterServices]);
+
     const workshop = useMemo(() => {
         if (!workshopData) return null;
-        // The workshop data is incomplete from Firestore, so we'll merge it with placeholder data
         return {
           ...workshopData,
           city: "Metropolis",
           rating: 4.5,
           reviewCount: 50,
-          services: ['Reparación de Motor', 'Escáner OBD-II', 'Cambio de Aceite', 'Rotación de Llantas', 'Alineación y Balanceo', 'Frenos'],
+          services: workshopServices,
           image: PlaceHolderImages.find(p => p.id.startsWith('workshop')) || PlaceHolderImages[1],
         };
-    }, [workshopData]);
+    }, [workshopData, workshopServices]);
 
     const handleLogin = () => {
         initiateAnonymousSignIn(auth);
@@ -84,22 +104,30 @@ export default function WorkshopDetailPage() {
         }
         setIsSubmitting(true);
         
+        const selectedService = workshopServices.find(s => s.id === values.serviceId);
+        if (!selectedService) {
+            toast({ variant: 'destructive', title: 'Error', description: 'Servicio no válido seleccionado.' });
+            setIsSubmitting(false);
+            return;
+        }
+
         try {
             const appointmentsCollection = collection(firestore, 'users', user.uid, 'appointments');
-            const appointmentData = {
-                ...values,
+            const appointmentData: Omit<Appointment, 'id'> = {
                 appointmentDateTime: values.appointmentDateTime.toISOString(),
                 workshopId: workshopId,
                 userId: user.uid,
-                serviceId: 'general', // Placeholder
+                serviceId: values.serviceId,
+                serviceName: selectedService.name,
                 status: 'scheduled',
+                description: values.description || "Cita para " + selectedService.name,
             };
             
-            addDocumentNonBlocking(appointmentsCollection, appointmentData as Omit<Appointment, 'id'>);
+            addDocumentNonBlocking(appointmentsCollection, appointmentData);
 
             toast({
                 title: '¡Cita Agendada!',
-                description: `Tu cita en ${workshop?.name} ha sido programada.`,
+                description: `Tu cita para ${selectedService.name} en ${workshop?.name} ha sido programada.`,
             });
             router.push('/dashboard');
         } catch (error) {
@@ -114,7 +142,7 @@ export default function WorkshopDetailPage() {
         }
     }
 
-    if (isWorkshopLoading || isUserLoading) {
+    if (isWorkshopLoading || isUserLoading || isServicesLoading) {
         return (
             <div className="flex min-h-screen items-center justify-center">
                 <Loader2 className="h-16 w-16 animate-spin text-primary" />
@@ -183,8 +211,8 @@ export default function WorkshopDetailPage() {
                             <h3 className="font-semibold text-lg mb-3">Servicios Ofrecidos</h3>
                             <div className="flex flex-wrap gap-3">
                                 {workshop.services.map(service => (
-                                    <Badge key={service} variant="secondary" className="text-base px-4 py-2 flex items-center gap-2">
-                                        <Wrench className="h-4 w-4" /> {service}
+                                    <Badge key={service.id} variant="secondary" className="text-base px-4 py-2 flex items-center gap-2">
+                                        <Wrench className="h-4 w-4" /> {service.name} (${service.price})
                                     </Badge>
                                 ))}
                             </div>
@@ -198,12 +226,36 @@ export default function WorkshopDetailPage() {
                 <Card className="sticky top-24 shadow-xl">
                     <CardHeader>
                         <CardTitle>Agendar una Cita</CardTitle>
-                        <CardDescription>Selecciona una fecha y describe tu problema.</CardDescription>
+                        <CardDescription>Selecciona un servicio, fecha y describe tu problema.</CardDescription>
                     </CardHeader>
                     <CardContent>
                         {user ? (
                         <Form {...form}>
                             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+                                <FormField
+                                    control={form.control}
+                                    name="serviceId"
+                                    render={({ field }) => (
+                                        <FormItem>
+                                        <FormLabel>Servicio</FormLabel>
+                                        <Select onValueChange={field.onChange} defaultValue={field.value}>
+                                            <FormControl>
+                                            <SelectTrigger>
+                                                <SelectValue placeholder="Selecciona un servicio" />
+                                            </SelectTrigger>
+                                            </FormControl>
+                                            <SelectContent>
+                                            {workshopServices.map(service => (
+                                                <SelectItem key={service.id} value={service.id}>
+                                                    {service.name} - ${service.price}
+                                                </SelectItem>
+                                            ))}
+                                            </SelectContent>
+                                        </Select>
+                                        <FormMessage />
+                                        </FormItem>
+                                    )}
+                                />
                                  <FormField
                                     control={form.control}
                                     name="appointmentDateTime"
@@ -250,9 +302,9 @@ export default function WorkshopDetailPage() {
                                     name="description"
                                     render={({ field }) => (
                                     <FormItem>
-                                        <FormLabel>Describe el Problema</FormLabel>
+                                        <FormLabel>Notas Adicionales (Opcional)</FormLabel>
                                         <FormControl>
-                                        <Textarea placeholder="Ej: Ruido extraño en el motor al acelerar..." {...field} />
+                                        <Textarea placeholder="Ej: El ruido es más fuerte al girar a la derecha." {...field} />
                                         </FormControl>
                                         <FormMessage />
                                     </FormItem>
