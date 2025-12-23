@@ -71,6 +71,9 @@ export default function MarketplacePage() {
     return [...new Set(vehicles.map(v => v.brand).filter(Boolean))];
   }, [vehicles]);
 
+  console.log("Unique Countries:", uniqueCountries);
+  console.log("Unique Brands:", uniqueBrands);
+
 
   const filteredVehicles = useMemo(() => {
     if (!vehicles) return [];
