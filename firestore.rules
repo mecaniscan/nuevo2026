@@ -170,7 +170,10 @@ service cloud.firestore {
        * @allow (get, list, create, update, delete) A user can manage their own oil change records.
        */
       match /oilChanges/{oilChangeId} {
-        allow get, list, create, update, delete: if isOwner(userId);
+        allow get, list: if isOwner(userId);
+        allow create: if isOwner(userId) && request.resource.data.userId == userId;
+        allow update: if isExistingOwner(userId) && request.resource.data.userId == resource.data.userId;
+        allow delete: if isExistingOwner(userId);
       }
       
       /**
@@ -181,7 +184,8 @@ service cloud.firestore {
        */
       match /vehicles/{vehicleId} {
         allow get, list: if isOwner(userId);
-        allow create, update, delete: if isOwner(userId) && request.resource.data.userId == userId;
+        allow create, update: if isOwner(userId) && request.resource.data.userId == userId;
+        allow delete: if isExistingOwner(userId) && resource.data.userId == userId;
       }
     }
   }
