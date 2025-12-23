@@ -38,6 +38,10 @@ const vehicleSchema = z.object({
   ),
   vin: z.string().length(17, 'El VIN debe tener 17 caracteres.'),
   licensePlate: z.string().min(3, 'La placa es muy corta.'),
+  price: z.preprocess(
+    (a) => parseFloat(z.string().parse(a)),
+    z.number().positive('El precio debe ser un número positivo.')
+  ),
 });
 
 export default function MyVehiclesPage() {
@@ -67,6 +71,7 @@ export default function MyVehiclesPage() {
       year: new Date().getFullYear(),
       vin: '',
       licensePlate: '',
+      price: 0,
     },
   });
 
@@ -183,6 +188,17 @@ export default function MyVehiclesPage() {
                       </FormItem>
                     )}
                   />
+                   <FormField
+                    control={form.control}
+                    name="price"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Precio ($)</FormLabel>
+                        <FormControl><Input type="number" step="0.01" placeholder="25000.00" {...field} /></FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
                   <FormField
                     control={form.control}
                     name="licensePlate"
@@ -194,17 +210,19 @@ export default function MyVehiclesPage() {
                       </FormItem>
                     )}
                   />
-                  <FormField
-                    control={form.control}
-                    name="vin"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Código VIN</FormLabel>
-                        <FormControl><Input placeholder="17 caracteres" {...field} /></FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
+                  <div className="lg:col-span-2">
+                    <FormField
+                      control={form.control}
+                      name="vin"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Código VIN</FormLabel>
+                          <FormControl><Input placeholder="17 caracteres" {...field} /></FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </div>
                 </div>
                 <Button type="submit" disabled={isSubmitting}>
                   {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
@@ -231,6 +249,7 @@ export default function MyVehiclesPage() {
                                 <TableHead>Año</TableHead>
                                 <TableHead>Placa</TableHead>
                                 <TableHead>VIN</TableHead>
+                                <TableHead>Precio</TableHead>
                                 <TableHead className="text-right">Acciones</TableHead>
                             </TableRow>
                         </TableHeader>
@@ -242,6 +261,7 @@ export default function MyVehiclesPage() {
                                         <TableCell>{vehicle.year}</TableCell>
                                         <TableCell>{vehicle.licensePlate}</TableCell>
                                         <TableCell className="font-mono text-xs">{vehicle.vin}</TableCell>
+                                        <TableCell>${vehicle.price?.toFixed(2)}</TableCell>
                                         <TableCell className="text-right">
                                             <AlertDialog>
                                                 <AlertDialogTrigger asChild>
@@ -273,7 +293,7 @@ export default function MyVehiclesPage() {
                                 ))
                             ) : (
                                 <TableRow>
-                                    <TableCell colSpan={5} className="text-center h-24">
+                                    <TableCell colSpan={6} className="text-center h-24">
                                         No has registrado ningún vehículo todavía.
                                     </TableCell>
                                 </TableRow>
@@ -287,3 +307,5 @@ export default function MyVehiclesPage() {
     </div>
   );
 }
+
+    
