@@ -8,7 +8,7 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { useUser, useFirestore, useMemoFirebase } from '@/firebase';
-import { collection, query, orderBy, serverTimestamp } from 'firebase/firestore';
+import { collection, query, orderBy, serverTimestamp, Timestamp } from 'firebase/firestore';
 import { useCollection } from '@/firebase/firestore/use-collection';
 import { addDocumentNonBlocking } from '@/firebase/non-blocking-updates';
 import { useToast } from '@/hooks/use-toast';
@@ -84,7 +84,7 @@ export default function OilChangesPage() {
         date: serverTimestamp(),
       };
       
-      await addDocumentNonBlocking(collection(firestore, `users/${user.uid}/oilChanges`), oilChangeData);
+      addDocumentNonBlocking(collection(firestore, `users/${user.uid}/oilChanges`), oilChangeData);
       
       toast({
         title: '¡Registro Añadido!',
@@ -104,6 +104,12 @@ export default function OilChangesPage() {
   }
 
   const isLoading = isUserLoading || areOilChangesLoading;
+  
+  const formatDate = (dateValue: string | Timestamp) => {
+    if (!dateValue) return '';
+    const date = (dateValue as Timestamp)?.toDate ? (dateValue as Timestamp).toDate() : new Date(dateValue);
+    return format(date, 'dd MMM yyyy', { locale: es });
+  };
 
   return (
     <div className="container mx-auto py-12">
@@ -203,7 +209,7 @@ export default function OilChangesPage() {
                             {oilChanges && oilChanges.length > 0 ? (
                                 oilChanges.map((change) => (
                                     <TableRow key={change.id}>
-                                        <TableCell>{format(change.date.toDate(), 'dd MMM yyyy', { locale: es })}</TableCell>
+                                        <TableCell>{formatDate(change.date)}</TableCell>
                                         <TableCell>{change.oilType}</TableCell>
                                         <TableCell>{change.mileage.toLocaleString()} km</TableCell>
                                         <TableCell>{change.nextChangeMileage.toLocaleString()} km</TableCell>
