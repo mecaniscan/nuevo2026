@@ -110,24 +110,28 @@ export default function MarketplacePage() {
 
            <div className="mx-auto max-w-6xl">
             <div className="flex flex-col sm:flex-row gap-4 mb-8 p-4 border rounded-lg bg-card sticky top-20 z-10 backdrop-blur-md shadow-lg">
-                <div className="flex-1">
-                    <Select value={countryFilter} onValueChange={setCountryFilter}>
-                        <SelectTrigger><SelectValue placeholder="Filtrar por País" /></SelectTrigger>
-                        <SelectContent>
-                            <SelectItem value="">Todos los Países</SelectItem>
-                            {uniqueCountries.map(country => <SelectItem key={country} value={country}>{country}</SelectItem>)}
-                        </SelectContent>
-                    </Select>
-                </div>
-                <div className="flex-1">
-                     <Select value={brandFilter} onValueChange={setBrandFilter}>
-                        <SelectTrigger><SelectValue placeholder="Filtrar por Marca" /></SelectTrigger>
-                        <SelectContent>
-                            <SelectItem value="">Todas las Marcas</SelectItem>
-                            {uniqueBrands.map(brand => <SelectItem key={brand} value={brand}>{brand}</SelectItem>)}
-                        </SelectContent>
-                    </Select>
-                </div>
+                {vehicles.length > 0 && (
+                    <>
+                        <div className="flex-1">
+                            <Select value={countryFilter} onValueChange={setCountryFilter}>
+                                <SelectTrigger><SelectValue placeholder="Filtrar por País" /></SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="">Todos los Países</SelectItem>
+                                    {uniqueCountries.map(country => <SelectItem key={country} value={country}>{country}</SelectItem>)}
+                                </SelectContent>
+                            </Select>
+                        </div>
+                        <div className="flex-1">
+                            <Select value={brandFilter} onValueChange={setBrandFilter}>
+                                <SelectTrigger><SelectValue placeholder="Filtrar por Marca" /></SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="">Todas las Marcas</SelectItem>
+                                    {uniqueBrands.map(brand => <SelectItem key={brand} value={brand}>{brand}</SelectItem>)}
+                                </SelectContent>
+                            </Select>
+                        </div>
+                    </>
+                )}
                  <Button variant="outline" onClick={() => {setBrandFilter(''); setCountryFilter('');}}>Limpiar Filtros</Button>
             </div>
 
@@ -154,4 +158,3 @@ export default function MarketplacePage() {
     </div>
   );
 }
-    
