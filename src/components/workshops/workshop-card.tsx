@@ -4,6 +4,7 @@ import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/componen
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { MapPin, ScanLine, Star } from 'lucide-react';
+import Link from 'next/link';
 
 type WorkshopCardProps = {
   workshop: Workshop & { hasObdiiScanner: boolean };
@@ -49,7 +50,11 @@ export function WorkshopCard({ workshop }: WorkshopCardProps) {
         </div>
       </div>
       <CardFooter>
-        <Button className="w-full">Reservar Cita</Button>
+        <Button className="w-full" asChild>
+            <Link href={`/workshop/${workshop.id}`}>
+                Ver Taller y Agendar
+            </Link>
+        </Button>
       </CardFooter>
     </Card>
   );

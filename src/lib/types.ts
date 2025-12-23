@@ -17,3 +17,13 @@ export type Workshop = {
     image: ImagePlaceholder; // Placeholder for image
     city: string; // Placeholder
 };
+
+export type Appointment = {
+    id: string;
+    workshopId: string;
+    userId: string;
+    serviceId: string; // For now, we'll just use a string
+    appointmentDateTime: string;
+    description: string;
+    status: 'scheduled' | 'completed' | 'cancelled';
+}
