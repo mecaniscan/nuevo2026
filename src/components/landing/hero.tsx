@@ -26,7 +26,7 @@ export function HeroSection() {
                         El Mejor Amigo de tu Auto
                     </h1>
                     <p className="mt-4 max-w-2xl text-lg text-foreground/80 md:text-xl">
-                        Registra tu taller para ofrecer servios o regístrate tu auto para solicitar y agendar servicios a nuestra red de talleres como también puedes publicar tu vehículo para la venta en nuestra tienda de markplay
+                        Registra tu taller para ofrecer servicios o registra tu auto para solicitar y agendar servicios en nuestra red de talleres, como también puedes publicar tu vehículo para la venta en nuestra tienda de Marketplace.
                     </p>
                     <div className="mt-8 flex flex-wrap justify-center gap-4">
                         <Button asChild size="lg" className="bg-accent text-accent-foreground hover:bg-accent/90">

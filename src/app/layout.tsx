@@ -6,7 +6,7 @@ import { FirebaseErrorListener } from '@/components/FirebaseErrorListener';
 
 export const metadata: Metadata = {
   title: 'MecaniScan',
-  description: "Registra tu taller para ofrecer servios o regístrate tu auto para solicitar y agendar servicios a nuestra red de talleres como también puedes publicar tu vehículo para la venta en nuestra tienda de markplay",
+  description: "Registra tu taller para ofrecer servicios o registra tu auto para solicitar y agendar servicios en nuestra red de talleres, como también puedes publicar tu vehículo para la venta en nuestra tienda de Marketplace.",
 };
 
 export default function RootLayout({
