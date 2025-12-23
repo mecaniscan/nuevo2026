@@ -6,7 +6,7 @@ import { useCollection } from '@/firebase/firestore/use-collection';
 import type { FavoriteWorkshop } from '@/lib/types';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Loader2, Star, Trash2, Heart, MapPin } from 'lucide-react';
+import { Loader2, Star, Trash2, Heart, MapPin, Search } from 'lucide-react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { useToast } from '@/hooks/use-toast';
@@ -65,9 +65,14 @@ export default function MyFavoritesPage() {
             </h1>
             <p className="text-muted-foreground">Accede rápidamente a los talleres que has guardado.</p>
           </div>
-          <Button variant="ghost" asChild>
-            <Link href="/dashboard">Volver al Panel</Link>
-          </Button>
+          <div className="flex items-center gap-2">
+            <Button asChild>
+                <Link href="/#workshops"><Search className="mr-2 h-4 w-4"/>Buscar Talleres</Link>
+            </Button>
+            <Button variant="ghost" asChild>
+                <Link href="/dashboard">Volver al Panel</Link>
+            </Button>
+          </div>
         </div>
 
         <Card>
