@@ -1,27 +1,46 @@
 'use client';
 
-import { useUser, useFirestore, useMemoFirebase } from '@/firebase';
-import { collection, query, where } from 'firebase/firestore';
+import { useUser, useFirestore, useMemoFirebase, deleteDocumentNonBlocking } from '@/firebase';
+import { collection, query, where, doc } from 'firebase/firestore';
 import { useCollection } from '@/firebase/firestore/use-collection';
 import type { Workshop, Appointment } from '@/lib/types';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Loader2, Calendar, Wrench } from 'lucide-react';
+import { Loader2, Calendar, Wrench, Trash2 } from 'lucide-react';
 import Link from 'next/link';
 import { initiateAnonymousSignIn } from '@/firebase/non-blocking-login';
 import { useAuth } from '@/firebase';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { Badge } from '@/components/ui/badge';
+import { useToast } from '@/hooks/use-toast';
 
 export default function DashboardPage() {
   const { user, isUserLoading } = useUser();
   const firestore = useFirestore();
   const auth = useAuth();
+  const { toast } = useToast();
 
   const handleLogin = () => {
     initiateAnonymousSignIn(auth);
   };
+
+  const handleCancelAppointment = (appointmentId: string) => {
+    if (!firestore || !user) {
+        toast({
+            variant: 'destructive',
+            title: 'Error',
+            description: 'Debes iniciar sesión para cancelar una cita.',
+        });
+        return;
+    }
+    const appointmentRef = doc(firestore, 'users', user.uid, 'appointments', appointmentId);
+    deleteDocumentNonBlocking(appointmentRef);
+    toast({
+        title: 'Cita Cancelada',
+        description: 'La cita ha sido eliminada de tu agenda.',
+    });
+  }
 
   // Fetch Workshops
   const workshopsCollection = useMemoFirebase(() => {
@@ -126,7 +145,13 @@ export default function DashboardPage() {
                                     </div>
                                     <Badge variant={appointment.status === 'scheduled' ? 'default' : 'secondary'}>{appointment.status}</Badge>
                                 </div>
-                                <p className="text-sm mt-2 p-3 bg-muted rounded-md">{appointment.description}</p>
+                                <div className="flex justify-between items-end mt-2">
+                                  <p className="text-sm p-3 bg-muted rounded-md flex-grow">{appointment.description}</p>
+                                  <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive" onClick={() => handleCancelAppointment(appointment.id)}>
+                                    <Trash2 className="h-5 w-5" />
+                                    <span className="sr-only">Cancelar Cita</span>
+                                  </Button>
+                                </div>
                             </Card>
                         ))}
                     </div>
