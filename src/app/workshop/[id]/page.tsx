@@ -157,42 +157,26 @@ export default function WorkshopDetailPage() {
     };
 
 
-    async function onAppointmentSubmit(values: z.infer<typeof appointmentSchema>) {
-        if (!user || !firestore || !workshopId || !workshop) {
-            toast({ variant: 'destructive', title: 'Error', description: 'Debes iniciar sesión para agendar una cita.' });
+    function onAppointmentSubmit(values: z.infer<typeof appointmentSchema>) {
+        if (!workshop || !workshop.whatsappNumber) {
+            toast({ variant: 'destructive', title: 'Error', description: 'Este taller no ha proporcionado un número de WhatsApp.' });
             return;
         }
+
         setIsSubmitting(true);
+
+        const date = format(values.appointmentDateTime, "eeee, dd 'de' MMMM 'de' yyyy", { locale: es });
+        const message = `Hola ${workshop.name}, me gustaría agendar una cita para el día ${date}. El motivo es: "${values.description}". ¿Tienen disponibilidad?`;
+        const whatsappUrl = `https://wa.me/${workshop.whatsappNumber.replace(/\D/g, '')}?text=${encodeURIComponent(message)}`;
         
+        window.open(whatsappUrl, '_blank');
+        
+        toast({
+            title: 'Redirigiendo a WhatsApp',
+            description: 'Confirma la cita enviando el mensaje.',
+        });
 
-        try {
-            const appointmentsCollection = collection(firestore, 'users', user.uid, 'appointments');
-            const appointmentData: Omit<Appointment, 'id'> = {
-                appointmentDateTime: values.appointmentDateTime.toISOString(),
-                workshopId: workshopId,
-                workshopName: workshop.name, // Denormalized name
-                userId: user.uid,
-                status: 'scheduled',
-                description: values.description,
-            };
-            
-            addDocumentNonBlocking(appointmentsCollection, appointmentData);
-
-            toast({
-                title: '¡Cita Agendada!',
-                description: `Tu cita en ${workshop?.name} ha sido programada.`,
-            });
-            router.push('/dashboard/my-appointments');
-        } catch (error) {
-            console.error('Error creating appointment:', error);
-            toast({
-                variant: 'destructive',
-                title: 'Error Inesperado',
-                description: 'No se pudo agendar la cita. Por favor, intenta de nuevo.',
-            });
-        } finally {
-            setIsSubmitting(false);
-        }
+        setIsSubmitting(false);
     }
     
     async function onReviewSubmit(values: z.infer<typeof reviewSchema>) {
@@ -491,7 +475,8 @@ export default function WorkshopDetailPage() {
                                     )}
                                 />
                                 <Button type="submit" disabled={isSubmitting} className="w-full">
-                                    {isSubmitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : 'Confirmar Cita'}
+                                    {isSubmitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <WhatsappIcon />}
+                                    Contactar por WhatsApp para Agendar
                                 </Button>
                             </form>
                         </Form>
@@ -508,4 +493,3 @@ export default function WorkshopDetailPage() {
     </div>
   );
 }
-
