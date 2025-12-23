@@ -6,7 +6,7 @@ import { useCollection } from '@/firebase/firestore/use-collection';
 import type { Workshop, Appointment } from '@/lib/types';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Loader2, Calendar, Wrench, Trash2, Settings, Pencil, LogOut, User as UserIcon, Lock, ListPlus, Building, ArrowRight, Droplets } from 'lucide-react';
+import { Loader2, Calendar, Wrench, Trash2, Settings, Pencil, LogOut, User as UserIcon, Lock, ListPlus, Building, ArrowRight, Droplets, Car } from 'lucide-react';
 import Link from 'next/link';
 import { initiateAnonymousSignIn, initiateSignOut, initiateEmailSignIn } from '@/firebase/non-blocking-login';
 import { useAuth } from '@/firebase';
@@ -268,13 +268,23 @@ export default function DashboardPage() {
             />
         </div>
 
+        {/* My Vehicles Section */}
+        <div className="lg:col-span-2">
+             <ActionButton 
+                href="/dashboard/my-vehicles"
+                icon={<Car className="h-8 w-8 text-primary"/>}
+                title="Mis Vehículos"
+                description="Registra y gestiona los vehículos de tu propiedad."
+            />
+        </div>
+
         {/* Oil Change Section */}
-        <div className="lg:col-span-3">
+        <div>
              <ActionButton 
                 href="/dashboard/oil-changes"
                 icon={<Droplets className="h-8 w-8 text-primary"/>}
-                title="Registro de Cambios de Aceite"
-                description="Lleva un historial de los cambios de aceite de tu vehículo."
+                title="Cambios de Aceite"
+                description="Lleva un historial de los cambios de aceite."
             />
         </div>
 

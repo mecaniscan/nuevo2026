@@ -10,8 +10,8 @@
  *
  * Data Structure:
  * The data is organized into several top-level collections: 'users' and 'workshops'.
- * All data private to a user, such as 'appointments', is stored in
- * a subcollection directly under that user's document in the '/users/{userId}' path.
+ * All data private to a user, such as 'appointments', 'oilChanges', and 'vehicles',
+ * is stored in a subcollection directly under that user's document in the '/users/{userId}' path.
  * Data specific to a workshop, like 'reviews' and 'services', is stored in subcollections
  * under the workshop's document.
  *
@@ -171,6 +171,15 @@ service cloud.firestore {
        */
       match /oilChanges/{oilChangeId} {
         allow get, list, create, update, delete: if isOwner(userId);
+      }
+      
+      /**
+       * @description Secures a user's vehicles subcollection.
+       * @path /users/{userId}/vehicles/{vehicleId}
+       * @allow (get, list, create, update, delete) A user can manage their own vehicle records.
+       */
+      match /vehicles/{vehicleId} {
+        allow get, list, create, update, delete: if isOwner(userId) && request.resource.data.userId == userId;
       }
     }
   }

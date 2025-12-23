@@ -53,3 +53,14 @@ export type OilChange = {
     mileage: number;
     nextChangeMileage: number;
 };
+
+export type Vehicle = {
+    id: string;
+    userId: string;
+    type: string;
+    brand: string;
+    model: string;
+    year: number;
+    vin: string;
+    licensePlate: string;
+};
