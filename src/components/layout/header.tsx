@@ -1,8 +1,18 @@
+'use client';
 import { Wrench } from 'lucide-react';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
+import { useUser } from '@/firebase/provider';
+import { initiateAnonymousSignIn } from '@/firebase/non-blocking-login';
+import { useAuth } from '@/firebase';
 
 export function Header() {
+  const { user, isUserLoading } = useUser();
+  const auth = useAuth();
+
+  const handleLogin = () => {
+    initiateAnonymousSignIn(auth);
+  };
   return (
     <header className="sticky top-0 z-50 w-full border-b border-border/40 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
       <div className="container flex h-14 max-w-screen-2xl items-center">
@@ -26,7 +36,12 @@ export function Header() {
           </nav>
         </div>
         <div className="flex flex-1 items-center justify-end space-x-4">
-          <Button variant="outline" className="hidden sm:inline-flex">Iniciar Sesión</Button>
+          {!user && !isUserLoading && (
+            <Button variant="outline" className="hidden sm:inline-flex" onClick={handleLogin}>Iniciar Sesión</Button>
+          )}
+          {user && (
+             <Button variant="outline" className="hidden sm:inline-flex">Mi Cuenta</Button>
+          )}
           <Button className="bg-accent text-accent-foreground hover:bg-accent/90">Registra tu Taller</Button>
         </div>
       </div>
