@@ -50,8 +50,8 @@ export function WorkshopFinder() {
       return {
         ...workshop,
         city: "Metropolis",
-        rating: 4.5 + (index * 0.1),
-        reviewCount: 50 + (index * 10),
+        averageRating: workshop.averageRating || 4.5 + (index * 0.1),
+        reviewCount: workshop.reviewCount || 50 + (index * 10),
         services: workshopServices,
         image: PlaceHolderImages.find(p => p.id.startsWith('workshop')) || PlaceHolderImages[1],
       }

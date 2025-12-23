@@ -37,7 +37,7 @@ export function WorkshopCard({ workshop }: WorkshopCardProps) {
         </div>
         <div className="flex items-center gap-1.5 mb-4">
             <Star className="h-5 w-5 fill-amber-400 text-amber-400" />
-            <span className="font-bold text-foreground">{workshop.rating.toFixed(1)}</span>
+            <span className="font-bold text-foreground">{workshop.averageRating.toFixed(1)}</span>
             <span className="text-sm text-muted-foreground">({workshop.reviewCount} reseñas)</span>
         </div>
         <div className="flex flex-wrap gap-2 mt-auto">

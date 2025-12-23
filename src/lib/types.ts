@@ -12,8 +12,8 @@ export type Workshop = {
     longitude: number;
     obdScannerService: boolean;
     serviceIds: string[]; // List of service IDs offered by the workshop
-    rating: number; // Placeholder, as it's not in the backend.json schema
-    reviewCount: number; // Placeholder
+    averageRating: number;
+    reviewCount: number;
     services: Service[]; // Populated placeholder for service details
     image: ImagePlaceholder; // Placeholder for image
     city: string; // Placeholder
@@ -23,7 +23,6 @@ export type Appointment = {
     id: string;
     workshopId: string;
     userId: string;
-    serviceId?: string; 
     serviceName?: string; // Denormalized service name
     appointmentDateTime: string;
     description: string;
@@ -36,3 +35,13 @@ export type Service = {
     description: string;
     price: number;
 }
+
+export type Review = {
+    id: string;
+    workshopId: string;
+    userId: string;
+    rating: number;
+    comment: string;
+    createdAt: string;
+    authorName?: string; // Denormalized user name
+};

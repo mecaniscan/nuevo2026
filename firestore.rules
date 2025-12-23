@@ -12,8 +12,6 @@
  * The data is organized into several top-level collections: 'users', 'workshops',
  * and 'services'. All data private to a user, such as 'appointments', is stored in
  * a subcollection directly under that user's document in the '/users/{userId}' path.
- * This hierarchical structure makes it simple and performant to apply ownership-based
- * security rules.
  *
  * Key Security Decisions:
  * - User Data Privacy: A user can only read, write, and query data within their
@@ -115,6 +113,20 @@ service cloud.firestore {
       allow create: if isSignedIn() && isValidNewWorkshop();
       allow update: if isExistingOwner(resource.data.ownerId) && isValidWorkshopUpdate();
       allow delete: if isExistingOwner(resource.data.ownerId);
+
+      /**
+       * @description Secures workshop reviews.
+       * @path /workshops/{workshopId}/reviews/{reviewId}
+       * @allow (list, get) Any user can read reviews.
+       * @allow (create) Authenticated users can create reviews.
+       * @allow (update, delete) Only the review's owner can modify or delete it.
+       */
+      match /reviews/{reviewId} {
+        allow list: if true;
+        allow get: if true;
+        allow create: if isSignedIn() && request.resource.data.userId == request.auth.uid;
+        allow update, delete: if isExistingOwner(resource.data.userId);
+      }
     }
 
     /**

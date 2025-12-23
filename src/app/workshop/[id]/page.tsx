@@ -6,13 +6,12 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { useParams, useRouter } from 'next/navigation';
 import Image from 'next/image';
-import Link from 'next/link';
 import { useDoc, useUser, useFirestore, useMemoFirebase, useCollection } from '@/firebase';
-import { doc, collection } from 'firebase/firestore';
-import type { Workshop, Appointment, Service } from '@/lib/types';
+import { doc, collection, query, where, serverTimestamp } from 'firebase/firestore';
+import type { Workshop, Appointment, Service, Review } from '@/lib/types';
 import { addDocumentNonBlocking } from '@/firebase/non-blocking-updates';
 import { PlaceHolderImages } from '@/lib/placeholder-images';
-import { Loader2, MapPin, ScanLine, Star, Calendar as CalendarIcon, Wrench } from 'lucide-react';
+import { Loader2, MapPin, ScanLine, Star, Calendar as CalendarIcon, Wrench, MessageSquare, Send } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -25,19 +24,18 @@ import { format } from 'date-fns';
 import { useToast } from '@/hooks/use-toast';
 import { initiateAnonymousSignIn } from '@/firebase/non-blocking-login';
 import { useAuth } from '@/firebase';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select"
+import Link from 'next/link';
 
 const appointmentSchema = z.object({
     appointmentDateTime: z.date({
         required_error: 'Se requiere una fecha para la cita.',
     }),
     description: z.string().min(10, 'La descripción debe tener al menos 10 caracteres.'),
+});
+
+const reviewSchema = z.object({
+  rating: z.number().min(1).max(5),
+  comment: z.string().min(10, "La reseña debe tener al menos 10 caracteres.").max(500, "La reseña no puede exceder los 500 caracteres."),
 });
 
 
@@ -52,6 +50,7 @@ export default function WorkshopDetailPage() {
     const firestore = useFirestore();
 
     const [isSubmitting, setIsSubmitting] = React.useState(false);
+    const [isSubmittingReview, setIsSubmittingReview] = React.useState(false);
 
     // Fetch Workshop
     const workshopRef = useMemoFirebase(() => {
@@ -66,13 +65,28 @@ export default function WorkshopDetailPage() {
         return collection(firestore, 'services');
       }, [firestore]);
     const { data: masterServices, isLoading: isServicesLoading } = useCollection<Service>(servicesCollection);
+    
+    // Fetch Reviews
+    const reviewsCollection = useMemoFirebase(() => {
+        if (!firestore || !workshopId) return null;
+        return collection(firestore, `workshops/${workshopId}/reviews`);
+      }, [firestore, workshopId]);
+    const { data: reviews, isLoading: areReviewsLoading } = useCollection<Review>(reviewsCollection);
 
 
-    const form = useForm<z.infer<typeof appointmentSchema>>({
+    const appointmentForm = useForm<z.infer<typeof appointmentSchema>>({
         resolver: zodResolver(appointmentSchema),
         defaultValues: {
             description: '',
         },
+    });
+
+    const reviewForm = useForm<z.infer<typeof reviewSchema>>({
+      resolver: zodResolver(reviewSchema),
+      defaultValues: {
+        rating: 0,
+        comment: "",
+      }
     });
 
     const workshopServices = useMemo(() => {
@@ -85,8 +99,8 @@ export default function WorkshopDetailPage() {
         return {
           ...workshopData,
           city: "Metropolis",
-          rating: 4.5,
-          reviewCount: 50,
+          rating: workshopData.averageRating || 4.5,
+          reviewCount: workshopData.reviewCount || 50,
           services: workshopServices,
           image: PlaceHolderImages.find(p => p.id.startsWith('workshop')) || PlaceHolderImages[1],
         };
@@ -96,7 +110,7 @@ export default function WorkshopDetailPage() {
         initiateAnonymousSignIn(auth);
     };
 
-    async function onSubmit(values: z.infer<typeof appointmentSchema>) {
+    async function onAppointmentSubmit(values: z.infer<typeof appointmentSchema>) {
         if (!user || !firestore || !workshopId) {
             toast({ variant: 'destructive', title: 'Error', description: 'Debes iniciar sesión para agendar una cita.' });
             return;
@@ -106,7 +120,7 @@ export default function WorkshopDetailPage() {
 
         try {
             const appointmentsCollection = collection(firestore, 'users', user.uid, 'appointments');
-            const appointmentData: Omit<Appointment, 'id' | 'serviceId' | 'serviceName'> = {
+            const appointmentData: Omit<Appointment, 'id'> = {
                 appointmentDateTime: values.appointmentDateTime.toISOString(),
                 workshopId: workshopId,
                 userId: user.uid,
@@ -132,8 +146,47 @@ export default function WorkshopDetailPage() {
             setIsSubmitting(false);
         }
     }
+    
+    async function onReviewSubmit(values: z.infer<typeof reviewSchema>) {
+      if (!user || !firestore || !workshopId) {
+        toast({ variant: "destructive", title: "Error", description: "Debes iniciar sesión para dejar una reseña." });
+        return;
+      }
+      setIsSubmittingReview(true);
+      try {
+        const reviewCollection = collection(firestore, `workshops/${workshopId}/reviews`);
+        const reviewData = {
+          ...values,
+          workshopId,
+          userId: user.uid,
+          authorName: user.displayName || user.email,
+          createdAt: serverTimestamp(),
+        };
 
-    if (isWorkshopLoading || isUserLoading || isServicesLoading) {
+        await addDocumentNonBlocking(reviewCollection, reviewData);
+        
+        // This should be a transaction in a real app to update average rating
+        // For now, we will just add the review
+
+        toast({
+          title: "¡Reseña Enviada!",
+          description: "Gracias por compartir tu opinión.",
+        });
+        reviewForm.reset();
+
+      } catch (error) {
+        console.error("Error submitting review:", error);
+        toast({
+          variant: "destructive",
+          title: "Error Inesperado",
+          description: "No se pudo enviar tu reseña. Intenta de nuevo.",
+        });
+      } finally {
+        setIsSubmittingReview(false);
+      }
+    }
+
+    if (isWorkshopLoading || isUserLoading || isServicesLoading || areReviewsLoading) {
         return (
             <div className="flex min-h-screen items-center justify-center">
                 <Loader2 className="h-16 w-16 animate-spin text-primary" />
@@ -210,6 +263,75 @@ export default function WorkshopDetailPage() {
                         </div>
                     </CardContent>
                 </Card>
+                 {/* Reviews Section */}
+                <Card>
+                    <CardHeader>
+                        <CardTitle className="flex items-center gap-2"><MessageSquare/> Reseñas de Clientes</CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-6">
+                        {user && !user.isAnonymous && (
+                          <Form {...reviewForm}>
+                             <form onSubmit={reviewForm.handleSubmit(onReviewSubmit)} className="space-y-4 p-4 border rounded-lg bg-card/30">
+                                <FormLabel>Deja tu reseña</FormLabel>
+                                <FormField
+                                  control={reviewForm.control}
+                                  name="rating"
+                                  render={({ field }) => (
+                                    <FormItem className="flex items-center gap-2">
+                                      <FormLabel>Calificación:</FormLabel>
+                                       <div className="flex">
+                                          {[1, 2, 3, 4, 5].map((star) => (
+                                            <Star
+                                              key={star}
+                                              className={cn("h-6 w-6 cursor-pointer", field.value >= star ? "text-amber-400 fill-amber-400" : "text-muted-foreground")}
+                                              onClick={() => field.onChange(star)}
+                                            />
+                                          ))}
+                                      </div>
+                                      <FormMessage/>
+                                    </FormItem>
+                                  )}
+                                />
+                                <FormField
+                                  control={reviewForm.control}
+                                  name="comment"
+                                  render={({ field }) => (
+                                    <FormItem>
+                                      <FormControl>
+                                        <Textarea placeholder="Comparte tu experiencia con este taller..." {...field}/>
+                                      </FormControl>
+                                      <FormMessage />
+                                    </FormItem>
+                                  )}
+                                />
+                                <Button type="submit" disabled={isSubmittingReview}>
+                                  {isSubmittingReview ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <Send className="mr-2"/>}
+                                  Enviar Reseña
+                                </Button>
+                            </form>
+                          </Form>
+                        )}
+                        <div className="space-y-4">
+                            {reviews && reviews.length > 0 ? (
+                                reviews.map(review => (
+                                <div key={review.id} className="p-4 border-b">
+                                    <div className="flex justify-between items-center">
+                                      <p className="font-semibold">{review.authorName || 'Anónimo'}</p>
+                                      <div className="flex items-center">
+                                          {[...Array(review.rating)].map((_, i) => <Star key={i} className="h-4 w-4 fill-amber-400 text-amber-400"/>)}
+                                          {[...Array(5 - review.rating)].map((_, i) => <Star key={i} className="h-4 w-4 text-muted-foreground"/>)}
+                                      </div>
+                                    </div>
+                                    <p className="text-muted-foreground mt-2">{review.comment}</p>
+                                    <p className="text-xs text-muted-foreground mt-2">{format(new Date(review.createdAt), 'dd MMM yyyy')}</p>
+                                </div>
+                                ))
+                            ) : (
+                                <p className="text-muted-foreground text-center">Todavía no hay reseñas para este taller. ¡Sé el primero!</p>
+                            )}
+                        </div>
+                    </CardContent>
+                </Card>
             </div>
             
             {/* Appointment Form */}
@@ -221,10 +343,10 @@ export default function WorkshopDetailPage() {
                     </CardHeader>
                     <CardContent>
                         {user ? (
-                        <Form {...form}>
-                            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+                        <Form {...appointmentForm}>
+                            <form onSubmit={appointmentForm.handleSubmit(onAppointmentSubmit)} className="space-y-6">
                                  <FormField
-                                    control={form.control}
+                                    control={appointmentForm.control}
                                     name="appointmentDateTime"
                                     render={({ field }) => (
                                         <FormItem className="flex flex-col">
@@ -240,7 +362,7 @@ export default function WorkshopDetailPage() {
                                                 )}
                                                 >
                                                 {field.value ? (
-                                                    format(field.value, "PPP")
+                                                    format(field.value, "PPP", { locale: es })
                                                 ) : (
                                                     <span>Elige una fecha</span>
                                                 )}
@@ -265,7 +387,7 @@ export default function WorkshopDetailPage() {
                                     )}
                                 />
                                 <FormField
-                                    control={form.control}
+                                    control={appointmentForm.control}
                                     name="description"
                                     render={({ field }) => (
                                     <FormItem>
