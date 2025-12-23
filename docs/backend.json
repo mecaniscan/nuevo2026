@@ -49,6 +49,10 @@
           "items": {
             "type": "string"
           }
+        },
+        "ownerId": {
+          "type": "string",
+          "description": "The UID of the user who owns this workshop."
         }
       },
       "required": [
@@ -60,7 +64,8 @@
         "email",
         "latitude",
         "longitude",
-        "obdScannerService"
+        "obdScannerService",
+        "ownerId"
       ]
     },
     "Appointment": {

@@ -24,14 +24,14 @@ export function Header() {
             </span>
           </Link>
           <nav className="hidden items-center space-x-6 text-sm font-medium md:flex">
-            <Link href="#workshops" className="transition-colors hover:text-primary">
+            <Link href="/#workshops" className="transition-colors hover:text-primary">
               Encontrar un Taller
             </Link>
-            <Link href="#decoder" className="transition-colors hover:text-primary">
+            <Link href="/#decoder" className="transition-colors hover:text-primary">
               Decodificador OBD-II
             </Link>
-            <Link href="#" className="transition-colors hover:text-primary">
-              Cuenta
+            <Link href="/dashboard" className="transition-colors hover:text-primary">
+              Mi Cuenta
             </Link>
           </nav>
         </div>
@@ -40,9 +40,13 @@ export function Header() {
             <Button variant="outline" className="hidden sm:inline-flex" onClick={handleLogin}>Iniciar Sesión</Button>
           )}
           {user && (
-             <Button variant="outline" className="hidden sm:inline-flex">Mi Cuenta</Button>
+             <Button asChild variant="outline" className="hidden sm:inline-flex">
+                <Link href="/dashboard">Mi Cuenta</Link>
+             </Button>
           )}
-          <Button className="bg-accent text-accent-foreground hover:bg-accent/90">Registra tu Taller</Button>
+          <Button asChild className="bg-accent text-accent-foreground hover:bg-accent/90">
+            <Link href="/dashboard/register-workshop">Registra tu Taller</Link>
+          </Button>
         </div>
       </div>
     </header>

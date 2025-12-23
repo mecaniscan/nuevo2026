@@ -2,6 +2,7 @@ import type { ImagePlaceholder } from './placeholder-images';
 
 export type Workshop = {
     id: string;
+    ownerId: string;
     name: string;
     description: string;
     address: string;

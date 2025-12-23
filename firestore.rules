@@ -30,8 +30,7 @@
  * To ensure fast and secure authorization checks, key identifying information is
  * denormalized. For instance, an 'Appointment' document created at
  * '/users/{userId}/appointments/{appointmentId}' must contain a 'userId' field
- * that matches the '{userId}' from the path. This avoids costly lookups and
- * simplifies rule logic.
+ * that matches the '{userId}' from the path.
  *
  * Structural Segregation:
  * The current structure uses a boolean flag ('obdScannerService') on workshop
@@ -81,6 +80,23 @@ service cloud.firestore {
     function isExistingOwner(userId) {
       return isOwner(userId) && isExistingDocument();
     }
+    
+    /**
+     * Checks if the incoming workshop data is valid for a create operation.
+     * The new workshop must be owned by the person creating it.
+     */
+    function isValidNewWorkshop() {
+      return request.resource.data.ownerId == request.auth.uid;
+    }
+    
+    /**
+     * Checks if the incoming workshop data is valid for an update.
+     * The ownerId cannot be changed.
+     */
+    function isValidWorkshopUpdate() {
+      return request.resource.data.ownerId == resource.data.ownerId;
+    }
+
 
     // ------------------------------------------------------------------------
     // Collection Rules
@@ -96,13 +112,9 @@ service cloud.firestore {
     match /workshops/{workshopId} {
       allow get: if true;
       allow list: if true;
-
-      // CRITICAL: Cannot implement owner-only writes. The 'Workshop' entity is missing an 'ownerId' or 'authorId' field.
-      // Writes are disabled until an ownership field is added to the Workshop schema,
-      // which is required to securely identify who is allowed to modify a workshop document.
-      allow create: if false; // TODO: Add owner validation once the schema is updated with an ownership field.
-      allow update: if false; // TODO: Add owner validation once the schema is updated with an ownership field.
-      allow delete: if false; // TODO: Add owner validation once the schema is updated with an ownership field.
+      allow create: if isSignedIn() && isValidNewWorkshop();
+      allow update: if isExistingOwner(resource.data.ownerId) && isValidWorkshopUpdate();
+      allow delete: if isExistingOwner(resource.data.ownerId);
     }
 
     /**
