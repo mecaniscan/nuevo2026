@@ -9,7 +9,7 @@ import { Button } from '@/components/ui/button';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { scanDashboardAction } from '@/lib/actions';
 import type { DashboardScanOutput } from '@/ai/schemas';
-import { Loader2, Camera, AlertCircle } from 'lucide-react';
+import { Loader2, Camera, AlertCircle, VideoOff } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { Alert, AlertDescription, AlertTitle } from '../ui/alert';
 
@@ -21,6 +21,7 @@ export function OBDII_Decoder() {
   const [isCameraActive, setIsCameraActive] = useState(false);
   const [hasCameraPermission, setHasCameraPermission] = useState<boolean | null>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
+  const streamRef = useRef<MediaStream | null>(null);
   const { toast } = useToast();
 
   const getCameraPermission = async () => {
@@ -35,6 +36,7 @@ export function OBDII_Decoder() {
     }
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } });
+      streamRef.current = stream;
       setHasCameraPermission(true);
       setIsCameraActive(true);
       if (videoRef.current) {
@@ -51,24 +53,32 @@ export function OBDII_Decoder() {
       });
     }
   };
+
+  const stopCamera = () => {
+    if (streamRef.current) {
+      streamRef.current.getTracks().forEach(track => track.stop());
+    }
+    setIsCameraActive(false);
+    if(videoRef.current) {
+        videoRef.current.srcObject = null;
+    }
+    streamRef.current = null;
+  };
   
+  // Cleanup function to stop camera stream when component unmounts
   useEffect(() => {
-    // Cleanup function to stop camera stream when component unmounts
     return () => {
-      if (videoRef.current && videoRef.current.srcObject) {
-        const stream = videoRef.current.srcObject as MediaStream;
-        stream.getTracks().forEach(track => track.stop());
-      }
+      stopCamera();
     };
   }, []);
 
 
   const handleScan = async () => {
-    if (!videoRef.current) {
+    if (!videoRef.current || !isCameraActive) {
       toast({
         variant: "destructive",
         title: "Error",
-        description: "No se puede acceder al video.",
+        description: "La cámara no está activa o no se puede acceder al video.",
       });
       return;
     }
@@ -83,6 +93,16 @@ export function OBDII_Decoder() {
     if (context) {
       context.drawImage(videoRef.current, 0, 0, canvas.width, canvas.height);
       const dataUri = canvas.toDataURL('image/jpeg');
+
+      if (dataUri === 'data:,') {
+         toast({
+          variant: "destructive",
+          title: "Error de Captura",
+          description: "No se pudo capturar la imagen. Asegúrate de que la cámara esté funcionando.",
+        });
+        setIsLoading(false);
+        return;
+      }
 
       try {
         const output = await scanDashboardAction({ photoDataUri: dataUri });
@@ -146,10 +166,15 @@ export function OBDII_Decoder() {
                             Activar Cámara
                         </Button>
                      ) : (
-                        <Button onClick={handleScan} disabled={isLoading} className="w-full">
-                            {isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Camera className="mr-2 h-4 w-4" />}
-                            Escanear Tablero
-                        </Button>
+                        <div className="flex gap-2">
+                            <Button onClick={handleScan} disabled={isLoading} className="w-full">
+                                {isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Camera className="mr-2 h-4 w-4" />}
+                                Escanear Tablero
+                            </Button>
+                             <Button onClick={stopCamera} variant="outline" title="Detener Cámara">
+                                <VideoOff className="h-4 w-4" />
+                             </Button>
+                        </div>
                      )}
                 </CardContent>
                 <CardFooter className="flex-col items-stretch">
