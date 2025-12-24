@@ -8,8 +8,8 @@ import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, For
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { useUser, useFirestore, useMemoFirebase, FirestorePermissionError, errorEmitter, deleteDocumentNonBlocking, useDoc, useStorage } from '@/firebase';
-import { collection, query, orderBy, doc, writeBatch, getDoc } from 'firebase/firestore';
-import { ref as storageRef, uploadBytes, getDownloadURL } from 'firebase/storage';
+import { collection, query, orderBy, doc, writeBatch, getDoc, updateDoc } from 'firebase/firestore';
+import { ref as storageRef, uploadBytes, getDownloadURL, uploadString } from 'firebase/storage';
 import { useCollection } from '@/firebase/firestore/use-collection';
 import { useToast } from '@/hooks/use-toast';
 import { Loader2, PlusCircle, Car, Trash2, Pencil, Save, Briefcase, BadgePercent, Upload, FileText, Wrench, Printer, Download, Share2 } from 'lucide-react';
@@ -57,14 +57,16 @@ const VehicleCertificate = ({ vehicle, user }: { vehicle: Vehicle, user: User | 
     const { toast } = useToast();
     const [isGenerating, setIsGenerating] = useState(false);
     const router = useRouter();
+    const storage = useStorage();
+    const firestore = useFirestore();
     
     if (!user) return null;
 
     const issueDate = format(new Date(), "yyyy-MM-dd");
-    const qrData = `VIN: ${vehicle.vin}\nMarca: ${vehicle.brand}\nModelo: ${vehicle.model}\nAño: ${vehicle.year}\nEmitido: ${issueDate}`;
-    const qrCodeUrl = `https://api.qrserver.com/v1/create-qr-code/?data=${encodeURIComponent(qrData)}&size=100x100&bgcolor=ffffff`;
+    const validationUrl = `${window.location.origin}/validate-certificate/${vehicle.certificateNumber}`;
+    const qrCodeUrl = `https://api.qrserver.com/v1/create-qr-code/?data=${encodeURIComponent(validationUrl)}&size=100x100&bgcolor=ffffff`;
 
-    const generateContent = async (output: 'pdf' | 'whatsapp') => {
+    const generateContent = async (output: 'pdf' | 'whatsapp' | 'storage') => {
         const content = document.getElementById(`certificate-${vehicle.id}`);
         if (!content) {
             toast({ variant: 'destructive', title: 'Error', description: 'No se pudo encontrar el contenido del certificado.' });
@@ -85,6 +87,24 @@ const VehicleCertificate = ({ vehicle, user }: { vehicle: Vehicle, user: User | 
             } else if (output === 'whatsapp') {
                 const encodedImage = encodeURIComponent(imgData);
                 router.push(`/certificate-preview?image=${encodedImage}`);
+            } else if (output === 'storage') {
+                 if (!storage || !firestore || !user) throw new Error("Servicios de Firebase no disponibles.");
+                const pdf = new jsPDF('p', 'mm', 'a4');
+                const pdfWidth = pdf.internal.pageSize.getWidth();
+                const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
+                pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
+                const pdfBlob = pdf.output('blob');
+
+                const pdfRef = storageRef(storage, `certificates/${user.uid}/${vehicle.id}.pdf`);
+                const snapshot = await uploadBytes(pdfRef, pdfBlob);
+                const downloadURL = await getDownloadURL(snapshot.ref);
+
+                const vehicleRef = doc(firestore, `users/${user.uid}/vehicles`, vehicle.id);
+                await updateDoc(vehicleRef, { certificatePdfUrl: downloadURL });
+                 toast({
+                    title: '¡PDF Guardado!',
+                    description: 'El certificado ha sido guardado en Firebase Storage.',
+                });
             }
         } catch (error) {
             console.error('Error generating content:', error);
@@ -104,7 +124,11 @@ const VehicleCertificate = ({ vehicle, user }: { vehicle: Vehicle, user: User | 
                         Revisa y descarga el certificado de venta del vehículo.
                     </DialogDescription>
                 </div>
-                <div className="flex gap-2">
+                <div className="flex gap-2 flex-wrap">
+                    <Button onClick={() => generateContent('storage')} disabled={isGenerating}>
+                        {isGenerating ? <Loader2 className="mr-2 animate-spin" /> : <Save className="mr-2" />}
+                        Guardar PDF en Storage
+                    </Button>
                     <Button onClick={() => generateContent('whatsapp')} disabled={isGenerating}>
                         {isGenerating ? <Loader2 className="mr-2 animate-spin" /> : <Share2 className="mr-2" />}
                         Compartir por WhatsApp
@@ -138,6 +162,7 @@ const VehicleCertificate = ({ vehicle, user }: { vehicle: Vehicle, user: User | 
                         <CertificateItem label="Correo Electrónico" value={user.email} />
                         <CertificateItem label="Número de WhatsApp" value={user.whatsappNumber} />
                         <CertificateItem label="Fecha de Emisión" value={format(new Date(), "dd 'de' MMMM 'de' yyyy", { locale: es })} />
+                        <CertificateItem label="Número de Certificado" value={vehicle.certificateNumber} />
                     </dl>
                 </div>
                 <Separator />
@@ -289,26 +314,25 @@ export default function MyVehiclesPage() {
             uploadedImageUrls = await uploadImages(values.images);
         }
 
-        const userDocRef = doc(firestore, 'users', user.uid);
-        const userDocSnap = await getDoc(userDocRef);
+        const userDocSnap = await getDoc(userDocRef as any);
         const userData = userDocSnap.data() as User | undefined;
 
         const sellerName = user.displayName || `${userData?.firstName} ${userData?.lastName}` || 'Vendedor Anónimo';
         const sellerWhatsapp = userData?.whatsappNumber || '';
+
+        const { images, ...restOfValues } = values;
 
         if (editingVehicleId) {
             const userVehicleRef = doc(firestore, `users/${user.uid}/vehicles`, editingVehicleId);
             const existingVehicleSnap = await getDoc(userVehicleRef);
             const existingVehicleData = existingVehicleSnap.data() as Vehicle;
 
-            const vehiclePayload: Partial<Omit<Vehicle, 'id' | 'userId'>> = {
-                ...values,
+            const vehiclePayload: Partial<Vehicle> = {
+                ...restOfValues,
                 imageUrls: uploadedImageUrls ?? existingVehicleData.imageUrls,
                 sellerName,
                 sellerWhatsapp,
             };
-            
-            delete (vehiclePayload as any).images;
 
             batch.update(userVehicleRef, vehiclePayload);
 
@@ -322,8 +346,6 @@ export default function MyVehiclesPage() {
         } else {
             const userVehicleRef = doc(collection(firestore, `users/${user.uid}/vehicles`));
             
-            const { images, ...restOfValues } = values;
-
             const vehiclePayload: Vehicle = {
                 ...restOfValues,
                 id: userVehicleRef.id,
@@ -331,6 +353,7 @@ export default function MyVehiclesPage() {
                 sellerName,
                 sellerWhatsapp,
                 imageUrls: uploadedImageUrls || [],
+                certificateNumber: uuidv4(),
             };
 
             batch.set(userVehicleRef, vehiclePayload);
@@ -449,12 +472,12 @@ export default function MyVehiclesPage() {
                         name="images"
                         render={({ field: { onChange, value, ...rest } }) => (
                           <FormItem>
-                            <FormLabel>Imágenes del Vehículo (opcional)</FormLabel>
+                            <FormLabel>Imágenes del Vehículo</FormLabel>
                             <FormControl>
                                 <Input type="file" multiple accept="image/*" onChange={(e) => onChange(e.target.files)} {...rest} />
                             </FormControl>
                             <FormDescription>
-                              Sube una o más imágenes de tu vehículo.
+                              Sube una o más imágenes de tu vehículo. La carga de imágenes es opcional.
                             </FormDescription>
                             <FormMessage />
                           </FormItem>
@@ -602,5 +625,3 @@ export default function MyVehiclesPage() {
     </div>
   );
 }
-
-    
