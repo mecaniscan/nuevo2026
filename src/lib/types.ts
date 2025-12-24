@@ -85,4 +85,12 @@ export type FavoriteWorkshop = {
     addedAt: Timestamp;
 }
 
-    
+
+export type User = {
+    id: string;
+    firstName: string;
+    lastName: string;
+    email: string;
+    phoneNumber?: string;
+    whatsappNumber?: string;
+}

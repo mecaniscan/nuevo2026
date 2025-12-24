@@ -9,8 +9,7 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { useUser, useFirestore, useMemoFirebase, useStorage } from '@/firebase';
-import { updateDocumentNonBlocking } from '@/firebase/non-blocking-updates';
-import { collection, query, where, doc } from 'firebase/firestore';
+import { updateDoc, collection, query, where, doc } from 'firebase/firestore';
 import { useCollection } from '@/firebase/firestore/use-collection';
 import { useToast } from '@/hooks/use-toast';
 import { useRouter } from 'next/navigation';
@@ -83,14 +82,21 @@ export default function EditWorkshopPage() {
     }
   }, [workshop, form]);
 
-  const uploadImage = async (file: File): Promise<string> => {
+  const uploadImage = async (file: File): Promise<string | null> => {
     if (!storage || !user) {
-        throw new Error("Storage service not available.");
+        toast({ variant: 'destructive', title: 'Error', description: 'Servicio de almacenamiento no disponible.'})
+        return null;
     }
-    const imageRef = storageRef(storage, `workshops/${user.uid}/${uuidv4()}`);
-    const snapshot = await uploadBytes(imageRef, file);
-    const downloadURL = await getDownloadURL(snapshot.ref);
-    return downloadURL;
+    try {
+        const imageRef = storageRef(storage, `workshops/${user.uid}/${uuidv4()}`);
+        const snapshot = await uploadBytes(imageRef, file);
+        const downloadURL = await getDownloadURL(snapshot.ref);
+        return downloadURL;
+    } catch (error) {
+        console.error("Error uploading image:", error);
+        toast({ variant: 'destructive', title: 'Error de Subida', description: 'No se pudo subir la imagen.'})
+        return null;
+    }
   };
 
   async function onSubmit(values: z.infer<typeof workshopSchema>) {
@@ -108,13 +114,20 @@ export default function EditWorkshopPage() {
     try {
       let imageUrl = workshop.imageUrl;
       if (values.image && values.image.length > 0) {
-          imageUrl = await uploadImage(values.image[0]);
+          const newImageUrl = await uploadImage(values.image[0]);
+          if (newImageUrl) {
+            imageUrl = newImageUrl;
+          } else {
+            // Halt submission if image upload fails
+            setIsSubmitting(false);
+            return;
+          }
       }
 
       const workshopRef = doc(firestore, 'workshops', workshop.id);
       const { image, ...dataToUpdate } = values;
       
-      updateDocumentNonBlocking(workshopRef, { ...dataToUpdate, imageUrl });
+      await updateDoc(workshopRef, { ...dataToUpdate, imageUrl });
 
       toast({
         title: '¡Taller Actualizado!',
@@ -128,7 +141,8 @@ export default function EditWorkshopPage() {
         title: 'Error Inesperado',
         description: 'No se pudo actualizar el taller. Por favor, intenta de nuevo.',
       });
-      setIsSubmitting(false);
+    } finally {
+        setIsSubmitting(false);
     }
   }
   
@@ -324,4 +338,3 @@ export default function EditWorkshopPage() {
     </div>
   );
 }
-    

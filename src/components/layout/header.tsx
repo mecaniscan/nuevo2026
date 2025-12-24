@@ -3,7 +3,7 @@ import { Wrench, LogOut } from 'lucide-react';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { useUser } from '@/firebase/provider';
-import { initiateAnonymousSignIn, initiateSignOut } from '@/firebase/non-blocking-login';
+import { initiateSignOut } from '@/firebase/non-blocking-login';
 import { useAuth } from '@/firebase';
 import {
   DropdownMenu,
@@ -16,10 +16,6 @@ import {
 export function Header() {
   const { user, isUserLoading } = useUser();
   const auth = useAuth();
-
-  const handleLogin = () => {
-    initiateAnonymousSignIn(auth);
-  };
 
   const handleLogout = () => {
     initiateSignOut(auth);
@@ -55,6 +51,9 @@ export function Header() {
             <>
                <Button variant="ghost" asChild>
                 <Link href="/dashboard">Iniciar Sesión</Link>
+              </Button>
+               <Button asChild>
+                <Link href="/register">Crear Cuenta</Link>
               </Button>
             </>
           )}

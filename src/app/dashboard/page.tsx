@@ -6,9 +6,9 @@ import { useCollection } from '@/firebase/firestore/use-collection';
 import type { Workshop, Appointment, OilChange, Vehicle } from '@/lib/types';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Loader2, Calendar, Wrench, Trash2, Settings, Pencil, LogOut, User as UserIcon, Lock, ListPlus, Building, ArrowRight, Droplets, Car, Gauge, ScanLine, Heart } from 'lucide-react';
+import { Loader2, Calendar, Wrench, Trash2, Settings, Pencil, LogOut, User as UserIcon, Lock, Building, ArrowRight, Droplets, Car, Gauge, ScanLine, Heart } from 'lucide-react';
 import Link from 'next/link';
-import { initiateAnonymousSignIn, initiateSignOut, initiateEmailSignIn } from '@/firebase/non-blocking-login';
+import { initiateSignOut, initiateEmailSignIn } from '@/firebase/non-blocking-login';
 import { useAuth } from '@/firebase';
 import { useToast } from '@/hooks/use-toast';
 import {
@@ -205,9 +205,8 @@ export default function DashboardPage() {
                 </CardHeader>
                 <CardContent>
                   <Tabs defaultValue="email">
-                    <TabsList className="grid w-full grid-cols-2">
+                    <TabsList className="grid w-full grid-cols-1">
                       <TabsTrigger value="email">Correo</TabsTrigger>
-                      <TabsTrigger value="anonymous">Invitado</TabsTrigger>
                     </TabsList>
                     <TabsContent value="email" className="pt-4">
                         <Form {...loginForm}>
@@ -244,14 +243,6 @@ export default function DashboardPage() {
                             </Button>
                           </form>
                         </Form>
-                    </TabsContent>
-                    <TabsContent value="anonymous" className="pt-4">
-                       <div className="flex flex-col items-center justify-center text-center space-y-4 p-4 border-2 border-dashed rounded-lg">
-                          <p className="text-muted-foreground text-sm">Explora la app como invitado. Podrás ver talleres pero no guardar citas o registrar tu propio taller de forma permanente.</p>
-                          <Button onClick={() => initiateAnonymousSignIn(auth)} className="w-full">
-                              <UserIcon className="mr-2"/> Continuar como Invitado
-                          </Button>
-                        </div>
                     </TabsContent>
                   </Tabs>
                 </CardContent>

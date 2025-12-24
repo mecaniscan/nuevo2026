@@ -2,6 +2,7 @@
 
 import { Auth, createUserWithEmailAndPassword, updateProfile } from "firebase/auth";
 import { doc, setDoc, Firestore } from "firebase/firestore";
+import type { User as AppUser } from "@/lib/types";
 
 interface UserInfo {
     firstName: string;
@@ -35,11 +36,13 @@ export async function initiateEmailSignUpAndCreateUser(auth: Auth, firestore: Fi
     // Remove password before saving to Firestore
     const { password, ...userDataToSave } = userInfo;
 
-    const userData = {
+    const userData: Omit<AppUser, 'id'> = {
         ...userDataToSave,
-        id: user.uid,
     };
 
     // Use setDoc to create the document.
-    await setDoc(userDocRef, userData);
+    await setDoc(userDocRef, {
+        id: user.uid,
+        ...userData
+    });
 }

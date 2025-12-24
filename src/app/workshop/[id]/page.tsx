@@ -7,10 +7,9 @@ import * as z from 'zod';
 import { useParams, useRouter } from 'next/navigation';
 import Image from 'next/image';
 import { useDoc, useUser, useFirestore, useMemoFirebase, useCollection } from '@/firebase';
-import { doc, collection, query, where, serverTimestamp, Timestamp, writeBatch, getDoc, deleteDoc } from 'firebase/firestore';
+import { doc, collection, query, serverTimestamp, Timestamp, writeBatch, deleteDoc } from 'firebase/firestore';
 import type { Workshop, Appointment, Service, Review, FavoriteWorkshop } from '@/lib/types';
 import { addDocumentNonBlocking } from '@/firebase/non-blocking-updates';
-import { PlaceHolderImages } from '@/lib/placeholder-images';
 import { Loader2, MapPin, ScanLine, Star, Calendar as CalendarIcon, Wrench, MessageSquare, Send, Heart, Phone, Car } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -22,7 +21,6 @@ import { Calendar } from '@/components/ui/calendar';
 import { cn } from '@/lib/utils';
 import { format } from 'date-fns';
 import { useToast } from '@/hooks/use-toast';
-import { initiateAnonymousSignIn } from '@/firebase/non-blocking-login';
 import { useAuth } from '@/firebase';
 import Link from 'next/link';
 import { es } from 'date-fns/locale';
@@ -51,7 +49,6 @@ export default function WorkshopDetailPage() {
     const router = useRouter();
 
     const { user, isUserLoading } = useUser();
-    const auth = useAuth();
     const firestore = useFirestore();
 
     const [isSubmitting, setIsSubmitting] = React.useState(false);
@@ -118,7 +115,7 @@ export default function WorkshopDetailPage() {
     }, [workshopData, workshopServices]);
 
     const handleLogin = () => {
-        initiateAnonymousSignIn(auth);
+        router.push('/dashboard');
     };
 
     const toggleFavorite = async () => {
@@ -143,7 +140,7 @@ export default function WorkshopDetailPage() {
                     address: workshop.address,
                     imageUrl: workshop.imageUrl || '',
                     averageRating: workshop.averageRating || 0,
-                    addedAt: serverTimestamp(),
+                    addedAt: serverTimestamp() as Timestamp,
                 };
                 batch.set(favRef, favoriteData);
                 await batch.commit();
@@ -246,7 +243,7 @@ export default function WorkshopDetailPage() {
       }
     }
 
-    const formatDate = (dateValue: string | Timestamp) => {
+    const formatDate = (dateValue: string | Timestamp | undefined) => {
         if (!dateValue) return '';
         const date = (dateValue as Timestamp)?.toDate ? (dateValue as Timestamp).toDate() : new Date(dateValue);
         return format(date, 'dd MMM yyyy', { locale: es });
@@ -521,5 +518,3 @@ export default function WorkshopDetailPage() {
     </div>
   );
 }
-
-    
