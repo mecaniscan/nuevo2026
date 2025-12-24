@@ -98,11 +98,22 @@ export default function VehicleCertificatePage() {
                         <div>
                             <h2 className="text-xl font-semibold mb-4 border-b pb-2">Datos del Vendedor</h2>
                             <dl className="space-y-1">
-                                <CertificateItem label="Nombre Completo" value={`${userData.firstName} ${userData.lastName}`} />
                                 <CertificateItem label="Correo Electrónico" value={userData.email} />
                                 <CertificateItem label="Número de WhatsApp" value={userData.whatsappNumber} />
                                 <CertificateItem label="Fecha de Emisión" value={format(new Date(), "dd 'de' MMMM 'de' yyyy", { locale: es })} />
                             </dl>
+                            <div className="space-y-10 pt-8">
+                                <div className="space-y-2">
+                                    <div className="w-full h-12 border-b border-foreground/50"></div>
+                                    <p className="text-center text-sm text-muted-foreground">Firma del Vendedor</p>
+                                </div>
+                                 <div className="space-y-2">
+                                     <div className="w-full h-8 border-b border-foreground/50 text-center font-semibold flex items-center justify-center">
+                                        {`${userData.firstName} ${userData.lastName}`}
+                                     </div>
+                                     <p className="text-center text-sm text-muted-foreground">Nombre y Apellido</p>
+                                </div>
+                            </div>
                         </div>
                         <Separator />
                          <div>
