@@ -5,7 +5,7 @@ import { useParams, useRouter } from 'next/navigation';
 import { useUser, useFirestore, useDoc, useMemoFirebase } from '@/firebase';
 import { doc } from 'firebase/firestore';
 import type { Vehicle, User } from '@/lib/types';
-import { Loader2, Wrench, Printer, ArrowLeft } from 'lucide-react';
+import { Loader2, Wrench, Printer, ArrowLeft, PenSquare } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
@@ -118,6 +118,24 @@ export default function VehicleCertificatePage() {
                                 <CertificateItem label="País de Registro" value={vehicle.country} />
                                 <CertificateItem label="Precio de Venta Sugerido" value={`$${vehicle.price.toLocaleString()}`} />
                             </dl>
+                        </div>
+                         <Separator />
+                         <div>
+                            <h2 className="text-xl font-semibold mb-4 border-b pb-2">Datos del Comprador</h2>
+                             <div className="space-y-10 pt-4">
+                                <div className="space-y-2">
+                                    <div className="w-full h-12 border-b border-foreground/50"></div>
+                                    <p className="text-center text-sm text-muted-foreground">Firma del Comprador</p>
+                                </div>
+                                <div className="space-y-2">
+                                     <div className="w-full h-8 border-b border-foreground/50"></div>
+                                     <p className="text-center text-sm text-muted-foreground">Nombre y Apellido</p>
+                                </div>
+                                <div className="space-y-2">
+                                    <div className="w-full h-8 border-b border-foreground/50"></div>
+                                    <p className="text-center text-sm text-muted-foreground">Número de Identificación</p>
+                                </div>
+                            </div>
                         </div>
                     </CardContent>
                     <CardFooter className="bg-muted/50 p-6 text-center">
