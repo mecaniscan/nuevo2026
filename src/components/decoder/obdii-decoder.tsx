@@ -182,16 +182,10 @@ export function OBDII_Decoder() {
                             Escanear con IA
                         </Button>
                      ) : (
-                        <div className='flex gap-2'>
-                          <Button onClick={handleScan} disabled={isLoading} className="w-full">
-                              {isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Camera className="mr-2 h-4 w-4" />}
-                              Escanear Tablero
-                          </Button>
-                          <Button onClick={stopCamera} variant="outline" className="w-full">
-                              <VideoOff className="mr-2 h-4 w-4" />
-                              Detener Cámara
-                          </Button>
-                        </div>
+                        <Button onClick={handleScan} disabled={isLoading} className="w-full">
+                            {isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Camera className="mr-2 h-4 w-4" />}
+                            Escanear Tablero
+                        </Button>
                      )}
                 </CardContent>
                 <CardFooter className="flex-col items-stretch">
