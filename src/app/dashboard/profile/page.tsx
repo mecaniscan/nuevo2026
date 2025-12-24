@@ -7,8 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { useUser, useFirestore, useMemoFirebase, useDoc } from '@/firebase';
-import { updateDocumentNonBlocking } from '@/firebase/non-blocking-updates';
+import { useUser, useFirestore, useMemoFirebase, useDoc, updateDocumentNonBlocking, FirestorePermissionError, errorEmitter } from '@/firebase';
 import { doc } from 'firebase/firestore';
 import { useToast } from '@/hooks/use-toast';
 import { useRouter } from 'next/navigation';
@@ -97,12 +96,11 @@ export default function ProfilePage() {
       });
       router.push('/dashboard');
     } catch (error) {
-      console.error('Error updating profile:', error);
-      toast({
-        variant: 'destructive',
-        title: 'Error Inesperado',
-        description: 'No se pudo actualizar tu perfil. Por favor, intenta de nuevo.',
-      });
+        errorEmitter.emit('permission-error', new FirestorePermissionError({
+            path: `/users/${user.uid}`,
+            operation: 'update',
+            requestResourceData: values
+        }));
     } finally {
         setIsSubmitting(false);
     }

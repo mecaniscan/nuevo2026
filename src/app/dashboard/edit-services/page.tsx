@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { useUser, useFirestore, useMemoFirebase } from '@/firebase';
+import { useUser, useFirestore, useMemoFirebase, FirestorePermissionError, errorEmitter } from '@/firebase';
 import { collection, query, where, doc, writeBatch } from 'firebase/firestore';
 import { useCollection } from '@/firebase/firestore/use-collection';
 import { useToast } from '@/hooks/use-toast';
@@ -86,46 +86,43 @@ export default function EditServicesPage() {
     
     setIsSubmitting(true);
     
-    try {
-      const batch = writeBatch(firestore);
-      const servicesColRef = collection(firestore, `workshops/${workshop.id}/services`);
-      
-      // Get IDs of services that exist on the form
-      const formIds = new Set(values.services.map(s => s.id).filter(Boolean));
+    const batch = writeBatch(firestore);
+    const servicesColRef = collection(firestore, `workshops/${workshop.id}/services`);
+    
+    // Get IDs of services that exist on the form
+    const formIds = new Set(values.services.map(s => s.id).filter(Boolean));
 
-      // Delete services that are no longer in the form
-      currentServices?.forEach(serviceInDb => {
-        if (!formIds.has(serviceInDb.id)) {
-            const docRef = doc(servicesColRef, serviceInDb.id);
-            batch.delete(docRef);
-        }
-      });
-      
-      // Add or update services
-      values.services.forEach(service => {
-        const docRef = service.id ? doc(servicesColRef, service.id) : doc(servicesColRef);
-        const { id, ...serviceData } = service; // remove frontend-only id before saving
-        batch.set(docRef, serviceData, { merge: true });
-      });
+    // Delete services that are no longer in the form
+    currentServices?.forEach(serviceInDb => {
+      if (!formIds.has(serviceInDb.id)) {
+          const docRef = doc(servicesColRef, serviceInDb.id);
+          batch.delete(docRef);
+      }
+    });
+    
+    // Add or update services
+    values.services.forEach(service => {
+      const docRef = service.id ? doc(servicesColRef, service.id) : doc(servicesColRef);
+      const { id, ...serviceData } = service; // remove frontend-only id before saving
+      batch.set(docRef, serviceData, { merge: true });
+    });
 
-      await batch.commit();
-
-      toast({
-        title: '¡Servicios Actualizados!',
-        description: 'Tu lista de servicios ha sido guardada.',
-      });
-      router.push('/dashboard');
-
-    } catch (error) {
-      console.error('Error updating services:', error);
-      toast({
-        variant: 'destructive',
-        title: 'Error Inesperado',
-        description: 'No se pudo actualizar la lista de servicios.',
-      });
-    } finally {
+    batch.commit().then(() => {
+        toast({
+            title: '¡Servicios Actualizados!',
+            description: 'Tu lista de servicios ha sido guardada.',
+        });
+        router.push('/dashboard');
+    }).catch(error => {
+        console.error('Error updating services:', error);
+        errorEmitter.emit('permission-error', new FirestorePermissionError({
+            path: servicesColRef.path,
+            operation: 'write',
+            requestResourceData: values.services
+        }));
+    }).finally(() => {
         setIsSubmitting(false);
-    }
+    });
   }
 
   const isLoading = isUserLoading || isWorkshopsLoading || isServicesLoading;
@@ -242,5 +239,3 @@ export default function EditServicesPage() {
     </div>
   )
 }
-
-    

@@ -6,8 +6,8 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { useParams, useRouter } from 'next/navigation';
 import Image from 'next/image';
-import { useDoc, useUser, useFirestore, useMemoFirebase, useCollection } from '@/firebase';
-import { doc, collection, query, serverTimestamp, Timestamp, writeBatch, deleteDoc } from 'firebase/firestore';
+import { useDoc, useUser, useFirestore, useMemoFirebase, useCollection, FirestorePermissionError, errorEmitter } from '@/firebase';
+import { doc, collection, query, serverTimestamp, Timestamp, writeBatch, deleteDoc, setDoc } from 'firebase/firestore';
 import type { Workshop, Appointment, Service, Review, FavoriteWorkshop } from '@/lib/types';
 import { addDocumentNonBlocking } from '@/firebase/non-blocking-updates';
 import { Loader2, MapPin, ScanLine, Star, Calendar as CalendarIcon, Wrench, MessageSquare, Send, Heart, Phone, Car } from 'lucide-react';
@@ -21,7 +21,6 @@ import { Calendar } from '@/components/ui/calendar';
 import { cn } from '@/lib/utils';
 import { format } from 'date-fns';
 import { useToast } from '@/hooks/use-toast';
-import { useAuth } from '@/firebase';
 import Link from 'next/link';
 import { es } from 'date-fns/locale';
 
@@ -126,29 +125,35 @@ export default function WorkshopDetailPage() {
 
         const favRef = doc(firestore, `users/${user.uid}/favorites`, workshopId);
 
-        try {
-            if (isFavorite) {
-                // Remove from favorites
-                await deleteDoc(favRef);
-                toast({ title: 'Eliminado de Favoritos', description: `${workshop.name} ha sido eliminado de tu lista.` });
-            } else {
-                // Add to favorites
-                const batch = writeBatch(firestore);
-                const favoriteData: FavoriteWorkshop = {
-                    workshopId,
-                    name: workshop.name,
-                    address: workshop.address,
-                    imageUrl: workshop.imageUrl || '',
-                    averageRating: workshop.averageRating || 0,
-                    addedAt: serverTimestamp() as Timestamp,
-                };
-                batch.set(favRef, favoriteData);
-                await batch.commit();
+        if (isFavorite) {
+            // Remove from favorites
+            deleteDoc(favRef).then(() => {
+                 toast({ title: 'Eliminado de Favoritos', description: `${workshop.name} ha sido eliminado de tu lista.` });
+            }).catch(error => {
+                errorEmitter.emit('permission-error', new FirestorePermissionError({
+                    path: favRef.path,
+                    operation: 'delete'
+                }));
+            });
+        } else {
+            // Add to favorites
+            const favoriteData: FavoriteWorkshop = {
+                workshopId,
+                name: workshop.name,
+                address: workshop.address,
+                imageUrl: workshop.imageUrl || '',
+                averageRating: workshop.averageRating || 0,
+                addedAt: serverTimestamp() as Timestamp,
+            };
+            setDoc(favRef, favoriteData).then(() => {
                 toast({ title: '¡Guardado en Favoritos!', description: `${workshop.name} ha sido añadido a tu lista.` });
-            }
-        } catch (error) {
-            console.error('Error toggling favorite:', error);
-            toast({ variant: 'destructive', title: 'Error', description: 'No se pudo actualizar tu lista de favoritos.' });
+            }).catch(error => {
+                errorEmitter.emit('permission-error', new FirestorePermissionError({
+                    path: favRef.path,
+                    operation: 'create',
+                    requestResourceData: favoriteData
+                }));
+            });
         }
     };
 
@@ -189,7 +194,9 @@ export default function WorkshopDetailPage() {
             router.push('/dashboard');
 
         } catch (error) {
-            console.error('Error creating appointment record:', error);
+             // This catch block is for client-side errors, not Firestore permission errors
+             // which are handled by addDocumentNonBlocking.
+             console.error('Error creating appointment record:', error);
              toast({
                 variant: 'destructive',
                 title: 'Error al Registrar',
@@ -210,37 +217,26 @@ export default function WorkshopDetailPage() {
         return;
       }
       setIsSubmittingReview(true);
-      try {
-        const reviewCollection = collection(firestore, `workshops/${workshopId}/reviews`);
-        const reviewData = {
-          ...values,
-          workshopId,
-          userId: user.uid,
-          authorName: user.displayName || user.email,
-          createdAt: serverTimestamp(),
-        };
+      
+      const reviewCollection = collection(firestore, `workshops/${workshopId}/reviews`);
+      const reviewData = {
+        ...values,
+        workshopId,
+        userId: user.uid,
+        authorName: user.displayName || user.email,
+        createdAt: serverTimestamp(),
+      };
 
-        addDocumentNonBlocking(reviewCollection, reviewData);
-        
-        // This should be a transaction in a real app to update average rating
-        // For now, we will just add the review
-
-        toast({
-          title: "¡Reseña Enviada!",
-          description: "Gracias por compartir tu opinión.",
-        });
-        reviewForm.reset({rating: 0, comment: ""});
-
-      } catch (error) {
-        console.error("Error submitting review:", error);
-        toast({
-          variant: "destructive",
-          title: "Error Inesperado",
-          description: "No se pudo enviar tu reseña. Intenta de nuevo.",
-        });
-      } finally {
-        setIsSubmittingReview(false);
-      }
+      addDocumentNonBlocking(reviewCollection, reviewData);
+      // In a real app, you'd use a transaction to update the average rating on the workshop doc.
+      // For simplicity, we just add the review here.
+      
+      toast({
+        title: "¡Reseña Enviada!",
+        description: "Gracias por compartir tu opinión.",
+      });
+      reviewForm.reset({rating: 0, comment: ""});
+      setIsSubmittingReview(false); // Do this optimistically
     }
 
     const formatDate = (dateValue: string | Timestamp | undefined) => {

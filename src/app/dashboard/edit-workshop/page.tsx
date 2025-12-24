@@ -8,8 +8,8 @@ import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, For
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { useUser, useFirestore, useMemoFirebase, useStorage } from '@/firebase';
-import { updateDoc, collection, query, where, doc } from 'firebase/firestore';
+import { useUser, useFirestore, useMemoFirebase, useStorage, updateDocumentNonBlocking } from '@/firebase';
+import { collection, query, where, doc } from 'firebase/firestore';
 import { useCollection } from '@/firebase/firestore/use-collection';
 import { useToast } from '@/hooks/use-toast';
 import { useRouter } from 'next/navigation';
@@ -127,7 +127,7 @@ export default function EditWorkshopPage() {
       const workshopRef = doc(firestore, 'workshops', workshop.id);
       const { image, ...dataToUpdate } = values;
       
-      await updateDoc(workshopRef, { ...dataToUpdate, imageUrl });
+      updateDocumentNonBlocking(workshopRef, { ...dataToUpdate, imageUrl });
 
       toast({
         title: '¡Taller Actualizado!',

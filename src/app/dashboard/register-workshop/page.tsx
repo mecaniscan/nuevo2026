@@ -8,9 +8,8 @@ import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, For
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { useUser, useFirestore, useMemoFirebase, useStorage } from '@/firebase';
-import { addDocumentNonBlocking } from '@/firebase/non-blocking-updates';
-import { collection, query, where, doc, setDoc } from 'firebase/firestore';
+import { useUser, useFirestore, useMemoFirebase, useStorage, setDocumentNonBlocking } from '@/firebase';
+import { collection, query, where, doc } from 'firebase/firestore';
 import { useCollection } from '@/firebase/firestore/use-collection';
 import { useToast } from '@/hooks/use-toast';
 import { useRouter } from 'next/navigation';
@@ -124,7 +123,7 @@ export default function RegisterWorkshopPage() {
         reviewCount: 0,
       };
       
-      await setDoc(workshopRef, workshopData);
+      setDocumentNonBlocking(workshopRef, workshopData, { merge: false });
 
       toast({
         title: '¡Taller Registrado!',
@@ -324,4 +323,3 @@ export default function RegisterWorkshopPage() {
     </div>
   );
 }
-    

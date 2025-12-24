@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
-import { useUser, useFirestore, useMemoFirebase, useStorage } from '@/firebase';
+import { useUser, useFirestore, useMemoFirebase, useStorage, FirestorePermissionError, errorEmitter, deleteDocumentNonBlocking } from '@/firebase';
 import { collection, query, orderBy, doc, writeBatch, getDoc } from 'firebase/firestore';
 import { ref as storageRef, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { useCollection } from '@/firebase/firestore/use-collection';
@@ -137,7 +137,6 @@ export default function MyVehiclesPage() {
         const sellerName = user.displayName || `${userData?.firstName} ${userData?.lastName}` || 'Vendedor Anónimo';
         const sellerWhatsapp = userData?.whatsappNumber || '';
 
-        
         if (editingVehicleId) {
             const userVehicleRef = doc(firestore, `users/${user.uid}/vehicles`, editingVehicleId);
             const existingVehicleSnap = await getDoc(userVehicleRef);
@@ -159,13 +158,6 @@ export default function MyVehiclesPage() {
             } else {
                 batch.delete(marketplaceVehicleRef);
             }
-            
-            await batch.commit();
-            toast({
-                title: '¡Vehículo Actualizado!',
-                description: 'Tu vehículo ha sido actualizado.',
-            });
-            setEditingVehicleId(null);
         } else {
             const userVehicleRef = doc(collection(firestore, `users/${user.uid}/vehicles`));
              const vehiclePayload: Omit<Vehicle, 'id'> = {
@@ -182,15 +174,25 @@ export default function MyVehiclesPage() {
                 const marketplaceVehicleRef = doc(firestore, 'marketplace', userVehicleRef.id);
                 batch.set(marketplaceVehicleRef, vehicleDataWithId);
             }
-
-            await batch.commit();
-            
-            toast({
-                title: '¡Vehículo Añadido!',
-                description: 'Tu vehículo ha sido guardado.',
-            });
         }
-        form.reset();
+        
+        batch.commit().then(() => {
+            toast({
+                title: editingVehicleId ? '¡Vehículo Actualizado!' : '¡Vehículo Añadido!',
+                description: `Tu vehículo ha sido ${editingVehicleId ? 'actualizado' : 'guardado'}.`,
+            });
+            form.reset();
+            setEditingVehicleId(null);
+        }).catch(error => {
+            errorEmitter.emit('permission-error', new FirestorePermissionError({
+                path: `/users/${user.uid}/vehicles`,
+                operation: 'write',
+                requestResourceData: values
+            }));
+        }).finally(() => {
+            setIsSubmitting(false);
+        });
+
     } catch (error) {
         console.error('Error saving vehicle:', error);
         toast({
@@ -198,41 +200,35 @@ export default function MyVehiclesPage() {
             title: 'Error Inesperado',
             description: 'No se pudo guardar el vehículo.',
         });
-    } finally {
         setIsSubmitting(false);
     }
   }
 
-  async function handleDeleteVehicle(vehicleId: string) {
+  function handleDeleteVehicle(vehicleId: string) {
      if (!user || !firestore) {
       toast({ variant: 'destructive', title: 'Error', description: 'No autenticado.' });
       return;
     }
     
-    try {
-        const batch = writeBatch(firestore);
-        
-        const userVehicleRef = doc(firestore, `users/${user.uid}/vehicles`, vehicleId);
-        batch.delete(userVehicleRef);
+    const batch = writeBatch(firestore);
+    
+    const userVehicleRef = doc(firestore, `users/${user.uid}/vehicles`, vehicleId);
+    batch.delete(userVehicleRef);
 
-        const marketplaceVehicleRef = doc(firestore, 'marketplace', vehicleId);
-        batch.delete(marketplaceVehicleRef);
+    const marketplaceVehicleRef = doc(firestore, 'marketplace', vehicleId);
+    batch.delete(marketplaceVehicleRef);
 
-        await batch.commit();
-
+    batch.commit().then(() => {
         toast({
             title: 'Vehículo Eliminado',
             description: 'El vehículo ha sido eliminado de tus registros y del marketplace.',
         });
-
-    } catch (error) {
-        console.error("Error deleting vehicle:", error);
-        toast({
-            variant: 'destructive',
-            title: 'Error Inesperado',
-            description: 'No se pudo eliminar el vehículo.',
-        });
-    }
+    }).catch(error => {
+        errorEmitter.emit('permission-error', new FirestorePermissionError({
+            path: userVehicleRef.path,
+            operation: 'delete',
+        }));
+    });
   }
 
   function handleEditVehicle(vehicle: Vehicle) {

@@ -35,13 +35,11 @@ export async function initiateEmailSignUpAndCreateUser(auth: Auth, firestore: Fi
     // Remove password before saving to Firestore
     const { password, ...userDataToSave } = userInfo;
 
-    const userData: Omit<AppUser, 'id'> = {
+    const userData: AppUser = {
+        id: user.uid, // Explicitly set the ID
         ...userDataToSave,
     };
 
     // Use setDoc to create the document.
-    await setDoc(userDocRef, {
-        id: user.uid,
-        ...userData
-    });
+    await setDoc(userDocRef, userData);
 }
