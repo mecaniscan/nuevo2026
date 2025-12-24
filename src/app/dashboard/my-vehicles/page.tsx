@@ -284,7 +284,7 @@ export default function MyVehiclesPage() {
     
     try {
         const batch = writeBatch(firestore);
-        let uploadedImageUrls: string[] = [];
+        let uploadedImageUrls: string[] | undefined = undefined;
         if (values.images && values.images.length > 0) {
             uploadedImageUrls = await uploadImages(values.images);
         }
@@ -303,7 +303,7 @@ export default function MyVehiclesPage() {
 
             const vehiclePayload: Partial<Vehicle> = {
                 ...values,
-                imageUrls: uploadedImageUrls.length > 0 ? uploadedImageUrls : existingVehicleData.imageUrls,
+                imageUrls: uploadedImageUrls ?? existingVehicleData.imageUrls,
                 sellerName,
                 sellerWhatsapp,
             };
@@ -319,13 +319,15 @@ export default function MyVehiclesPage() {
             }
         } else {
             const userVehicleRef = doc(collection(firestore, `users/${user.uid}/vehicles`));
-             const vehiclePayload: Omit<Vehicle, 'id'> = {
+            
+            const vehiclePayload: Omit<Vehicle, 'id'> & { imageUrls?: string[] } = {
                 ...values,
                 userId: user.uid,
                 sellerName,
                 sellerWhatsapp,
-                imageUrls: uploadedImageUrls
+                imageUrls: uploadedImageUrls,
             };
+
             const vehicleDataWithId = { ...vehiclePayload, id: userVehicleRef.id };
             batch.set(userVehicleRef, vehicleDataWithId);
 
