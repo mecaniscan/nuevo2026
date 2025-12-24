@@ -12,7 +12,7 @@ import { collection, query, orderBy, doc, writeBatch, getDoc } from 'firebase/fi
 import { ref as storageRef, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { useCollection } from '@/firebase/firestore/use-collection';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2, PlusCircle, Car, Trash2, Pencil, Save, Briefcase, BadgePercent, Upload } from 'lucide-react';
+import { Loader2, PlusCircle, Car, Trash2, Pencil, Save, Briefcase, BadgePercent, Upload, FileText } from 'lucide-react';
 import Link from 'next/link';
 import type { Vehicle, User } from '@/lib/types';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -56,10 +56,10 @@ const vehicleSchema = z.object({
   country: z.string().min(2, 'El país es requerido.'),
   isForSale: z.boolean().default(false),
   images: z.any()
-    .refine((files) => files?.length <= 5, `Máximo 5 imágenes.`)
-    .refine((files) => Array.from(files).every((file: any) => file.size <= MAX_FILE_SIZE), `Cada imagen debe pesar menos de 5MB.`)
+    .refine((files) => !files || files.length === 0 || files?.length <= 5, `Máximo 5 imágenes.`)
+    .refine((files) => !files || files.length === 0 || Array.from(files).every((file: any) => file.size <= MAX_FILE_SIZE), `Cada imagen debe pesar menos de 5MB.`)
     .refine(
-      (files) => Array.from(files).every((file: any) => ACCEPTED_IMAGE_TYPES.includes(file.type)),
+      (files) => !files || files.length === 0 || Array.from(files).every((file: any) => ACCEPTED_IMAGE_TYPES.includes(file.type)),
       "Solo se aceptan formatos .jpg, .jpeg, .png y .webp."
     ).optional(),
 });
@@ -379,8 +379,13 @@ export default function MyVehiclesPage() {
                                           )}
                                         </TableCell>
                                         <TableCell>{vehicle.currentMileage?.toLocaleString()} km</TableCell>
-                                        <TableCell>${vehicle.price?.toFixed(2)}</TableCell>
+                                        <TableCell>${vehicle.price?.toLocaleString()}</TableCell>
                                         <TableCell className="text-right">
+                                            <Button variant="ghost" size="icon" className="text-blue-500 hover:bg-blue-500/10" asChild>
+                                                <Link href={`/dashboard/vehicle-certificate/${vehicle.id}`} title="Generar Certificado">
+                                                    <FileText className="h-4 w-4" />
+                                                </Link>
+                                            </Button>
                                             <Button variant="ghost" size="icon" className="text-primary hover:bg-primary/10" onClick={() => handleEditVehicle(vehicle)}>
                                                 <Pencil className="h-4 w-4" />
                                             </Button>
