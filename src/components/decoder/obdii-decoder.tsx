@@ -92,7 +92,7 @@ export function OBDII_Decoder() {
     if (!videoRef.current) {
       toast({ variant: "destructive", title: "Error", description: "No se puede acceder al video." });
       setIsLoading(false);
-      stopCamera();
+      // Don't stop camera if capture fails, user might want to retry
       return;
     }
 
@@ -103,19 +103,18 @@ export function OBDII_Decoder() {
     if (!context) {
       toast({ variant: "destructive", title: "Error", description: "No se pudo procesar la imagen." });
       setIsLoading(false);
-      stopCamera();
       return;
     }
     context.drawImage(videoRef.current, 0, 0, canvas.width, canvas.height);
     const dataUri = canvas.toDataURL('image/jpeg');
 
     if (dataUri === 'data:,') {
-       toast({ variant: "destructive", title: "Error de Captura", description: "No se pudo capturar la imagen." });
+       toast({ variant: "destructive", title: "Error de Captura", description: "No se pudo capturar la imagen. Intenta de nuevo." });
        setIsLoading(false);
        return;
     }
 
-    // Step 3: Analyze Image (camera is not stopped here anymore)
+    // Step 3: Analyze Image
     try {
       const output = await scanDashboardAction({ photoDataUri: dataUri });
       setResult(output);
@@ -128,6 +127,7 @@ export function OBDII_Decoder() {
       console.error(e);
     } finally {
         setIsLoading(false);
+        // Camera remains on after scanning
     }
   };
 
@@ -146,7 +146,7 @@ export function OBDII_Decoder() {
           <div className="flex items-center justify-center">
             <Card className="w-full max-w-md shadow-lg">
                 <CardHeader>
-                  <CardTitle>Análisis de Tablero con Cámara</CardTitle>
+                  <CardTitle>Scanner de tablero con IA</CardTitle>
                   <CardDescription>
                     {isCameraActive ? 'Cámara activa. Presiona escanear.' : 'Presiona "Escanear con IA" para comenzar.'}
                   </CardDescription>
