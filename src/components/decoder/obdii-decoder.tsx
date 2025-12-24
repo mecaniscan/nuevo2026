@@ -135,7 +135,7 @@ export function OBDII_Decoder() {
                             </div>
                         )}
                     </div>
-                     <Button onClick={handleScan} disabled={isLoading || !hasCameraPermission} className="w-full">
+                     <Button onClick={handleScan} disabled={isLoading || hasCameraPermission === false || hasCameraPermission === null} className="w-full">
                         {isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Camera className="mr-2 h-4 w-4" />}
                         Escanear Tablero
                     </Button>

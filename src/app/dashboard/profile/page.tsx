@@ -90,31 +90,39 @@ export default function ProfilePage() {
 
     setIsSubmitting(true);
     
-    // Update Firestore document
-    const userRef = doc(firestore, 'users', user.uid);
-    const { email, ...dataToUpdate } = values; // Email is not updated here, id is not needed
-    
     try {
-        await updateDoc(userRef, dataToUpdate);
+      // Update Firestore document
+      const userRef = doc(firestore, 'users', user.uid);
+      const { email, ...dataToUpdate } = values; // Email is not updated here, id is not needed
+      
+      await updateDoc(userRef, dataToUpdate);
 
-        // Update Firebase Auth profile displayName
-        const newDisplayName = `${values.firstName} ${values.lastName}`;
-        if (user.displayName !== newDisplayName) {
-            await updateProfile(user, { displayName: newDisplayName });
-        }
+      // Update Firebase Auth profile displayName
+      const newDisplayName = `${values.firstName} ${values.lastName}`;
+      if (user.displayName !== newDisplayName) {
+          await updateProfile(user, { displayName: newDisplayName });
+      }
 
-        toast({
-            title: '¡Perfil Actualizado!',
-            description: 'Tu información ha sido guardada correctamente.',
-        });
-        router.push('/dashboard');
-    } catch (error) {
+      toast({
+          title: '¡Perfil Actualizado!',
+          description: 'Tu información ha sido guardada correctamente.',
+      });
+      router.push('/dashboard');
+    } catch (error: any) {
         console.error('Error updating profile:', error);
-        errorEmitter.emit('permission-error', new FirestorePermissionError({
-            path: userRef.path,
-            operation: 'update',
-            requestResourceData: dataToUpdate
-        }));
+        if (error.code && error.code.includes('permission-denied')) {
+            errorEmitter.emit('permission-error', new FirestorePermissionError({
+                path: `/users/${user.uid}`,
+                operation: 'update',
+                requestResourceData: values
+            }));
+        } else {
+            toast({
+                variant: 'destructive',
+                title: 'Error Inesperado',
+                description: 'No se pudo actualizar el perfil. ' + error.message,
+            });
+        }
     } finally {
         setIsSubmitting(false);
     }

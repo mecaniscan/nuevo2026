@@ -33,10 +33,10 @@ const workshopSchema = z.object({
   email: z.string().email('El correo electrónico no es válido.'),
   obdScannerService: z.boolean().default(false),
   image: z.any()
-    .refine((file) => !file || file.length === 1, "Solo puedes subir una imagen.")
-    .refine((file) => !file || file?.[0]?.size <= MAX_FILE_SIZE, `El tamaño máximo es 5MB.`)
+    .refine((files) => !files || files.length === 0 || files?.length === 1, "Solo puedes subir una imagen.")
+    .refine((files) => !files || files.length === 0 || files?.[0]?.size <= MAX_FILE_SIZE, `El tamaño máximo es 5MB.`)
     .refine(
-      (file) => !file || ACCEPTED_IMAGE_TYPES.includes(file?.[0]?.type),
+      (files) => !files || files.length === 0 || ACCEPTED_IMAGE_TYPES.includes(files?.[0]?.type),
       "Solo se aceptan formatos .jpg, .jpeg, .png y .webp."
     ).optional(),
 });
@@ -123,42 +123,50 @@ export default function EditWorkshopPage() {
 
     setIsSubmitting(true);
     
-    let imageUrl = workshop.imageUrl;
-    if (values.image && values.image.length > 0) {
-        const newImageUrl = await uploadImage(values.image[0]);
-        if (newImageUrl) {
-          imageUrl = newImageUrl;
-        } else {
-          // Halt submission if image upload fails
-          setIsSubmitting(false);
-          return;
-        }
-    }
-
-    const workshopRef = doc(firestore, 'workshops', workshop.id);
-    const { image, ...dataToUpdate } = values;
-    
-    const finalData = { ...dataToUpdate, imageUrl };
-    
-    updateDoc(workshopRef, finalData)
-        .then(() => {
-            toast({
-                title: '¡Taller Actualizado!',
-                description: 'La información de tu taller ha sido guardada.',
-            });
-            router.push('/dashboard');
-        })
-        .catch(error => {
-            console.error('Error updating workshop:', error);
-            errorEmitter.emit('permission-error', new FirestorePermissionError({
-                path: workshopRef.path,
-                operation: 'update',
-                requestResourceData: finalData
-            }));
-        })
-        .finally(() => {
+    try {
+      let imageUrl = workshop.imageUrl;
+      if (values.image && values.image.length > 0) {
+          const newImageUrl = await uploadImage(values.image[0]);
+          if (newImageUrl) {
+            imageUrl = newImageUrl;
+          } else {
+            // Halt submission if image upload fails
             setIsSubmitting(false);
-        });
+            return;
+          }
+      }
+
+      const workshopRef = doc(firestore, 'workshops', workshop.id);
+      const { image, ...dataToUpdate } = values;
+      
+      const finalData = { ...dataToUpdate, imageUrl };
+      
+      await updateDoc(workshopRef, finalData);
+
+      toast({
+          title: '¡Taller Actualizado!',
+          description: 'La información de tu taller ha sido guardada.',
+      });
+      router.push('/dashboard');
+    } catch (error: any) {
+        console.error('Error updating workshop:', error);
+        if (error.code && error.code.includes('permission-denied')) {
+            const { image, ...dataToUpdate } = values;
+            errorEmitter.emit('permission-error', new FirestorePermissionError({
+                path: `/workshops/${workshop.id}`,
+                operation: 'update',
+                requestResourceData: { ...dataToUpdate, imageUrl: workshop.imageUrl }
+            }));
+        } else {
+            toast({
+                variant: 'destructive',
+                title: 'Error Inesperado',
+                description: 'No se pudo actualizar el taller. ' + error.message,
+            });
+        }
+    } finally {
+        setIsSubmitting(false);
+    }
   }
   
   if (isUserLoading || isWorkshopsLoading || (user && user.isAnonymous)) {

@@ -67,16 +67,16 @@ export default function EditServicesPage() {
     },
   });
 
-  const { fields, append, remove } = useFieldArray({
+  const { fields, append, remove, replace } = useFieldArray({
     control: form.control,
     name: "services"
   });
 
   useEffect(() => {
     if (currentServices) {
-      form.reset({ services: currentServices });
+      replace(currentServices);
     }
-  }, [currentServices, form]);
+  }, [currentServices, replace]);
 
   async function onSubmit(values: z.infer<typeof formSchema>) {
     if (!user || !firestore || !workshop) {
@@ -93,16 +93,16 @@ export default function EditServicesPage() {
         const formIds = new Set(values.services.map(s => s.id).filter(Boolean));
 
         currentServices?.forEach(serviceInDb => {
-        if (!formIds.has(serviceInDb.id)) {
-            const docRef = doc(servicesColRef, serviceInDb.id);
-            batch.delete(docRef);
-        }
+          if (!formIds.has(serviceInDb.id)) {
+              const docRef = doc(servicesColRef, serviceInDb.id);
+              batch.delete(docRef);
+          }
         });
         
         values.services.forEach(service => {
-        const docRef = service.id ? doc(servicesColRef, service.id) : doc(servicesColRef);
-        const { id, ...serviceData } = service; 
-        batch.set(docRef, { ...serviceData, id: docRef.id }, { merge: true });
+          const docRef = service.id ? doc(servicesColRef, service.id) : doc(servicesColRef);
+          const { id, ...serviceData } = service; 
+          batch.set(docRef, { ...serviceData, id: docRef.id }, { merge: true });
         });
 
         await batch.commit();
@@ -113,11 +113,19 @@ export default function EditServicesPage() {
         router.push('/dashboard');
     } catch (error: any) {
         console.error('Error updating services:', error);
-        errorEmitter.emit('permission-error', new FirestorePermissionError({
-            path: `/workshops/${workshop.id}/services`,
-            operation: 'write',
-            requestResourceData: values.services
-        }));
+        if (error.code && error.code.includes('permission-denied')) {
+            errorEmitter.emit('permission-error', new FirestorePermissionError({
+                path: `/workshops/${workshop.id}/services`,
+                operation: 'write',
+                requestResourceData: values.services
+            }));
+        } else {
+             toast({
+                variant: 'destructive',
+                title: 'Error Inesperado',
+                description: 'No se pudo guardar los servicios. ' + error.message,
+            });
+        }
     } finally {
         setIsSubmitting(false);
     }
@@ -237,5 +245,3 @@ export default function EditServicesPage() {
     </div>
   )
 }
-
-    

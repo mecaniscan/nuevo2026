@@ -9,7 +9,7 @@ import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { useUser, useFirestore, useMemoFirebase, FirestorePermissionError, errorEmitter, deleteDocumentNonBlocking, useDoc, useStorage } from '@/firebase';
 import { collection, query, orderBy, doc, writeBatch, getDoc, updateDoc } from 'firebase/firestore';
-import { ref as storageRef, uploadBytes, getDownloadURL, uploadString } from 'firebase/storage';
+import { ref as storageRef, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { useCollection } from '@/firebase/firestore/use-collection';
 import { useToast } from '@/hooks/use-toast';
 import { Loader2, PlusCircle, Car, Trash2, Pencil, Save, Briefcase, BadgePercent, Upload, FileText, Wrench, Printer, Download, Share2 } from 'lucide-react';
@@ -329,10 +329,12 @@ export default function MyVehiclesPage() {
 
             const vehiclePayload: Partial<Vehicle> = {
                 ...restOfValues,
-                imageUrls: uploadedImageUrls ?? existingVehicleData.imageUrls,
                 sellerName,
                 sellerWhatsapp,
             };
+            if(uploadedImageUrls) {
+              vehiclePayload.imageUrls = uploadedImageUrls;
+            }
 
             batch.update(userVehicleRef, vehiclePayload);
 
@@ -375,9 +377,7 @@ export default function MyVehiclesPage() {
     } catch (error: any) {
         console.error('Error saving vehicle:', error);
         
-        const isPermissionError = error.code && error.code.includes('permission-denied');
-        
-        if (isPermissionError) {
+        if (error.code && error.code.includes('permission-denied')) {
              const path = editingVehicleId ? `/users/${user.uid}/vehicles/${editingVehicleId}`: `/users/${user.uid}/vehicles`;
              const operation = editingVehicleId ? 'update' : 'create';
              errorEmitter.emit('permission-error', new FirestorePermissionError({
