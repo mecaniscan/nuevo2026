@@ -44,6 +44,7 @@ import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
+import { useRouter } from 'next/navigation';
 
 const CertificateItem = ({ label, value }: { label: string; value: string | number | undefined }) => (
     <div className="flex justify-between py-2 border-b border-dashed">
@@ -55,6 +56,7 @@ const CertificateItem = ({ label, value }: { label: string; value: string | numb
 const VehicleCertificate = ({ vehicle, user }: { vehicle: Vehicle, user: User | null }) => {
     const { toast } = useToast();
     const [isGenerating, setIsGenerating] = useState(false);
+    const router = useRouter();
     
     if (!user) return null;
 
@@ -82,11 +84,7 @@ const VehicleCertificate = ({ vehicle, user }: { vehicle: Vehicle, user: User | 
                 pdf.save(`certificado-venta-${vehicle.brand}-${vehicle.model}.pdf`);
             } else if (output === 'whatsapp') {
                 const encodedImage = encodeURIComponent(imgData);
-                const shareUrl = `/certificate-preview?image=${encodedImage}`;
-                
-                const message = `Hola, te comparto el certificado de venta para el vehículo ${vehicle.brand} ${vehicle.model}. Puedes verlo aquí: ${window.location.origin}${shareUrl}`;
-                const whatsappUrl = `https://wa.me/?text=${encodeURIComponent(message)}`;
-                window.open(whatsappUrl, '_blank');
+                router.push(`/certificate-preview?image=${encodedImage}`);
             }
         } catch (error) {
             console.error('Error generating content:', error);

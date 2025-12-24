@@ -8,7 +8,7 @@ import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, For
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { useUser, useFirestore, useMemoFirebase, useStorage } from '@/firebase';
+import { useUser, useFirestore, useMemoFirebase, useStorage, errorEmitter, FirestorePermissionError } from '@/firebase';
 import { collection, query, where, doc, updateDoc } from 'firebase/firestore';
 import { useCollection } from '@/firebase/firestore/use-collection';
 import { useToast } from '@/hooks/use-toast';
@@ -138,7 +138,9 @@ export default function EditWorkshopPage() {
     const workshopRef = doc(firestore, 'workshops', workshop.id);
     const { image, ...dataToUpdate } = values;
     
-    updateDoc(workshopRef, { ...dataToUpdate, imageUrl })
+    const finalData = { ...dataToUpdate, imageUrl };
+    
+    updateDoc(workshopRef, finalData)
         .then(() => {
             toast({
                 title: '¡Taller Actualizado!',
@@ -148,11 +150,11 @@ export default function EditWorkshopPage() {
         })
         .catch(error => {
             console.error('Error updating workshop:', error);
-            toast({
-                variant: 'destructive',
-                title: 'Error Inesperado',
-                description: 'No se pudo actualizar el taller. Por favor, intenta de nuevo.',
-            });
+            errorEmitter.emit('permission-error', new FirestorePermissionError({
+                path: workshopRef.path,
+                operation: 'update',
+                requestResourceData: finalData
+            }));
         })
         .finally(() => {
             setIsSubmitting(false);
