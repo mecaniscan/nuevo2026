@@ -74,6 +74,7 @@ const VehicleCertificate = ({ vehicle, user }: { vehicle: Vehicle, user: User | 
     return (
         <DialogContent className="max-w-3xl">
             <DialogHeader>
+                <DialogTitle className="sr-only">Certificado de Venta</DialogTitle>
                  <Button onClick={handlePrint} className="absolute top-4 right-16">
                     <Printer className="mr-2" />
                     Imprimir
@@ -557,3 +558,5 @@ export default function MyVehiclesPage() {
     </div>
   );
 }
+
+    
