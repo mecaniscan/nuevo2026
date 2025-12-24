@@ -111,7 +111,7 @@ export default function EditServicesPage() {
             description: 'Tu lista de servicios ha sido guardada.',
         });
         router.push('/dashboard');
-    } catch (error) {
+    } catch (error: any) {
         console.error('Error updating services:', error);
         errorEmitter.emit('permission-error', new FirestorePermissionError({
             path: `/workshops/${workshop.id}/services`,
@@ -237,3 +237,5 @@ export default function EditServicesPage() {
     </div>
   )
 }
+
+    

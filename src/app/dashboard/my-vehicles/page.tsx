@@ -307,6 +307,8 @@ export default function MyVehiclesPage() {
                 sellerName,
                 sellerWhatsapp,
             };
+            
+            delete (vehiclePayload as any).images;
 
             batch.update(userVehicleRef, vehiclePayload);
 
@@ -320,8 +322,10 @@ export default function MyVehiclesPage() {
         } else {
             const userVehicleRef = doc(collection(firestore, `users/${user.uid}/vehicles`));
             
+            const { images, ...restOfValues } = values;
+
             const vehiclePayload: Vehicle = {
-                ...values,
+                ...restOfValues,
                 id: userVehicleRef.id,
                 userId: user.uid,
                 sellerName,
@@ -348,10 +352,14 @@ export default function MyVehiclesPage() {
     } catch (error: any) {
         console.error('Error saving vehicle:', error);
         
-        if (error.code && error.code.includes('permission-denied')) {
-            errorEmitter.emit('permission-error', new FirestorePermissionError({
-                path: `/users/${user.uid}/vehicles`,
-                operation: 'write',
+        const isPermissionError = error.code && error.code.includes('permission-denied');
+        
+        if (isPermissionError) {
+             const path = editingVehicleId ? `/users/${user.uid}/vehicles/${editingVehicleId}`: `/users/${user.uid}/vehicles`;
+             const operation = editingVehicleId ? 'update' : 'create';
+             errorEmitter.emit('permission-error', new FirestorePermissionError({
+                path: path,
+                operation: operation,
                 requestResourceData: values
             }));
         } else {
@@ -594,3 +602,5 @@ export default function MyVehiclesPage() {
     </div>
   );
 }
+
+    

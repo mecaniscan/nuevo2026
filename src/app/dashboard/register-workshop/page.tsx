@@ -8,7 +8,7 @@ import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, For
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { useUser, useFirestore, useMemoFirebase, useStorage, setDocumentNonBlocking } from '@/firebase';
+import { useUser, useFirestore, useMemoFirebase, useStorage, setDocumentNonBlocking, FirestorePermissionError, errorEmitter } from '@/firebase';
 import { collection, query, where, doc } from 'firebase/firestore';
 import { useCollection } from '@/firebase/firestore/use-collection';
 import { useToast } from '@/hooks/use-toast';
@@ -135,20 +135,28 @@ export default function RegisterWorkshopPage() {
         reviewCount: 0,
       };
       
-      setDocumentNonBlocking(workshopRef, workshopData, { merge: false });
+      await setDoc(workshopRef, workshopData);
 
       toast({
         title: '¡Taller Registrado!',
         description: 'Tu taller ha sido añadido a nuestra plataforma.',
       });
       router.push('/dashboard/edit-services');
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error registering workshop:', error);
-      toast({
-        variant: 'destructive',
-        title: 'Error Inesperado',
-        description: 'No se pudo registrar el taller. Por favor, intenta de nuevo.',
-      });
+       if (error.code && error.code.includes('permission-denied')) {
+            errorEmitter.emit('permission-error', new FirestorePermissionError({
+                path: `/workshops`,
+                operation: 'create',
+                requestResourceData: values
+            }));
+        } else {
+            toast({
+                variant: 'destructive',
+                title: 'Error Inesperado',
+                description: 'No se pudo registrar el taller. ' + error.message,
+            });
+        }
     } finally {
         setIsSubmitting(false);
     }
@@ -337,3 +345,5 @@ export default function RegisterWorkshopPage() {
     </div>
   );
 }
+
+    
