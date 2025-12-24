@@ -60,7 +60,7 @@ const VehicleCertificate = ({ vehicle, user }: { vehicle: Vehicle, user: User | 
         if (printWindow && content) {
             printWindow.document.write('<html><head><title>Certificado de Venta</title>');
             // You may need to link a stylesheet here for proper printing
-            printWindow.document.write('<style>body{font-family:sans-serif;}</style>');
+            printWindow.document.write('<style>body{font-family:sans-serif;padding: 2rem;} .signature-section { display: flex; justify-content: space-around; margin-top: 4rem; } .signature-box { width: 45%; text-align: center; } .signature-line { border-bottom: 1px solid #333; height: 2.5rem; margin-bottom: 0.5rem; } .signature-label { font-size: 0.75rem; color: #666; }</style>');
             printWindow.document.write('</head><body>');
             printWindow.document.write(content);
             printWindow.document.write('</body></html>');
@@ -96,12 +96,6 @@ const VehicleCertificate = ({ vehicle, user }: { vehicle: Vehicle, user: User | 
                         <CertificateItem label="Número de WhatsApp" value={user.whatsappNumber} />
                         <CertificateItem label="Fecha de Emisión" value={format(new Date(), "dd 'de' MMMM 'de' yyyy", { locale: es })} />
                     </dl>
-                    <div className="space-y-6 pt-6">
-                        <div className="space-y-1">
-                            <div className="w-full h-10 border-b border-foreground/50"></div>
-                            <p className="text-center text-xs text-muted-foreground">Firma del Vendedor</p>
-                        </div>
-                    </div>
                 </div>
                 <Separator />
                  <div>
@@ -123,10 +117,6 @@ const VehicleCertificate = ({ vehicle, user }: { vehicle: Vehicle, user: User | 
                     <h2 className="text-lg font-semibold mb-2 border-b pb-1">Datos del Comprador</h2>
                      <div className="space-y-6 pt-4">
                         <div className="space-y-1">
-                            <div className="w-full h-10 border-b border-foreground/50"></div>
-                            <p className="text-center text-xs text-muted-foreground">Firma del Comprador</p>
-                        </div>
-                        <div className="space-y-1">
                              <div className="w-full h-7 border-b border-foreground/50"></div>
                              <p className="text-center text-xs text-muted-foreground">Nombre y Apellido</p>
                         </div>
@@ -136,7 +126,20 @@ const VehicleCertificate = ({ vehicle, user }: { vehicle: Vehicle, user: User | 
                         </div>
                     </div>
                 </div>
-                <div className="bg-muted/50 p-4 rounded-md text-center mt-4">
+
+                <div className="signature-section pt-16 flex justify-around">
+                    <div className="signature-box w-[45%] text-center">
+                        <div className="signature-line w-full h-10 border-b border-foreground/50 mb-2"></div>
+                        <p className="signature-label text-center text-xs text-muted-foreground">Firma del Vendedor</p>
+                        <p className="text-center text-sm font-semibold">{`${user.firstName} ${user.lastName}`}</p>
+                    </div>
+                    <div className="signature-box w-[45%] text-center">
+                        <div className="signature-line w-full h-10 border-b border-foreground/50 mb-2"></div>
+                        <p className="signature-label text-center text-xs text-muted-foreground">Firma del Comprador</p>
+                    </div>
+                </div>
+
+                <div className="bg-muted/50 p-4 rounded-md text-center mt-8">
                      <p className="text-xs text-muted-foreground">
                         Este documento es un certificado de venta privado. MecaniScan no se hace responsable de la veracidad de los datos. Se recomienda una inspección profesional.
                     </p>
@@ -203,8 +206,8 @@ export default function MyVehiclesPage() {
     if (!firestore || !user) return null;
     return doc(firestore, 'users', user.uid);
   }, [firestore, user]);
-  const { data: userData, isLoading: isUserDataLoading } = useCollection<User>(userDocRef as any);
-  const currentUserData = userData?.[0];
+  const { data: userData, isLoading: isUserDataLoading } = useDoc<User>(userDocRef);
+
 
   const form = useForm<z.infer<typeof vehicleSchema>>({
     resolver: zodResolver(vehicleSchema),
@@ -504,7 +507,7 @@ export default function MyVehiclesPage() {
                                                         <FileText className="h-4 w-4" />
                                                     </Button>
                                                 </DialogTrigger>
-                                                <VehicleCertificate vehicle={vehicle} user={currentUserData || null} />
+                                                {userData && <VehicleCertificate vehicle={vehicle} user={userData} /> }
                                             </Dialog>
                                             <Button variant="ghost" size="icon" className="text-primary hover:bg-primary/10" onClick={() => handleEditVehicle(vehicle)}>
                                                 <Pencil className="h-4 w-4" />
