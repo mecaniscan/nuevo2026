@@ -7,8 +7,8 @@ import { Button } from '@/components/ui/button';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { useUser, useFirestore, useMemoFirebase, useDoc, updateDocumentNonBlocking, FirestorePermissionError, errorEmitter } from '@/firebase';
-import { doc } from 'firebase/firestore';
+import { useUser, useFirestore, useMemoFirebase, useDoc, FirestorePermissionError, errorEmitter } from '@/firebase';
+import { doc, updateDoc } from 'firebase/firestore';
 import { useToast } from '@/hooks/use-toast';
 import { useRouter } from 'next/navigation';
 import { Loader2, Save } from 'lucide-react';
@@ -92,21 +92,32 @@ export default function ProfilePage() {
     
     // Update Firestore document
     const userRef = doc(firestore, 'users', user.uid);
-    const { email, ...dataToUpdate } = values; // Email is not updated here
-    updateDocumentNonBlocking(userRef, dataToUpdate);
+    const { email, ...dataToUpdate } = values; // Email is not updated here, id is not needed
+    
+    try {
+        await updateDoc(userRef, dataToUpdate);
 
-    // Update Firebase Auth profile displayName
-    const newDisplayName = `${values.firstName} ${values.lastName}`;
-    if (user.displayName !== newDisplayName) {
-      await updateProfile(user, { displayName: newDisplayName });
+        // Update Firebase Auth profile displayName
+        const newDisplayName = `${values.firstName} ${values.lastName}`;
+        if (user.displayName !== newDisplayName) {
+            await updateProfile(user, { displayName: newDisplayName });
+        }
+
+        toast({
+            title: '¡Perfil Actualizado!',
+            description: 'Tu información ha sido guardada correctamente.',
+        });
+        router.push('/dashboard');
+    } catch (error) {
+        console.error('Error updating profile:', error);
+        errorEmitter.emit('permission-error', new FirestorePermissionError({
+            path: userRef.path,
+            operation: 'update',
+            requestResourceData: dataToUpdate
+        }));
+    } finally {
+        setIsSubmitting(false);
     }
-
-    toast({
-      title: '¡Perfil Actualizado!',
-      description: 'Tu información ha sido guardada correctamente.',
-    });
-    router.push('/dashboard');
-    setIsSubmitting(false);
   }
   
   const isLoading = isUserLoading || isUserDataLoading || (user && user.isAnonymous);
