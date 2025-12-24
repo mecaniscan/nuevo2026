@@ -320,47 +320,48 @@ export default function MyVehiclesPage() {
         } else {
             const userVehicleRef = doc(collection(firestore, `users/${user.uid}/vehicles`));
             
-            const vehiclePayload: Omit<Vehicle, 'id'> & { imageUrls?: string[] } = {
+            const vehiclePayload: Vehicle = {
                 ...values,
+                id: userVehicleRef.id,
                 userId: user.uid,
                 sellerName,
                 sellerWhatsapp,
-                imageUrls: uploadedImageUrls,
+                imageUrls: uploadedImageUrls || [],
             };
 
-            const vehicleDataWithId = { ...vehiclePayload, id: userVehicleRef.id };
-            batch.set(userVehicleRef, vehicleDataWithId);
+            batch.set(userVehicleRef, vehiclePayload);
 
             if (values.isForSale) {
                 const marketplaceVehicleRef = doc(firestore, 'marketplace', userVehicleRef.id);
-                batch.set(marketplaceVehicleRef, vehicleDataWithId);
+                batch.set(marketplaceVehicleRef, vehiclePayload);
             }
         }
         
-        batch.commit().then(() => {
-            toast({
-                title: editingVehicleId ? '¡Vehículo Actualizado!' : '¡Vehículo Añadido!',
-                description: `Tu vehículo ha sido ${editingVehicleId ? 'actualizado' : 'guardado'}.`,
-            });
-            form.reset();
-            setEditingVehicleId(null);
-        }).catch(error => {
+        await batch.commit();
+
+        toast({
+            title: editingVehicleId ? '¡Vehículo Actualizado!' : '¡Vehículo Añadido!',
+            description: `Tu vehículo ha sido ${editingVehicleId ? 'actualizado' : 'guardado'}.`,
+        });
+        form.reset();
+        setEditingVehicleId(null);
+    } catch (error: any) {
+        console.error('Error saving vehicle:', error);
+        
+        if (error.code && error.code.includes('permission-denied')) {
             errorEmitter.emit('permission-error', new FirestorePermissionError({
                 path: `/users/${user.uid}/vehicles`,
                 operation: 'write',
                 requestResourceData: values
             }));
-        }).finally(() => {
-            setIsSubmitting(false);
-        });
-
-    } catch (error) {
-        console.error('Error saving vehicle:', error);
-        toast({
-            variant: 'destructive',
-            title: 'Error Inesperado',
-            description: 'No se pudo guardar el vehículo.',
-        });
+        } else {
+            toast({
+                variant: 'destructive',
+                title: 'Error Inesperado',
+                description: 'No se pudo guardar el vehículo. ' + error.message,
+            });
+        }
+    } finally {
         setIsSubmitting(false);
     }
   }
