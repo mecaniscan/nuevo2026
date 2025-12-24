@@ -9,7 +9,6 @@ import { Search, Loader2 } from 'lucide-react';
 import { useCollection, useFirestore, useMemoFirebase } from '@/firebase';
 import { collection, query, where, getDocs } from 'firebase/firestore';
 import type { Workshop, Service } from '@/lib/types';
-import { PlaceHolderImages } from '@/lib/placeholder-images';
 import React from 'react';
 
 
@@ -71,7 +70,6 @@ export function WorkshopFinder() {
         averageRating: workshop.averageRating || 4.5 + (index * 0.1),
         reviewCount: workshop.reviewCount || 0,
         services: workshopServices,
-        image: PlaceHolderImages.find(p => p.id.startsWith('workshop')) || PlaceHolderImages[1],
       }
     });
 
@@ -132,4 +130,5 @@ export function WorkshopFinder() {
   );
 }
 
+    
     

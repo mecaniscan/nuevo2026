@@ -3,7 +3,7 @@ import type { Workshop, Service } from '@/lib/types';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { MapPin, ScanLine, Star } from 'lucide-react';
+import { MapPin, ScanLine, Star, Car } from 'lucide-react';
 import Link from 'next/link';
 
 type WorkshopCardProps = {
@@ -14,15 +14,18 @@ export function WorkshopCard({ workshop }: WorkshopCardProps) {
   return (
     <Card className="flex flex-col h-full overflow-hidden transition-all duration-300 hover:shadow-lg hover:shadow-primary/20 hover:-translate-y-1 animate-in fade-in-50 zoom-in-95">
       <CardHeader className="p-0">
-        <div className="relative h-48 w-full">
-            <Image
-                src={workshop.image.imageUrl}
-                alt={workshop.image.description}
-                fill
-                className="object-cover"
-                sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
-                data-ai-hint={workshop.image.imageHint}
-            />
+        <div className="relative h-48 w-full bg-muted flex items-center justify-center">
+            {workshop.imageUrl ? (
+                <Image
+                    src={workshop.imageUrl}
+                    alt={workshop.name}
+                    fill
+                    className="object-cover"
+                    sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+                />
+            ) : (
+                <Car className="h-20 w-20 text-muted-foreground"/>
+            )}
             {workshop.obdScannerService && (
                 <Badge variant="default" className="absolute top-2 right-2 bg-accent text-accent-foreground border-transparent shadow-md">
                     <ScanLine className="mr-1.5 h-4 w-4" /> Escáner OBD-II
@@ -59,3 +62,5 @@ export function WorkshopCard({ workshop }: WorkshopCardProps) {
     </Card>
   );
 }
+
+    

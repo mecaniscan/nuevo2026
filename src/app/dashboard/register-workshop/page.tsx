@@ -8,9 +8,9 @@ import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, For
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { useUser, useFirestore, useMemoFirebase } from '@/firebase';
+import { useUser, useFirestore, useMemoFirebase, useStorage } from '@/firebase';
 import { addDocumentNonBlocking } from '@/firebase/non-blocking-updates';
-import { collection, query, where } from 'firebase/firestore';
+import { collection, query, where, doc, setDoc } from 'firebase/firestore';
 import { useCollection } from '@/firebase/firestore/use-collection';
 import { useToast } from '@/hooks/use-toast';
 import { useRouter } from 'next/navigation';
@@ -18,6 +18,11 @@ import { Loader2, Car, Wrench } from 'lucide-react';
 import { Switch } from '@/components/ui/switch';
 import Link from 'next/link';
 import type { Workshop } from '@/lib/types';
+import { ref as storageRef, uploadBytes, getDownloadURL } from 'firebase/storage';
+import { v4 as uuidv4 } from 'uuid';
+
+const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
+const ACCEPTED_IMAGE_TYPES = ["image/jpeg", "image/jpg", "image/png", "image/webp"];
 
 const workshopSchema = z.object({
   name: z.string().min(3, 'El nombre debe tener al menos 3 caracteres.'),
@@ -27,11 +32,19 @@ const workshopSchema = z.object({
   whatsappNumber: z.string().optional(),
   email: z.string().email('El correo electrónico no es válido.'),
   obdScannerService: z.boolean().default(false),
+  image: z.any()
+    .refine((files) => files?.length == 1, "Debes subir una foto del taller.")
+    .refine((files) => files?.[0]?.size <= MAX_FILE_SIZE, `El tamaño máximo de la imagen es 5MB.`)
+    .refine(
+      (files) => ACCEPTED_IMAGE_TYPES.includes(files?.[0]?.type),
+      "Solo se aceptan formatos .jpg, .jpeg, .png y .webp."
+    ),
 });
 
 export default function RegisterWorkshopPage() {
   const { user, isUserLoading } = useUser();
   const firestore = useFirestore();
+  const storage = useStorage();
   const { toast } = useToast();
   const router = useRouter();
   const [isSubmitting, setIsSubmitting] = React.useState(false);
@@ -62,6 +75,16 @@ export default function RegisterWorkshopPage() {
     },
   });
 
+  const uploadImage = async (file: File): Promise<string> => {
+    if (!storage || !user) {
+        throw new Error("Storage service not available.");
+    }
+    const imageRef = storageRef(storage, `workshops/${user.uid}/${uuidv4()}`);
+    const snapshot = await uploadBytes(imageRef, file);
+    const downloadURL = await getDownloadURL(snapshot.ref);
+    return downloadURL;
+  };
+
   async function onSubmit(values: z.infer<typeof workshopSchema>) {
     if (!user || !firestore) {
       toast({
@@ -84,16 +107,24 @@ export default function RegisterWorkshopPage() {
     setIsSubmitting(true);
     
     try {
+      const imageUrl = await uploadImage(values.image[0]);
+      
+      const workshopRef = doc(collection(firestore, 'workshops'));
+      
+      const { image, ...dataToSave } = values;
+
       const workshopData = {
-        ...values,
+        ...dataToSave,
+        id: workshopRef.id,
         ownerId: user.uid,
+        imageUrl,
         latitude: 0, 
         longitude: 0,
         averageRating: 0,
         reviewCount: 0,
       };
       
-      const docRef = await addDocumentNonBlocking(collection(firestore, 'workshops'), workshopData);
+      await setDoc(workshopRef, workshopData);
 
       toast({
         title: '¡Taller Registrado!',
@@ -107,7 +138,8 @@ export default function RegisterWorkshopPage() {
         title: 'Error Inesperado',
         description: 'No se pudo registrar el taller. Por favor, intenta de nuevo.',
       });
-      setIsSubmitting(false);
+    } finally {
+        setIsSubmitting(false);
     }
   }
   
@@ -186,6 +218,20 @@ export default function RegisterWorkshopPage() {
                     <FormControl>
                       <Textarea placeholder="Describe los servicios que ofreces, tu especialidad, etc." {...field} />
                     </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+               <FormField
+                control={form.control}
+                name="image"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Foto del Taller</FormLabel>
+                    <FormControl>
+                      <Input type="file" accept="image/*" onChange={(e) => field.onChange(e.target.files)} />
+                    </FormControl>
+                    <FormDescription>Sube una imagen principal que represente tu taller.</FormDescription>
                     <FormMessage />
                   </FormItem>
                 )}
@@ -278,4 +324,4 @@ export default function RegisterWorkshopPage() {
     </div>
   );
 }
-
+    

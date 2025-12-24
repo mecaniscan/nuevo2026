@@ -1,5 +1,5 @@
 'use client';
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
@@ -8,7 +8,7 @@ import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, For
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { useUser, useFirestore, useMemoFirebase } from '@/firebase';
+import { useUser, useFirestore, useMemoFirebase, useStorage } from '@/firebase';
 import { updateDocumentNonBlocking } from '@/firebase/non-blocking-updates';
 import { collection, query, where, doc } from 'firebase/firestore';
 import { useCollection } from '@/firebase/firestore/use-collection';
@@ -18,6 +18,12 @@ import { Loader2, Car, Wrench } from 'lucide-react';
 import { Switch } from '@/components/ui/switch';
 import Link from 'next/link';
 import type { Workshop } from '@/lib/types';
+import { ref as storageRef, uploadBytes, getDownloadURL } from 'firebase/storage';
+import { v4 as uuidv4 } from 'uuid';
+import Image from 'next/image';
+
+const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
+const ACCEPTED_IMAGE_TYPES = ["image/jpeg", "image/jpg", "image/png", "image/webp"];
 
 const workshopSchema = z.object({
   name: z.string().min(3, 'El nombre debe tener al menos 3 caracteres.'),
@@ -27,11 +33,19 @@ const workshopSchema = z.object({
   whatsappNumber: z.string().optional(),
   email: z.string().email('El correo electrónico no es válido.'),
   obdScannerService: z.boolean().default(false),
+  image: z.any()
+    .refine((file) => !file || file.length === 1, "Solo puedes subir una imagen.")
+    .refine((file) => !file || file?.[0]?.size <= MAX_FILE_SIZE, `El tamaño máximo es 5MB.`)
+    .refine(
+      (file) => !file || ACCEPTED_IMAGE_TYPES.includes(file?.[0]?.type),
+      "Solo se aceptan formatos .jpg, .jpeg, .png y .webp."
+    ).optional(),
 });
 
 export default function EditWorkshopPage() {
   const { user, isUserLoading } = useUser();
   const firestore = useFirestore();
+  const storage = useStorage();
   const { toast } = useToast();
   const router = useRouter();
   const [isSubmitting, setIsSubmitting] = React.useState(false);
@@ -65,9 +79,19 @@ export default function EditWorkshopPage() {
 
   useEffect(() => {
     if (workshop) {
-      form.reset(workshop);
+      form.reset({ ...workshop, image: undefined });
     }
   }, [workshop, form]);
+
+  const uploadImage = async (file: File): Promise<string> => {
+    if (!storage || !user) {
+        throw new Error("Storage service not available.");
+    }
+    const imageRef = storageRef(storage, `workshops/${user.uid}/${uuidv4()}`);
+    const snapshot = await uploadBytes(imageRef, file);
+    const downloadURL = await getDownloadURL(snapshot.ref);
+    return downloadURL;
+  };
 
   async function onSubmit(values: z.infer<typeof workshopSchema>) {
     if (!user || !firestore || !workshop) {
@@ -82,8 +106,15 @@ export default function EditWorkshopPage() {
     setIsSubmitting(true);
     
     try {
+      let imageUrl = workshop.imageUrl;
+      if (values.image && values.image.length > 0) {
+          imageUrl = await uploadImage(values.image[0]);
+      }
+
       const workshopRef = doc(firestore, 'workshops', workshop.id);
-      updateDocumentNonBlocking(workshopRef, values);
+      const { image, ...dataToUpdate } = values;
+      
+      updateDocumentNonBlocking(workshopRef, { ...dataToUpdate, imageUrl });
 
       toast({
         title: '¡Taller Actualizado!',
@@ -156,7 +187,7 @@ export default function EditWorkshopPage() {
         <CardContent>
           <Form {...form}>
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
-              <FormField
+               <FormField
                 control={form.control}
                 name="name"
                 render={({ field }) => (
@@ -178,6 +209,25 @@ export default function EditWorkshopPage() {
                     <FormControl>
                       <Textarea placeholder="Describe los servicios que ofreces, tu especialidad, etc." {...field} />
                     </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+               <FormField
+                control={form.control}
+                name="image"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Foto del Taller</FormLabel>
+                     {workshop.imageUrl && (
+                        <div className="mb-4">
+                            <Image src={workshop.imageUrl} alt="Vista previa del taller" width={200} height={150} className="rounded-md object-cover" />
+                        </div>
+                    )}
+                    <FormControl>
+                      <Input type="file" accept="image/*" onChange={(e) => field.onChange(e.target.files)} />
+                    </FormControl>
+                    <FormDescription>Sube una nueva foto para reemplazar la actual (opcional).</FormDescription>
                     <FormMessage />
                   </FormItem>
                 )}
@@ -274,4 +324,4 @@ export default function EditWorkshopPage() {
     </div>
   );
 }
-
+    

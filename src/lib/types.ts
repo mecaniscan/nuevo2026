@@ -15,7 +15,7 @@ export type Workshop = {
     obdScannerService: boolean;
     averageRating: number;
     reviewCount: number;
-    image: ImagePlaceholder; // Placeholder for image
+    imageUrl?: string;
     city: string; // Placeholder
 };
 
@@ -84,11 +84,5 @@ export type FavoriteWorkshop = {
     averageRating: number;
     addedAt: Timestamp;
 }
-    
-    
-
-    
-
-
 
     

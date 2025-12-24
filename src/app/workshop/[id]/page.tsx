@@ -11,7 +11,7 @@ import { doc, collection, query, where, serverTimestamp, Timestamp, writeBatch, 
 import type { Workshop, Appointment, Service, Review, FavoriteWorkshop } from '@/lib/types';
 import { addDocumentNonBlocking } from '@/firebase/non-blocking-updates';
 import { PlaceHolderImages } from '@/lib/placeholder-images';
-import { Loader2, MapPin, ScanLine, Star, Calendar as CalendarIcon, Wrench, MessageSquare, Send, Heart, Phone } from 'lucide-react';
+import { Loader2, MapPin, ScanLine, Star, Calendar as CalendarIcon, Wrench, MessageSquare, Send, Heart, Phone, Car } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -114,7 +114,6 @@ export default function WorkshopDetailPage() {
           rating: workshopData.averageRating || 4.5,
           reviewCount: workshopData.reviewCount || 0,
           services: workshopServices || [],
-          image: PlaceHolderImages.find(p => p.id.startsWith('workshop')) || PlaceHolderImages[1],
         };
     }, [workshopData, workshopServices]);
 
@@ -142,7 +141,7 @@ export default function WorkshopDetailPage() {
                     workshopId,
                     name: workshop.name,
                     address: workshop.address,
-                    imageUrl: workshop.image.imageUrl,
+                    imageUrl: workshop.imageUrl || '',
                     averageRating: workshop.averageRating || 0,
                     addedAt: serverTimestamp(),
                 };
@@ -280,15 +279,18 @@ export default function WorkshopDetailPage() {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-12">
             <div className="lg:col-span-2 space-y-8">
                 {/* Image Header */}
-                <div className="relative h-96 w-full rounded-xl overflow-hidden shadow-lg">
-                    <Image
-                        src={workshop.image.imageUrl}
-                        alt={workshop.image.description}
-                        fill
-                        className="object-cover"
-                        data-ai-hint={workshop.image.imageHint}
-                        priority
-                    />
+                <div className="relative h-96 w-full rounded-xl overflow-hidden shadow-lg bg-muted flex items-center justify-center">
+                    {workshop.imageUrl ? (
+                        <Image
+                            src={workshop.imageUrl}
+                            alt={workshop.name}
+                            fill
+                            className="object-cover"
+                            priority
+                        />
+                    ) : (
+                        <Car className="h-24 w-24 text-muted-foreground"/>
+                    )}
                     <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/30 to-transparent" />
                     <div className="absolute bottom-0 left-0 p-6 w-full flex justify-between items-end">
                         <div>
@@ -519,3 +521,5 @@ export default function WorkshopDetailPage() {
     </div>
   );
 }
+
+    

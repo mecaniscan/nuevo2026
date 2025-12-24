@@ -6,7 +6,7 @@ import { useCollection } from '@/firebase/firestore/use-collection';
 import type { FavoriteWorkshop } from '@/lib/types';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Loader2, Star, Trash2, Heart, MapPin, Search } from 'lucide-react';
+import { Loader2, Star, Trash2, Heart, MapPin, Search, Car } from 'lucide-react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { useToast } from '@/hooks/use-toast';
@@ -93,8 +93,12 @@ export default function MyFavoritesPage() {
                     favorites.map((fav) => (
                         <Card key={fav.workshopId} className="group relative overflow-hidden">
                             <Link href={`/workshop/${fav.workshopId}`} className="block">
-                                <div className="relative h-48 w-full">
-                                    <Image src={fav.imageUrl} alt={fav.name} fill className="object-cover transition-transform duration-300 group-hover:scale-105" />
+                                <div className="relative h-48 w-full bg-muted flex items-center justify-center">
+                                    {fav.imageUrl ? (
+                                        <Image src={fav.imageUrl} alt={fav.name} fill className="object-cover transition-transform duration-300 group-hover:scale-105" />
+                                    ) : (
+                                        <Car className="h-16 w-16 text-muted-foreground"/>
+                                    )}
                                 </div>
                                 <div className="p-4">
                                     <h3 className="font-semibold text-lg truncate group-hover:text-primary">{fav.name}</h3>
@@ -153,3 +157,5 @@ export default function MyFavoritesPage() {
     </div>
   );
 }
+
+    
