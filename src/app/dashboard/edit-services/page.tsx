@@ -86,43 +86,41 @@ export default function EditServicesPage() {
     
     setIsSubmitting(true);
     
-    const batch = writeBatch(firestore);
-    const servicesColRef = collection(firestore, `workshops/${workshop.id}/services`);
-    
-    // Get IDs of services that exist on the form
-    const formIds = new Set(values.services.map(s => s.id).filter(Boolean));
+    try {
+        const batch = writeBatch(firestore);
+        const servicesColRef = collection(firestore, `workshops/${workshop.id}/services`);
+        
+        const formIds = new Set(values.services.map(s => s.id).filter(Boolean));
 
-    // Delete services that are no longer in the form
-    currentServices?.forEach(serviceInDb => {
-      if (!formIds.has(serviceInDb.id)) {
-          const docRef = doc(servicesColRef, serviceInDb.id);
-          batch.delete(docRef);
-      }
-    });
-    
-    // Add or update services
-    values.services.forEach(service => {
-      const docRef = service.id ? doc(servicesColRef, service.id) : doc(servicesColRef);
-      const { id, ...serviceData } = service; // remove frontend-only id before saving
-      batch.set(docRef, serviceData, { merge: true });
-    });
+        currentServices?.forEach(serviceInDb => {
+        if (!formIds.has(serviceInDb.id)) {
+            const docRef = doc(servicesColRef, serviceInDb.id);
+            batch.delete(docRef);
+        }
+        });
+        
+        values.services.forEach(service => {
+        const docRef = service.id ? doc(servicesColRef, service.id) : doc(servicesColRef);
+        const { id, ...serviceData } = service; 
+        batch.set(docRef, { ...serviceData, id: docRef.id }, { merge: true });
+        });
 
-    batch.commit().then(() => {
+        await batch.commit();
         toast({
             title: '¡Servicios Actualizados!',
             description: 'Tu lista de servicios ha sido guardada.',
         });
         router.push('/dashboard');
-    }).catch(error => {
+    } catch (error) {
         console.error('Error updating services:', error);
         errorEmitter.emit('permission-error', new FirestorePermissionError({
-            path: servicesColRef.path,
+            path: `/workshops/${workshop.id}/services`,
             operation: 'write',
             requestResourceData: values.services
         }));
-    }).finally(() => {
+    } finally {
         setIsSubmitting(false);
-    });
+    }
   }
 
   const isLoading = isUserLoading || isWorkshopsLoading || isServicesLoading;
