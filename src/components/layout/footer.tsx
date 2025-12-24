@@ -7,8 +7,8 @@ const WhatsappIcon = () => (
 
 
 export function Footer() {
-    const whatsappNumber = "+573181591062";
-    const whatsappUrl = `https://wa.me/${whatsappNumber}`;
+    const whatsappNumber = "+573181591962";
+    const whatsappUrl = `https://wa.me/${whatsappNumber.replace(/\D/g, '')}`;
 
     return (
         <footer className="border-t py-6 md:px-8 md:py-8 bg-card/50">
@@ -17,7 +17,7 @@ export function Footer() {
                     <Wrench className="h-6 w-6 text-primary" />
                     <div className="flex flex-col items-center md:items-start">
                          <p className="text-sm font-semibold text-foreground">
-                           Creado por Antonio Ruiz (Venezolano)
+                           Creador de la APP MecaniScan ANTONIO RUIZ, Venezolano
                         </p>
                         <p className="text-xs text-muted-foreground">
                             &copy; {new Date().getFullYear()} MecaniScan. Todos los derechos reservados.
@@ -28,7 +28,7 @@ export function Footer() {
                      <p className="text-sm text-muted-foreground">Para asistencia técnica:</p>
                     <a href={whatsappUrl} target="_blank" rel="noopener noreferrer" className="text-sm font-medium text-primary hover:underline flex items-center justify-center md:justify-end gap-2">
                         <WhatsappIcon />
-                        <span>+57 318 1591062</span>
+                        <span>+57 318 1591962</span>
                     </a>
                 </div>
             </div>
