@@ -12,7 +12,7 @@ import { collection, query, orderBy, doc, writeBatch, getDoc } from 'firebase/fi
 import { ref as storageRef, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { useCollection } from '@/firebase/firestore/use-collection';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2, PlusCircle, Car, Trash2, Pencil, Save, Briefcase, BadgePercent, Upload, FileText, Wrench, Printer, Download } from 'lucide-react';
+import { Loader2, PlusCircle, Car, Trash2, Pencil, Save, Briefcase, BadgePercent, Upload, FileText, Wrench, Printer, Download, Share2 } from 'lucide-react';
 import Link from 'next/link';
 import type { Vehicle, User } from '@/lib/types';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -53,6 +53,8 @@ const CertificateItem = ({ label, value }: { label: string; value: string | numb
 );
 
 const VehicleCertificate = ({ vehicle, user }: { vehicle: Vehicle, user: User | null }) => {
+    const { toast } = useToast();
+    const [isGenerating, setIsGenerating] = useState(false);
     
     if (!user) return null;
 
@@ -60,33 +62,60 @@ const VehicleCertificate = ({ vehicle, user }: { vehicle: Vehicle, user: User | 
     const qrData = `VIN: ${vehicle.vin}\nMarca: ${vehicle.brand}\nModelo: ${vehicle.model}\nAño: ${vehicle.year}\nEmitido: ${issueDate}`;
     const qrCodeUrl = `https://api.qrserver.com/v1/create-qr-code/?data=${encodeURIComponent(qrData)}&size=100x100&bgcolor=ffffff`;
 
-    const handleDownloadPdf = () => {
+    const generateContent = async (output: 'pdf' | 'whatsapp') => {
         const content = document.getElementById(`certificate-${vehicle.id}`);
-        if (content) {
-            html2canvas(content, { scale: 2, backgroundColor: null }).then(canvas => {
-                const imgData = canvas.toDataURL('image/png');
+        if (!content) {
+            toast({ variant: 'destructive', title: 'Error', description: 'No se pudo encontrar el contenido del certificado.' });
+            return;
+        }
+
+        setIsGenerating(true);
+        try {
+            const canvas = await html2canvas(content, { scale: 2, backgroundColor: null });
+            const imgData = canvas.toDataURL('image/png');
+
+            if (output === 'pdf') {
                 const pdf = new jsPDF('p', 'mm', 'a4');
                 const pdfWidth = pdf.internal.pageSize.getWidth();
                 const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
                 pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
                 pdf.save(`certificado-venta-${vehicle.brand}-${vehicle.model}.pdf`);
-            });
+            } else if (output === 'whatsapp') {
+                const encodedImage = encodeURIComponent(imgData);
+                const shareUrl = `/certificate-preview?image=${encodedImage}`;
+                
+                const message = `Hola, te comparto el certificado de venta para el vehículo ${vehicle.brand} ${vehicle.model}. Puedes verlo aquí: ${window.location.origin}${shareUrl}`;
+                const whatsappUrl = `https://wa.me/?text=${encodeURIComponent(message)}`;
+                window.open(whatsappUrl, '_blank');
+            }
+        } catch (error) {
+            console.error('Error generating content:', error);
+            toast({ variant: 'destructive', title: 'Error', description: 'No se pudo generar el documento.' });
+        } finally {
+            setIsGenerating(false);
         }
     };
+
 
     return (
         <DialogContent className="max-w-3xl">
              <DialogHeader className='flex-row items-center justify-between'>
                 <div>
-                    <DialogTitle className="text-2xl font-bold font-headline text-primary">Certificado de Venta</DialogTitle>
-                    <DialogDescription>
+                    <DialogTitle className="text-2xl font-bold font-headline text-primary sr-only">Certificado de Venta</DialogTitle>
+                    <DialogDescription className="sr-only">
                         Revisa y descarga el certificado de venta del vehículo.
                     </DialogDescription>
                 </div>
-                <Button onClick={handleDownloadPdf}>
-                    <Download className="mr-2" />
-                    Descargar PDF
-                </Button>
+                <div className="flex gap-2">
+                    <Button onClick={() => generateContent('whatsapp')} disabled={isGenerating}>
+                        {isGenerating ? <Loader2 className="mr-2 animate-spin" /> : <Share2 className="mr-2" />}
+                        Compartir por WhatsApp
+                    </Button>
+                    <Button onClick={() => generateContent('pdf')} disabled={isGenerating}>
+                        {isGenerating ? <Loader2 className="mr-2 animate-spin" /> : <Download className="mr-2" />}
+                        Descargar PDF
+                    </Button>
+                </div>
             </DialogHeader>
              <div id={`certificate-${vehicle.id}`} className="space-y-4 bg-white text-black p-8 rounded-lg">
                  <div className="flex justify-between items-start">
@@ -103,6 +132,7 @@ const VehicleCertificate = ({ vehicle, user }: { vehicle: Vehicle, user: User | 
                     </div>
                 </div>
 
+                <Separator />
                 <div>
                     <h2 className="text-lg font-semibold mb-2 border-b pb-1">Datos del Vendedor</h2>
                     <dl className="space-y-1">
@@ -142,19 +172,19 @@ const VehicleCertificate = ({ vehicle, user }: { vehicle: Vehicle, user: User | 
                     </div>
                 </div>
 
-                <div className="pt-16">
-                  <div className="signature-section flex justify-around">
-                      <div className="signature-box w-[45%] text-center">
-                          <div className="signature-line w-full h-10 border-b border-foreground/50 mb-2"></div>
-                          <p className="signature-label text-center text-xs text-muted-foreground">Firma del Vendedor</p>
-                          <p className="text-center text-sm font-semibold">{`${user.firstName} ${user.lastName}`}</p>
-                      </div>
-                      <div className="signature-box w-[45%] text-center">
-                          <div className="signature-line w-full h-10 border-b border-foreground/50 mb-2"></div>
-                          <p className="signature-label text-center text-xs text-muted-foreground">Firma del Comprador</p>
-                      </div>
-                  </div>
-                  <div className="bg-muted/50 p-4 rounded-md text-center mt-8">
+                <div className="pt-8">
+                    <div className="signature-section flex justify-around items-end">
+                        <div className="signature-box w-[45%] text-center">
+                            <div className="signature-line w-full h-10 border-b border-foreground/50 mb-2"></div>
+                            <p className="signature-label text-center text-xs text-muted-foreground">Firma del Vendedor</p>
+                            <p className="text-center text-sm font-semibold">{`${user.firstName} ${user.lastName}`}</p>
+                        </div>
+                        <div className="signature-box w-[45%] text-center">
+                            <div className="signature-line w-full h-10 border-b border-foreground/50 mb-2"></div>
+                            <p className="signature-label text-center text-xs text-muted-foreground">Firma del Comprador</p>
+                        </div>
+                    </div>
+                    <div className="bg-muted/50 p-4 rounded-md text-center mt-8">
                        <p className="text-xs text-muted-foreground">
                           Este documento es un certificado de venta privado. MecaniScan no se hace responsable de la veracidad de los datos. Se recomienda una inspección profesional.
                       </p>
