@@ -124,7 +124,7 @@ export default function DashboardPage() {
   };
 
   const handleDeleteAccount = async () => {
-    if (!user || !firestore) {
+    if (!user || !firestore || user.isAnonymous) {
       toast({ variant: 'destructive', title: 'Error', description: 'No se pudo eliminar la cuenta.' });
       return;
     }
@@ -265,8 +265,8 @@ export default function DashboardPage() {
   // --- Render ---
   const hasWorkshop = workshops && workshops.length > 0;
   
-  const ActionButton = ({ href, icon, title, description }: { href: string; icon: React.ReactNode; title: string; description: string }) => (
-    <Link href={href} className="group block">
+  const ActionButton = ({ href, icon, title, description, disabled = false }: { href: string; icon: React.ReactNode; title: string; description: string, disabled?: boolean }) => (
+    <Link href={!disabled ? href : '#'} className={cn("group block", disabled && "pointer-events-none opacity-50")}>
         <Card className="h-full transition-all duration-300 hover:border-primary hover:shadow-xl hover:-translate-y-1">
             <CardHeader className="flex flex-row items-center gap-4">
                 <div className="bg-primary/10 p-3 rounded-full">
@@ -287,7 +287,11 @@ export default function DashboardPage() {
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-8">
         <div>
           <h1 className="text-3xl font-bold font-headline text-primary">Panel de Control</h1>
-          <p className="text-muted-foreground">Bienvenido, {user.displayName || user.email}. Aquí puedes gestionar tu actividad.</p>
+           {user.isAnonymous ? (
+             <p className="text-muted-foreground">Estás navegando como invitado. <Link href="/register" className='text-primary underline'>Crea una cuenta</Link> para guardar tus datos.</p>
+           ) : (
+            <p className="text-muted-foreground">Bienvenido, {user.displayName || user.email}. Aquí puedes gestionar tu actividad.</p>
+           )}
         </div>
         <Button onClick={handleLogout} variant="outline" className="mt-4 sm:mt-0">
           <LogOut className="mr-2 h-4 w-4" />
@@ -306,9 +310,10 @@ export default function DashboardPage() {
                     <CardDescription>Añade tu vehículo y tu primer cambio de aceite para ver un resumen aquí.</CardDescription>
                 </CardHeader>
                 <CardContent>
-                     <Button asChild>
+                     <Button asChild disabled={user.isAnonymous}>
                         <Link href="/dashboard/my-vehicles">Añadir Vehículo</Link>
                     </Button>
+                    {user.isAnonymous && <p className='text-xs text-muted-foreground mt-2'>Regístrate para añadir vehículos.</p>}
                 </CardContent>
             </Card>
           )}
@@ -341,6 +346,7 @@ export default function DashboardPage() {
                 icon={<Car className="h-8 w-8 text-primary"/>}
                 title="Mis Vehículos"
                 description="Registra y gestiona tus vehículos."
+                disabled={user.isAnonymous}
             />
         </div>
 
@@ -351,6 +357,7 @@ export default function DashboardPage() {
                 icon={<Droplets className="h-8 w-8 text-primary"/>}
                 title="Cambios de Aceite"
                 description="Lleva un historial de los cambios de aceite."
+                disabled={user.isAnonymous}
             />
         </div>
 
@@ -402,7 +409,7 @@ export default function DashboardPage() {
                             </AlertDialogFooter>
                         </AlertDialogContent>
                     </AlertDialog>
-                    {user.isAnonymous && <p className="text-xs text-muted-foreground">Debes tener una cuenta permanente para poder editar o eliminar tu perfil y registrar un taller.</p>}
+                    {user.isAnonymous && <p className="text-xs text-muted-foreground">Debes tener una cuenta permanente para poder editar tu perfil, gestionar un taller o eliminar tu cuenta.</p>}
                 </CardContent>
             </Card>
         </div>

@@ -30,6 +30,18 @@ export default function ProfilePage() {
   const router = useRouter();
   const [isSubmitting, setIsSubmitting] = React.useState(false);
 
+  // Redirect anonymous users
+  useEffect(() => {
+    if (!isUserLoading && user?.isAnonymous) {
+      toast({
+        title: 'Función no disponible para invitados',
+        description: 'Por favor, crea una cuenta para tener un perfil.',
+        variant: 'destructive',
+      });
+      router.push('/dashboard');
+    }
+  }, [isUserLoading, user, router, toast]);
+
   const userDocRef = useMemoFirebase(() => {
     if (!firestore || !user) return null;
     return doc(firestore, 'users', user.uid);
@@ -67,7 +79,7 @@ export default function ProfilePage() {
   }, [userData, user, isUserDataLoading, form]);
 
   async function onSubmit(values: z.infer<typeof profileSchema>) {
-    if (!user || !firestore) {
+    if (!user || !firestore || user.isAnonymous) {
       toast({
         variant: 'destructive',
         title: 'Error',
@@ -78,35 +90,26 @@ export default function ProfilePage() {
 
     setIsSubmitting(true);
     
-    try {
-      // Update Firestore document
-      const userRef = doc(firestore, 'users', user.uid);
-      const { email, ...dataToUpdate } = values; // Email is not updated here
-      updateDocumentNonBlocking(userRef, dataToUpdate);
+    // Update Firestore document
+    const userRef = doc(firestore, 'users', user.uid);
+    const { email, ...dataToUpdate } = values; // Email is not updated here
+    updateDocumentNonBlocking(userRef, dataToUpdate);
 
-      // Update Firebase Auth profile displayName
-      const newDisplayName = `${values.firstName} ${values.lastName}`;
-      if (user.displayName !== newDisplayName) {
-        await updateProfile(user, { displayName: newDisplayName });
-      }
-
-      toast({
-        title: '¡Perfil Actualizado!',
-        description: 'Tu información ha sido guardada correctamente.',
-      });
-      router.push('/dashboard');
-    } catch (error) {
-        errorEmitter.emit('permission-error', new FirestorePermissionError({
-            path: `/users/${user.uid}`,
-            operation: 'update',
-            requestResourceData: values
-        }));
-    } finally {
-        setIsSubmitting(false);
+    // Update Firebase Auth profile displayName
+    const newDisplayName = `${values.firstName} ${values.lastName}`;
+    if (user.displayName !== newDisplayName) {
+      await updateProfile(user, { displayName: newDisplayName });
     }
+
+    toast({
+      title: '¡Perfil Actualizado!',
+      description: 'Tu información ha sido guardada correctamente.',
+    });
+    router.push('/dashboard');
+    setIsSubmitting(false);
   }
   
-  const isLoading = isUserLoading || isUserDataLoading;
+  const isLoading = isUserLoading || isUserDataLoading || (user && user.isAnonymous);
 
   if (isLoading) {
     return <div className="flex h-screen items-center justify-center"><Loader2 className="w-12 h-12 animate-spin text-primary" /></div>;

@@ -8,8 +8,8 @@ import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, For
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { useUser, useFirestore, useMemoFirebase, useStorage, updateDocumentNonBlocking } from '@/firebase';
-import { collection, query, where, doc } from 'firebase/firestore';
+import { useUser, useFirestore, useMemoFirebase, useStorage } from '@/firebase';
+import { collection, query, where, doc, updateDoc } from 'firebase/firestore';
 import { useCollection } from '@/firebase/firestore/use-collection';
 import { useToast } from '@/hooks/use-toast';
 import { useRouter } from 'next/navigation';
@@ -48,6 +48,18 @@ export default function EditWorkshopPage() {
   const { toast } = useToast();
   const router = useRouter();
   const [isSubmitting, setIsSubmitting] = React.useState(false);
+
+  // Redirect anonymous users
+  useEffect(() => {
+    if (!isUserLoading && user?.isAnonymous) {
+      toast({
+        title: 'Función no disponible para invitados',
+        description: 'Por favor, crea una cuenta para editar un taller.',
+        variant: 'destructive',
+      });
+      router.push('/dashboard');
+    }
+  }, [isUserLoading, user, router, toast]);
 
   // Fetch User's Workshop
   const workshopsCollection = useMemoFirebase(() => {
@@ -111,42 +123,43 @@ export default function EditWorkshopPage() {
 
     setIsSubmitting(true);
     
-    try {
-      let imageUrl = workshop.imageUrl;
-      if (values.image && values.image.length > 0) {
-          const newImageUrl = await uploadImage(values.image[0]);
-          if (newImageUrl) {
-            imageUrl = newImageUrl;
-          } else {
-            // Halt submission if image upload fails
-            setIsSubmitting(false);
-            return;
-          }
-      }
-
-      const workshopRef = doc(firestore, 'workshops', workshop.id);
-      const { image, ...dataToUpdate } = values;
-      
-      updateDocumentNonBlocking(workshopRef, { ...dataToUpdate, imageUrl });
-
-      toast({
-        title: '¡Taller Actualizado!',
-        description: 'La información de tu taller ha sido guardada.',
-      });
-      router.push('/dashboard');
-    } catch (error) {
-      console.error('Error updating workshop:', error);
-      toast({
-        variant: 'destructive',
-        title: 'Error Inesperado',
-        description: 'No se pudo actualizar el taller. Por favor, intenta de nuevo.',
-      });
-    } finally {
-        setIsSubmitting(false);
+    let imageUrl = workshop.imageUrl;
+    if (values.image && values.image.length > 0) {
+        const newImageUrl = await uploadImage(values.image[0]);
+        if (newImageUrl) {
+          imageUrl = newImageUrl;
+        } else {
+          // Halt submission if image upload fails
+          setIsSubmitting(false);
+          return;
+        }
     }
+
+    const workshopRef = doc(firestore, 'workshops', workshop.id);
+    const { image, ...dataToUpdate } = values;
+    
+    updateDoc(workshopRef, { ...dataToUpdate, imageUrl })
+        .then(() => {
+            toast({
+                title: '¡Taller Actualizado!',
+                description: 'La información de tu taller ha sido guardada.',
+            });
+            router.push('/dashboard');
+        })
+        .catch(error => {
+            console.error('Error updating workshop:', error);
+            toast({
+                variant: 'destructive',
+                title: 'Error Inesperado',
+                description: 'No se pudo actualizar el taller. Por favor, intenta de nuevo.',
+            });
+        })
+        .finally(() => {
+            setIsSubmitting(false);
+        });
   }
   
-  if (isUserLoading || isWorkshopsLoading) {
+  if (isUserLoading || isWorkshopsLoading || (user && user.isAnonymous)) {
     return <div className="flex h-screen items-center justify-center"><Loader2 className="w-12 h-12 animate-spin text-primary" /></div>;
   }
 

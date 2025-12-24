@@ -47,6 +47,18 @@ export default function RegisterWorkshopPage() {
   const { toast } = useToast();
   const router = useRouter();
   const [isSubmitting, setIsSubmitting] = React.useState(false);
+  
+  // Redirect anonymous users
+  React.useEffect(() => {
+    if (!isUserLoading && user?.isAnonymous) {
+      toast({
+        title: 'Función no disponible para invitados',
+        description: 'Por favor, crea una cuenta para registrar un taller.',
+        variant: 'destructive',
+      });
+      router.push('/dashboard');
+    }
+  }, [isUserLoading, user, router, toast]);
 
   // Fetch User's Workshops
   const workshopsCollection = useMemoFirebase(() => {
@@ -85,7 +97,7 @@ export default function RegisterWorkshopPage() {
   };
 
   async function onSubmit(values: z.infer<typeof workshopSchema>) {
-    if (!user || !firestore) {
+    if (!user || !firestore || user.isAnonymous) {
       toast({
         variant: 'destructive',
         title: 'Error',
@@ -142,7 +154,9 @@ export default function RegisterWorkshopPage() {
     }
   }
   
-  if (isUserLoading || isWorkshopsLoading) {
+  const isLoading = isUserLoading || isWorkshopsLoading || (user && user.isAnonymous);
+
+  if (isLoading) {
     return <div className="flex h-screen items-center justify-center"><Loader2 className="w-12 h-12 animate-spin text-primary" /></div>;
   }
 
