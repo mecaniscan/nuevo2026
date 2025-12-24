@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
-import { useUser, useFirestore, useMemoFirebase, useStorage, FirestorePermissionError, errorEmitter, deleteDocumentNonBlocking } from '@/firebase';
+import { useUser, useFirestore, useMemoFirebase, useStorage, FirestorePermissionError, errorEmitter, deleteDocumentNonBlocking, useDoc } from '@/firebase';
 import { collection, query, orderBy, doc, writeBatch, getDoc } from 'firebase/firestore';
 import { ref as storageRef, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { useCollection } from '@/firebase/firestore/use-collection';
@@ -127,22 +127,23 @@ const VehicleCertificate = ({ vehicle, user }: { vehicle: Vehicle, user: User | 
                     </div>
                 </div>
 
-                <div className="signature-section pt-16 flex justify-around">
-                    <div className="signature-box w-[45%] text-center">
-                        <div className="signature-line w-full h-10 border-b border-foreground/50 mb-2"></div>
-                        <p className="signature-label text-center text-xs text-muted-foreground">Firma del Vendedor</p>
-                        <p className="text-center text-sm font-semibold">{`${user.firstName} ${user.lastName}`}</p>
-                    </div>
-                    <div className="signature-box w-[45%] text-center">
-                        <div className="signature-line w-full h-10 border-b border-foreground/50 mb-2"></div>
-                        <p className="signature-label text-center text-xs text-muted-foreground">Firma del Comprador</p>
-                    </div>
-                </div>
-
-                <div className="bg-muted/50 p-4 rounded-md text-center mt-8">
-                     <p className="text-xs text-muted-foreground">
-                        Este documento es un certificado de venta privado. MecaniScan no se hace responsable de la veracidad de los datos. Se recomienda una inspección profesional.
-                    </p>
+                <div className="pt-16">
+                  <div className="signature-section flex justify-around">
+                      <div className="signature-box w-[45%] text-center">
+                          <div className="signature-line w-full h-10 border-b border-foreground/50 mb-2"></div>
+                          <p className="signature-label text-center text-xs text-muted-foreground">Firma del Vendedor</p>
+                          <p className="text-center text-sm font-semibold">{`${user.firstName} ${user.lastName}`}</p>
+                      </div>
+                      <div className="signature-box w-[45%] text-center">
+                          <div className="signature-line w-full h-10 border-b border-foreground/50 mb-2"></div>
+                          <p className="signature-label text-center text-xs text-muted-foreground">Firma del Comprador</p>
+                      </div>
+                  </div>
+                  <div className="bg-muted/50 p-4 rounded-md text-center mt-8">
+                       <p className="text-xs text-muted-foreground">
+                          Este documento es un certificado de venta privado. MecaniScan no se hace responsable de la veracidad de los datos. Se recomienda una inspección profesional.
+                      </p>
+                  </div>
                 </div>
              </div>
         </DialogContent>
