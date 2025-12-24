@@ -21,7 +21,6 @@ const profileSchema = z.object({
   firstName: z.string().min(2, 'El nombre debe tener al menos 2 caracteres.'),
   lastName: z.string().min(2, 'El apellido debe tener al menos 2 caracteres.'),
   email: z.string().email('El correo electrónico no es válido.').optional(),
-  phoneNumber: z.string().optional(),
   whatsappNumber: z.string().optional(),
 });
 
@@ -45,7 +44,6 @@ export default function ProfilePage() {
       firstName: '',
       lastName: '',
       email: '',
-      phoneNumber: '',
       whatsappNumber: '',
     },
   });
@@ -55,7 +53,6 @@ export default function ProfilePage() {
       form.reset({
         ...userData,
         email: user?.email || userData.email, // Prefer email from auth object
-        phoneNumber: userData.phoneNumber || '',
         whatsappNumber: userData.whatsappNumber || '',
       });
     } else if (user && !isUserDataLoading) {
@@ -65,7 +62,6 @@ export default function ProfilePage() {
         firstName,
         lastName,
         email: user.email || '',
-        phoneNumber: user.phoneNumber || '',
         whatsappNumber: '', // Auth object doesn't have whatsapp
       });
     }
@@ -187,34 +183,19 @@ export default function ProfilePage() {
                     </FormItem>
                   )}
                 />
-               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                 <FormField
-                    control={form.control}
-                    name="phoneNumber"
-                    render={({ field }) => (
-                        <FormItem>
-                        <FormLabel>Teléfono (Opcional)</FormLabel>
-                        <FormControl>
-                            <Input type="tel" placeholder="+54 11 1234-5678" {...field} />
-                        </FormControl>
-                        <FormMessage />
-                        </FormItem>
-                    )}
-                    />
-                 <FormField
-                    control={form.control}
-                    name="whatsappNumber"
-                    render={({ field }) => (
-                        <FormItem>
-                        <FormLabel>WhatsApp (Opcional)</FormLabel>
-                        <FormControl>
-                            <Input type="tel" placeholder="+54 9 11 1234-5678" {...field} />
-                        </FormControl>
-                        <FormMessage />
-                        </FormItem>
-                    )}
-                    />
-               </div>
+               <FormField
+                  control={form.control}
+                  name="whatsappNumber"
+                  render={({ field }) => (
+                      <FormItem>
+                      <FormLabel>WhatsApp (Opcional)</FormLabel>
+                      <FormControl>
+                          <Input type="tel" placeholder="+54 9 11 1234-5678" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                      </FormItem>
+                  )}
+                  />
                <div className="flex gap-4 pt-4 border-t">
                   <Button type="submit" disabled={isSubmitting}>
                     {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}

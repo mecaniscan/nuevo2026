@@ -141,10 +141,6 @@
           "description": "Email address of the user.",
           "format": "email"
         },
-        "phoneNumber": {
-          "type": "string",
-          "description": "Phone number of the user."
-        },
         "whatsappNumber": {
           "type": "string",
           "description": "WhatsApp number of the user."
@@ -590,5 +586,3 @@
     "reasoning": "The Firestore data structure is designed to support the MecaniScan application, focusing on mechanic workshop registration, appointment booking, and OBDII scanner service highlighting. The structure prioritizes authorization independence and supports QAPs (Rules are not Filters) to ensure secure `list` operations. Path-based ownership is used where applicable to simplify security rules. The structure is organized into collections for `Workshops` and `Users`, with subcollections to manage relationships effectively.\n\n**Authorization Independence:**\n\n*   **Appointments:** The `appointments` subcollection under each `user` document includes the `userId` of the user who created the appointment. This denormalization is critical for authorization independence because security rules can authorize access to appointments based on the `userId` in the appointment document and/or ownership of the parent `User` document. Without the `userId` on the `Appointment`, rules would need to perform a `get()` to verify the requesting user owns the parent `User` document, violating Authorization Independence.\n*   **Reviews**: Reviews are stored in a subcollection under each workshop (`/workshops/{workshopId}/reviews`). This allows for easy retrieval of all reviews for a specific workshop and enables security rules that grant write access only to authenticated users.\n* **Services**: Services are stored in a subcollection under each workshop (`/workshops/{workshopId}/services`). This allows each workshop to manage its own list of services and prices, and makes it easy to retrieve all services for a specific workshop.\n* **Favorites**: Favorite workshops are stored in a subcollection under each user (`/users/{userId}/favorites`). This ensures that only the owner can read or write their own favorites list, enforcing strict data privacy.\n\n**QAPs Support:**\n\n*   **Workshops Collection:** All workshops are stored in a single `workshops` collection, but segregation is achieved via the `obdScannerService` field. List operations can be secured by filtering based on workshop attributes in the rules (e.g., `obdScannerService == true`) to highlight workshops offering OBDII scanner services, without compromising security.\n*   **User-Owned Data:** Storing appointments, oil changes, vehicles, and favorites within a user's document ensures that only the user has access to their own data.\n\n**Marketplace:**\n* **Marketplace Collection:** A top-level `marketplace` collection stores denormalized copies of vehicles listed for sale. This is crucial for security and performance. It allows unauthenticated users to browse all vehicles for sale (`allow list`) without being able to access the private `/users` collection. Security rules ensure that only the vehicle's owner can create, update, or delete their listing in the marketplace, maintaining data integrity."
   }
 }
-
-    

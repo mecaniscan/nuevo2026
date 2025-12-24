@@ -9,7 +9,6 @@ interface UserInfo {
     lastName: string;
     email: string;
     password?: string; // Password is not stored in Firestore, but is needed for creation
-    phoneNumber?: string;
     whatsappNumber?: string;
 }
 
