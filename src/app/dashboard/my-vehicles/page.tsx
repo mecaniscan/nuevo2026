@@ -195,9 +195,6 @@ const VehicleCertificate = ({ vehicle, user }: { vehicle: Vehicle, user: User | 
     );
 };
 
-const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
-const ACCEPTED_IMAGE_TYPES = ["image/jpeg", "image/jpg", "image/png", "image/webp"];
-
 const vehicleSchema = z.object({
   type: z.string().min(3, 'El tipo es muy corto.'),
   brand: z.string().min(2, 'La marca es requerida.'),
@@ -218,13 +215,7 @@ const vehicleSchema = z.object({
   ),
   country: z.string().min(2, 'El país es requerido.'),
   isForSale: z.boolean().default(false),
-  images: z.any()
-    .refine((files) => !files || files.length === 0 || files?.length <= 5, `Máximo 5 imágenes.`)
-    .refine((files) => !files || files.length === 0 || Array.from(files).every((file: any) => file.size <= MAX_FILE_SIZE), `Cada imagen debe pesar menos de 5MB.`)
-    .refine(
-      (files) => !files || files.length === 0 || Array.from(files).every((file: any) => ACCEPTED_IMAGE_TYPES.includes(file.type)),
-      "Solo se aceptan formatos .jpg, .jpeg, .png y .webp."
-    ).optional(),
+  images: z.any().optional(),
 });
 
 
@@ -449,7 +440,7 @@ export default function MyVehiclesPage() {
                         name="images"
                         render={({ field: { onChange, value, ...rest } }) => (
                           <FormItem>
-                            <FormLabel>Imágenes del Vehículo (hasta 5)</FormLabel>
+                            <FormLabel>Imágenes del Vehículo (opcional)</FormLabel>
                             <FormControl>
                                 <Input type="file" multiple accept="image/*" onChange={(e) => onChange(e.target.files)} {...rest} />
                             </FormControl>
