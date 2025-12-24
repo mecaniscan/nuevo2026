@@ -45,17 +45,13 @@ export function OBDII_Decoder() {
 
   const handleScan = async () => {
     if (isLoading) return;
-    
+
     setIsLoading(true);
     setResult(null);
 
-    // Step 1: Get camera permission and stream
+    // Step 1: Activate Camera
     if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-      toast({
-        variant: 'destructive',
-        title: 'Cámara no Soportada',
-        description: 'Tu navegador no soporta el acceso a la cámara.',
-      });
+      toast({ variant: 'destructive', title: 'Cámara no Soportada', description: 'Tu navegador no soporta el acceso a la cámara.' });
       setHasCameraPermission(false);
       setIsLoading(false);
       return;
@@ -70,63 +66,52 @@ export function OBDII_Decoder() {
       if (videoRef.current) {
         videoRef.current.srcObject = stream;
         await new Promise(resolve => {
-          if (videoRef.current) {
-            videoRef.current.onloadedmetadata = resolve;
-          } else {
-            resolve(null);
-          }
+          videoRef.current!.onloadedmetadata = () => resolve(null);
         });
       }
     } catch (error) {
       console.error('Error accessing camera:', error);
       setHasCameraPermission(false);
       setIsCameraActive(false);
-      toast({
-        variant: 'destructive',
-        title: 'Acceso a la Cámara Denegado',
-        description: 'Por favor, activa los permisos de la cámara en tu navegador para usar esta función.',
-      });
+      toast({ variant: 'destructive', title: 'Acceso a la Cámara Denegado', description: 'Por favor, activa los permisos de la cámara.' });
       setIsLoading(false);
       return;
     }
 
-    // Step 2: Capture image from video stream
+    // Give the camera a moment to adjust focus and exposure
+    await new Promise(resolve => setTimeout(resolve, 500));
+
+    // Step 2: Capture Image
     if (!videoRef.current) {
-        toast({ variant: "destructive", title: "Error", description: "No se puede acceder al video." });
-        setIsLoading(false);
-        stopCamera();
-        return;
+      toast({ variant: "destructive", title: "Error", description: "No se puede acceder al video." });
+      setIsLoading(false);
+      stopCamera();
+      return;
     }
-    
+
     const canvas = document.createElement('canvas');
     canvas.width = videoRef.current.videoWidth;
     canvas.height = videoRef.current.videoHeight;
     const context = canvas.getContext('2d');
-
     if (!context) {
-        toast({ variant: "destructive", title: "Error", description: "No se pudo procesar la imagen." });
-        setIsLoading(false);
-        stopCamera();
-        return;
+      toast({ variant: "destructive", title: "Error", description: "No se pudo procesar la imagen." });
+      setIsLoading(false);
+      stopCamera();
+      return;
     }
-
     context.drawImage(videoRef.current, 0, 0, canvas.width, canvas.height);
     const dataUri = canvas.toDataURL('image/jpeg');
 
-    // Stop camera after capture
+    // Step 3: Stop camera after capture
     stopCamera();
 
     if (dataUri === 'data:,') {
-       toast({
-        variant: "destructive",
-        title: "Error de Captura",
-        description: "No se pudo capturar la imagen. Asegúrate de que la cámara esté funcionando.",
-      });
-      setIsLoading(false);
-      return;
+       toast({ variant: "destructive", title: "Error de Captura", description: "No se pudo capturar la imagen." });
+       setIsLoading(false);
+       return;
     }
 
-    // Step 3: Send image for analysis
+    // Step 4: Analyze Image
     try {
       const output = await scanDashboardAction({ photoDataUri: dataUri });
       setResult(output);
@@ -134,12 +119,12 @@ export function OBDII_Decoder() {
       toast({
         variant: "destructive",
         title: "Error de Análisis",
-        description: "No se pudo analizar la imagen. Por favor, asegúrate de que el tablero esté bien iluminado e inténtalo de nuevo.",
+        description: "No se pudo analizar la imagen. Asegúrate de que el tablero esté bien iluminado.",
       });
       console.error(e);
+    } finally {
+        setIsLoading(false);
     }
-
-    setIsLoading(false);
   };
 
 
