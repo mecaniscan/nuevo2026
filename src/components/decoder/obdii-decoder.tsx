@@ -12,6 +12,7 @@ import type { DashboardScanOutput } from '@/ai/schemas';
 import { Loader2, Camera, AlertCircle, VideoOff } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { Alert, AlertDescription, AlertTitle } from '../ui/alert';
+import { cn } from '@/lib/utils';
 
 const FormSchema = z.object({});
 
@@ -71,6 +72,8 @@ export function OBDII_Decoder() {
         await new Promise(resolve => {
           if (videoRef.current) {
             videoRef.current.onloadedmetadata = resolve;
+          } else {
+            resolve(null);
           }
         });
       }
@@ -161,14 +164,11 @@ export function OBDII_Decoder() {
                 </CardHeader>
                 <CardContent className="space-y-4">
                     <div className="w-full aspect-video bg-muted rounded-md overflow-hidden flex items-center justify-center relative">
-                        {isCameraActive || isLoading ? (
-                            <video ref={videoRef} className="w-full h-full object-cover" autoPlay muted playsInline />
-                        ) : (
-                             <div className="flex flex-col items-center gap-2 text-muted-foreground">
-                                <Camera className="w-12 h-12" />
-                                <span>Cámara inactiva</span>
-                            </div>
-                        )}
+                        <video ref={videoRef} className={cn("w-full h-full object-cover", !isCameraActive && "hidden")} autoPlay muted playsInline />
+                         <div className={cn("flex flex-col items-center gap-2 text-muted-foreground", isCameraActive && "hidden")}>
+                            <Camera className="w-12 h-12" />
+                            <span>Cámara inactiva</span>
+                        </div>
                         {hasCameraPermission === false && (
                              <Alert variant="destructive" className="m-4">
                                 <AlertCircle className="h-4 w-4" />
