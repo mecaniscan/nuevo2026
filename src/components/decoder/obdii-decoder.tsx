@@ -49,34 +49,41 @@ export function OBDII_Decoder() {
     setIsLoading(true);
     setResult(null);
 
-    // Step 1: Activate Camera
-    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-      toast({ variant: 'destructive', title: 'Cámara no Soportada', description: 'Tu navegador no soporta el acceso a la cámara.' });
-      setHasCameraPermission(false);
-      setIsLoading(false);
-      return;
+    // Step 1: Activate Camera if not already active
+    if (!isCameraActive) {
+        if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+            toast({ variant: 'destructive', title: 'Cámara no Soportada', description: 'Tu navegador no soporta el acceso a la cámara.' });
+            setHasCameraPermission(false);
+            setIsLoading(false);
+            return;
+        }
+        
+        let stream: MediaStream;
+        try {
+            stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } });
+            streamRef.current = stream;
+            setHasCameraPermission(true);
+            setIsCameraActive(true);
+            if (videoRef.current) {
+                videoRef.current.srcObject = stream;
+                await new Promise(resolve => {
+                    if (videoRef.current) {
+                        videoRef.current.onloadedmetadata = () => resolve(null);
+                    } else {
+                        resolve(null);
+                    }
+                });
+            }
+        } catch (error) {
+            console.error('Error accessing camera:', error);
+            setHasCameraPermission(false);
+            setIsCameraActive(false);
+            toast({ variant: 'destructive', title: 'Acceso a la Cámara Denegado', description: 'Por favor, activa los permisos de la cámara.' });
+            setIsLoading(false);
+            return;
+        }
     }
-    
-    let stream: MediaStream;
-    try {
-      stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } });
-      streamRef.current = stream;
-      setHasCameraPermission(true);
-      setIsCameraActive(true);
-      if (videoRef.current) {
-        videoRef.current.srcObject = stream;
-        await new Promise(resolve => {
-          videoRef.current!.onloadedmetadata = () => resolve(null);
-        });
-      }
-    } catch (error) {
-      console.error('Error accessing camera:', error);
-      setHasCameraPermission(false);
-      setIsCameraActive(false);
-      toast({ variant: 'destructive', title: 'Acceso a la Cámara Denegado', description: 'Por favor, activa los permisos de la cámara.' });
-      setIsLoading(false);
-      return;
-    }
+
 
     // Give the camera a moment to adjust focus and exposure
     await new Promise(resolve => setTimeout(resolve, 500));
@@ -102,16 +109,13 @@ export function OBDII_Decoder() {
     context.drawImage(videoRef.current, 0, 0, canvas.width, canvas.height);
     const dataUri = canvas.toDataURL('image/jpeg');
 
-    // Step 3: Stop camera after capture
-    stopCamera();
-
     if (dataUri === 'data:,') {
        toast({ variant: "destructive", title: "Error de Captura", description: "No se pudo capturar la imagen." });
        setIsLoading(false);
        return;
     }
 
-    // Step 4: Analyze Image
+    // Step 3: Analyze Image (camera is not stopped here anymore)
     try {
       const output = await scanDashboardAction({ photoDataUri: dataUri });
       setResult(output);
@@ -144,7 +148,7 @@ export function OBDII_Decoder() {
                 <CardHeader>
                   <CardTitle>Análisis de Tablero con Cámara</CardTitle>
                   <CardDescription>
-                    {isCameraActive ? 'Capturando imagen...' : 'Presiona "Escanear con IA" para comenzar.'}
+                    {isCameraActive ? 'Cámara activa. Presiona escanear.' : 'Presiona "Escanear con IA" para comenzar.'}
                   </CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-4">
@@ -170,10 +174,16 @@ export function OBDII_Decoder() {
                             Escanear con IA
                         </Button>
                      ) : (
-                        <Button onClick={stopCamera} variant="outline" className="w-full">
-                            <VideoOff className="mr-2 h-4 w-4" />
-                            Detener Cámara
-                        </Button>
+                        <div className='flex gap-2'>
+                          <Button onClick={handleScan} disabled={isLoading} className="w-full">
+                              {isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Camera className="mr-2 h-4 w-4" />}
+                              Escanear Tablero
+                          </Button>
+                          <Button onClick={stopCamera} variant="outline" className="w-full">
+                              <VideoOff className="mr-2 h-4 w-4" />
+                              Detener Cámara
+                          </Button>
+                        </div>
                      )}
                 </CardContent>
                 <CardFooter className="flex-col items-stretch">
