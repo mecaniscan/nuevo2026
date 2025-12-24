@@ -12,7 +12,7 @@ import { collection, query, orderBy, doc, writeBatch, getDoc } from 'firebase/fi
 import { ref as storageRef, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { useCollection } from '@/firebase/firestore/use-collection';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2, PlusCircle, Car, Trash2, Pencil, Save, Briefcase, BadgePercent, Upload, FileText } from 'lucide-react';
+import { Loader2, PlusCircle, Car, Trash2, Pencil, Save, Briefcase, BadgePercent, Upload, FileText, Wrench, Printer } from 'lucide-react';
 import Link from 'next/link';
 import type { Vehicle, User } from '@/lib/types';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -27,10 +27,124 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
 import { Switch } from '@/components/ui/switch';
 import { Badge } from '@/components/ui/badge';
 import { v4 as uuidv4 } from 'uuid';
 import Image from 'next/image';
+import { Separator } from '@/components/ui/separator';
+import { format } from 'date-fns';
+import { es } from 'date-fns/locale';
+
+const CertificateItem = ({ label, value }: { label: string; value: string | number | undefined }) => (
+    <div className="flex justify-between py-2 border-b border-dashed">
+        <dt className="text-sm text-muted-foreground">{label}:</dt>
+        <dd className="text-sm font-semibold text-foreground">{value || 'N/A'}</dd>
+    </div>
+);
+
+const VehicleCertificate = ({ vehicle, user }: { vehicle: Vehicle, user: User | null }) => {
+    
+    if (!user) return null;
+
+    const handlePrint = () => {
+        const printWindow = window.open('', '', 'height=800,width=800');
+        const content = document.getElementById(`certificate-${vehicle.id}`)?.innerHTML;
+        if (printWindow && content) {
+            printWindow.document.write('<html><head><title>Certificado de Venta</title>');
+            // You may need to link a stylesheet here for proper printing
+            printWindow.document.write('<style>body{font-family:sans-serif;}</style>');
+            printWindow.document.write('</head><body>');
+            printWindow.document.write(content);
+            printWindow.document.write('</body></html>');
+            printWindow.document.close();
+            printWindow.print();
+        } else {
+            window.print();
+        }
+    };
+
+    return (
+        <DialogContent className="max-w-3xl">
+            <DialogHeader>
+                 <Button onClick={handlePrint} className="absolute top-4 right-16">
+                    <Printer className="mr-2" />
+                    Imprimir
+                </Button>
+            </DialogHeader>
+             <div id={`certificate-${vehicle.id}`} className="space-y-4">
+                 <div className="flex items-center gap-4">
+                    <Wrench className="h-10 w-10 text-primary" />
+                    <div>
+                        <h1 className="text-2xl font-bold font-headline text-primary">Certificado de Venta de Vehículo</h1>
+                        <p className="text-muted-foreground text-sm">Documento privado generado por MecaniScan</p>
+                    </div>
+                </div>
+
+                <div>
+                    <h2 className="text-lg font-semibold mb-2 border-b pb-1">Datos del Vendedor</h2>
+                    <dl className="space-y-1">
+                        <CertificateItem label="Nombre" value={`${user.firstName} ${user.lastName}`} />
+                        <CertificateItem label="Correo Electrónico" value={user.email} />
+                        <CertificateItem label="Número de WhatsApp" value={user.whatsappNumber} />
+                        <CertificateItem label="Fecha de Emisión" value={format(new Date(), "dd 'de' MMMM 'de' yyyy", { locale: es })} />
+                    </dl>
+                    <div className="space-y-6 pt-6">
+                        <div className="space-y-1">
+                            <div className="w-full h-10 border-b border-foreground/50"></div>
+                            <p className="text-center text-xs text-muted-foreground">Firma del Vendedor</p>
+                        </div>
+                    </div>
+                </div>
+                <Separator />
+                 <div>
+                    <h2 className="text-lg font-semibold mb-2 border-b pb-1">Datos del Vehículo</h2>
+                     <dl className="space-y-1">
+                        <CertificateItem label="Marca" value={vehicle.brand} />
+                        <CertificateItem label="Modelo" value={vehicle.model} />
+                        <CertificateItem label="Año" value={vehicle.year} />
+                        <CertificateItem label="Tipo" value={vehicle.type} />
+                        <CertificateItem label="Código VIN" value={vehicle.vin} />
+                        <CertificateItem label="Placa" value={vehicle.licensePlate} />
+                        <CertificateItem label="Kilometraje Actual" value={`${vehicle.currentMileage.toLocaleString()} km`} />
+                        <CertificateItem label="País de Registro" value={vehicle.country} />
+                        <CertificateItem label="Precio de Venta Sugerido" value={`$${vehicle.price.toLocaleString()}`} />
+                    </dl>
+                </div>
+                 <Separator />
+                 <div>
+                    <h2 className="text-lg font-semibold mb-2 border-b pb-1">Datos del Comprador</h2>
+                     <div className="space-y-6 pt-4">
+                        <div className="space-y-1">
+                            <div className="w-full h-10 border-b border-foreground/50"></div>
+                            <p className="text-center text-xs text-muted-foreground">Firma del Comprador</p>
+                        </div>
+                        <div className="space-y-1">
+                             <div className="w-full h-7 border-b border-foreground/50"></div>
+                             <p className="text-center text-xs text-muted-foreground">Nombre y Apellido</p>
+                        </div>
+                        <div className="space-y-1">
+                            <div className="w-full h-7 border-b border-foreground/50"></div>
+                            <p className="text-center text-xs text-muted-foreground">Número de Identificación</p>
+                        </div>
+                    </div>
+                </div>
+                <div className="bg-muted/50 p-4 rounded-md text-center mt-4">
+                     <p className="text-xs text-muted-foreground">
+                        Este documento es un certificado de venta privado. MecaniScan no se hace responsable de la veracidad de los datos. Se recomienda una inspección profesional.
+                    </p>
+                </div>
+             </div>
+        </DialogContent>
+    );
+};
 
 const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
 const ACCEPTED_IMAGE_TYPES = ["image/jpeg", "image/jpg", "image/png", "image/webp"];
@@ -84,6 +198,13 @@ export default function MyVehiclesPage() {
   }, [vehiclesCollection]);
 
   const { data: vehicles, isLoading: areVehiclesLoading } = useCollection<Vehicle>(vehiclesQuery);
+  
+  const userDocRef = useMemoFirebase(() => {
+    if (!firestore || !user) return null;
+    return doc(firestore, 'users', user.uid);
+  }, [firestore, user]);
+  const { data: userData, isLoading: isUserDataLoading } = useCollection<User>(userDocRef as any);
+  const currentUserData = userData?.[0];
 
   const form = useForm<z.infer<typeof vehicleSchema>>({
     resolver: zodResolver(vehicleSchema),
@@ -239,7 +360,7 @@ export default function MyVehiclesPage() {
     });
   }
 
-  const isLoading = isUserLoading || areVehiclesLoading;
+  const isLoading = isUserLoading || areVehiclesLoading || isUserDataLoading;
   
   return (
     <div className="container mx-auto py-12">
@@ -377,11 +498,14 @@ export default function MyVehiclesPage() {
                                         <TableCell>{vehicle.currentMileage?.toLocaleString()} km</TableCell>
                                         <TableCell>${vehicle.price?.toLocaleString()}</TableCell>
                                         <TableCell className="text-right">
-                                            <Button variant="ghost" size="icon" className="text-blue-500 hover:bg-blue-500/10" asChild>
-                                                <Link href={`/dashboard/vehicle-certificate/${vehicle.id}`} title="Generar Certificado">
-                                                    <FileText className="h-4 w-4" />
-                                                </Link>
-                                            </Button>
+                                            <Dialog>
+                                                <DialogTrigger asChild>
+                                                    <Button variant="ghost" size="icon" className="text-blue-500 hover:bg-blue-500/10" title="Generar Certificado">
+                                                        <FileText className="h-4 w-4" />
+                                                    </Button>
+                                                </DialogTrigger>
+                                                <VehicleCertificate vehicle={vehicle} user={currentUserData || null} />
+                                            </Dialog>
                                             <Button variant="ghost" size="icon" className="text-primary hover:bg-primary/10" onClick={() => handleEditVehicle(vehicle)}>
                                                 <Pencil className="h-4 w-4" />
                                             </Button>
