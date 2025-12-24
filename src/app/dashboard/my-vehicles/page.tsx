@@ -301,7 +301,7 @@ export default function MyVehiclesPage() {
             const existingVehicleSnap = await getDoc(userVehicleRef);
             const existingVehicleData = existingVehicleSnap.data() as Vehicle;
 
-            const vehiclePayload: Partial<Vehicle> = {
+            const vehiclePayload: Partial<Omit<Vehicle, 'id' | 'userId'>> = {
                 ...values,
                 imageUrls: uploadedImageUrls ?? existingVehicleData.imageUrls,
                 sellerName,
@@ -313,7 +313,7 @@ export default function MyVehiclesPage() {
             const marketplaceVehicleRef = doc(firestore, 'marketplace', editingVehicleId);
 
             if (values.isForSale) {
-                batch.set(marketplaceVehicleRef, { ...existingVehicleData, ...vehiclePayload, id: editingVehicleId });
+                batch.set(marketplaceVehicleRef, { ...existingVehicleData, ...vehiclePayload, id: editingVehicleId, userId: user.uid });
             } else {
                 batch.delete(marketplaceVehicleRef);
             }

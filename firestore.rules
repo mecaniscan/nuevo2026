@@ -184,7 +184,8 @@ service cloud.firestore {
        */
       match /vehicles/{vehicleId} {
         allow get, list: if isOwner(userId);
-        allow create, update: if isOwner(userId) && request.resource.data.userId == userId;
+        allow create: if isOwner(userId) && request.resource.data.userId == userId;
+        allow update: if isOwner(userId);
         allow delete: if isExistingOwner(userId) && resource.data.userId == userId;
       }
       
