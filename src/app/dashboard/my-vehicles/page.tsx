@@ -78,9 +78,9 @@ const VehicleCertificate = ({ vehicle, user }: { vehicle: Vehicle, user: User | 
         <DialogContent className="max-w-3xl">
              <DialogHeader className='flex-row items-center justify-between'>
                 <div>
-                    <DialogTitle className="text-2xl font-bold font-headline text-primary">Vista Previa del Certificado</DialogTitle>
+                    <DialogTitle className="text-2xl font-bold font-headline text-primary">Certificado de Venta</DialogTitle>
                     <DialogDescription>
-                        Revisa el certificado de venta del vehículo.
+                        Revisa y descarga el certificado de venta del vehículo.
                     </DialogDescription>
                 </div>
                 <Button onClick={handleDownloadPdf}>
