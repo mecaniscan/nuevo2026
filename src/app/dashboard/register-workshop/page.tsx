@@ -19,6 +19,7 @@ import Link from 'next/link';
 import type { Workshop } from '@/lib/types';
 import { ref as storageRef, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { v4 as uuidv4 } from 'uuid';
+import { setDoc } from 'firebase/firestore';
 
 const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
 const ACCEPTED_IMAGE_TYPES = ["image/jpeg", "image/jpg", "image/png", "image/webp"];
@@ -135,7 +136,7 @@ export default function RegisterWorkshopPage() {
         reviewCount: 0,
       };
       
-      await setDoc(workshopRef, workshopData);
+      setDocumentNonBlocking(workshopRef, workshopData, { merge: false });
 
       toast({
         title: '¡Taller Registrado!',
@@ -345,5 +346,3 @@ export default function RegisterWorkshopPage() {
     </div>
   );
 }
-
-    
