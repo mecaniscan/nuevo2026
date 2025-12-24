@@ -7,12 +7,12 @@ import { Button } from '@/components/ui/button';
 import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
-import { useUser, useFirestore, useMemoFirebase, useStorage, FirestorePermissionError, errorEmitter, deleteDocumentNonBlocking, useDoc } from '@/firebase';
+import { useUser, useFirestore, useMemoFirebase, FirestorePermissionError, errorEmitter, deleteDocumentNonBlocking, useDoc } from '@/firebase';
 import { collection, query, orderBy, doc, writeBatch, getDoc } from 'firebase/firestore';
 import { ref as storageRef, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { useCollection } from '@/firebase/firestore/use-collection';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2, PlusCircle, Car, Trash2, Pencil, Save, Briefcase, BadgePercent, Upload, FileText, Wrench, Printer } from 'lucide-react';
+import { Loader2, PlusCircle, Car, Trash2, Pencil, Save, Briefcase, BadgePercent, Upload, FileText, Wrench, Printer, Download } from 'lucide-react';
 import Link from 'next/link';
 import type { Vehicle, User } from '@/lib/types';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -42,6 +42,8 @@ import Image from 'next/image';
 import { Separator } from '@/components/ui/separator';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
+import jsPDF from 'jspdf';
+import html2canvas from 'html2canvas';
 
 const CertificateItem = ({ label, value }: { label: string; value: string | number | undefined }) => (
     <div className="flex justify-between py-2 border-b border-dashed">
@@ -54,33 +56,35 @@ const VehicleCertificate = ({ vehicle, user }: { vehicle: Vehicle, user: User | 
     
     if (!user) return null;
 
-    const handlePrint = () => {
-        const printWindow = window.open('', '', 'height=800,width=800');
-        const content = document.getElementById(`certificate-${vehicle.id}`)?.innerHTML;
-        if (printWindow && content) {
-            printWindow.document.write('<html><head><title>Certificado de Venta</title>');
-            // You may need to link a stylesheet here for proper printing
-            printWindow.document.write('<style>body{font-family:sans-serif;padding: 2rem;} .signature-section { display: flex; justify-content: space-around; margin-top: 4rem; } .signature-box { width: 45%; text-align: center; } .signature-line { border-bottom: 1px solid #333; height: 2.5rem; margin-bottom: 0.5rem; } .signature-label { font-size: 0.75rem; color: #666; }</style>');
-            printWindow.document.write('</head><body>');
-            printWindow.document.write(content);
-            printWindow.document.write('</body></html>');
-            printWindow.document.close();
-            printWindow.print();
-        } else {
-            window.print();
+    const handleDownloadPdf = () => {
+        const content = document.getElementById(`certificate-${vehicle.id}`);
+        if (content) {
+            html2canvas(content, { scale: 2 }).then(canvas => {
+                const imgData = canvas.toDataURL('image/png');
+                const pdf = new jsPDF('p', 'mm', 'a4');
+                const pdfWidth = pdf.internal.pageSize.getWidth();
+                const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
+                pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
+                pdf.save(`certificado-venta-${vehicle.brand}-${vehicle.model}.pdf`);
+            });
         }
     };
 
     return (
         <DialogContent className="max-w-3xl">
             <DialogHeader className='flex-row items-center justify-between'>
-                <DialogTitle>Certificado de Venta</DialogTitle>
-                <Button onClick={handlePrint} className="ml-auto">
-                    <Printer className="mr-2" />
-                    Imprimir
+                 <div>
+                    <DialogTitle className="text-2xl font-bold font-headline text-primary">Certificado de Venta</DialogTitle>
+                    <DialogDescription>
+                        Vista previa del certificado de venta del vehículo.
+                    </DialogDescription>
+                </div>
+                <Button onClick={handleDownloadPdf}>
+                    <Download className="mr-2" />
+                    Descargar PDF
                 </Button>
             </DialogHeader>
-             <div id={`certificate-${vehicle.id}`} className="space-y-4">
+             <div id={`certificate-${vehicle.id}`} className="space-y-4 bg-white text-black p-8">
                  <div className="flex items-center gap-4">
                     <Wrench className="h-10 w-10 text-primary" />
                     <div>
