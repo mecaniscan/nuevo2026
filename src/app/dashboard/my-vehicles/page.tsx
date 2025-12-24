@@ -56,10 +56,14 @@ const VehicleCertificate = ({ vehicle, user }: { vehicle: Vehicle, user: User | 
     
     if (!user) return null;
 
+    const issueDate = format(new Date(), "yyyy-MM-dd");
+    const qrData = `VIN: ${vehicle.vin}\nMarca: ${vehicle.brand}\nModelo: ${vehicle.model}\nAño: ${vehicle.year}\nEmitido: ${issueDate}`;
+    const qrCodeUrl = `https://api.qrserver.com/v1/create-qr-code/?data=${encodeURIComponent(qrData)}&size=100x100&bgcolor=ffffff`;
+
     const handleDownloadPdf = () => {
         const content = document.getElementById(`certificate-${vehicle.id}`);
         if (content) {
-            html2canvas(content, { scale: 2 }).then(canvas => {
+            html2canvas(content, { scale: 2, backgroundColor: null }).then(canvas => {
                 const imgData = canvas.toDataURL('image/png');
                 const pdf = new jsPDF('p', 'mm', 'a4');
                 const pdfWidth = pdf.internal.pageSize.getWidth();
@@ -72,11 +76,11 @@ const VehicleCertificate = ({ vehicle, user }: { vehicle: Vehicle, user: User | 
 
     return (
         <DialogContent className="max-w-3xl">
-            <DialogHeader className='flex-row items-center justify-between'>
-                 <div>
-                    <DialogTitle className="text-2xl font-bold font-headline text-primary">Certificado de Venta</DialogTitle>
+             <DialogHeader className='flex-row items-center justify-between'>
+                <div>
+                    <DialogTitle className="text-2xl font-bold font-headline text-primary">Vista Previa del Certificado</DialogTitle>
                     <DialogDescription>
-                        Vista previa del certificado de venta del vehículo.
+                        Revisa el certificado de venta del vehículo.
                     </DialogDescription>
                 </div>
                 <Button onClick={handleDownloadPdf}>
@@ -84,12 +88,18 @@ const VehicleCertificate = ({ vehicle, user }: { vehicle: Vehicle, user: User | 
                     Descargar PDF
                 </Button>
             </DialogHeader>
-             <div id={`certificate-${vehicle.id}`} className="space-y-4 bg-white text-black p-8">
-                 <div className="flex items-center gap-4">
-                    <Wrench className="h-10 w-10 text-primary" />
-                    <div>
-                        <h1 className="text-2xl font-bold font-headline text-primary">Certificado de Venta de Vehículo</h1>
-                        <p className="text-muted-foreground text-sm">Documento privado generado por MecaniScan</p>
+             <div id={`certificate-${vehicle.id}`} className="space-y-4 bg-white text-black p-8 rounded-lg">
+                 <div className="flex justify-between items-start">
+                    <div className="flex items-center gap-4">
+                        <Wrench className="h-10 w-10 text-primary" />
+                        <div>
+                            <h1 className="text-2xl font-bold font-headline text-primary">CERTIFICADO DE VENTA PRIVADO</h1>
+                            <p className="text-muted-foreground text-sm">Documento generado por MecaniScan</p>
+                        </div>
+                    </div>
+                    <div className='flex flex-col items-center'>
+                         <Image src={qrCodeUrl} alt="Código QR de Verificación" width={80} height={80} />
+                         <p className='text-[8px] text-muted-foreground mt-1'>Escanear para verificar</p>
                     </div>
                 </div>
 
@@ -562,5 +572,3 @@ export default function MyVehiclesPage() {
     </div>
   );
 }
-
-    
