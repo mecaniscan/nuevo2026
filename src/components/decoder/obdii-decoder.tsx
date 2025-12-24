@@ -118,6 +118,15 @@ export function OBDII_Decoder() {
     try {
       const output = await scanDashboardAction({ photoDataUri: dataUri });
       setResult(output);
+      if (output.indicators.length === 0) {
+        toast({
+          title: "No se encontraron testigos",
+          description: "La cámara se desactivará en 5 segundos."
+        });
+        setTimeout(() => {
+          stopCamera();
+        }, 5000);
+      }
     } catch (e) {
       toast({
         variant: "destructive",
@@ -127,7 +136,6 @@ export function OBDII_Decoder() {
       console.error(e);
     } finally {
         setIsLoading(false);
-        // Camera remains on after scanning
     }
   };
 
