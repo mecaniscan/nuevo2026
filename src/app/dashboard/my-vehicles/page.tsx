@@ -7,11 +7,12 @@ import { Button } from '@/components/ui/button';
 import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
-import { useUser, useFirestore, useMemoFirebase, deleteDocumentNonBlocking } from '@/firebase';
+import { useUser, useFirestore, useMemoFirebase, useStorage } from '@/firebase';
 import { collection, query, orderBy, doc, writeBatch, getDoc } from 'firebase/firestore';
+import { ref as storageRef, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { useCollection } from '@/firebase/firestore/use-collection';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2, PlusCircle, Car, Trash2, Pencil, Save, Briefcase, BadgePercent } from 'lucide-react';
+import { Loader2, PlusCircle, Car, Trash2, Pencil, Save, Briefcase, BadgePercent, Upload } from 'lucide-react';
 import Link from 'next/link';
 import type { Vehicle, User } from '@/lib/types';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -28,6 +29,11 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Switch } from '@/components/ui/switch';
 import { Badge } from '@/components/ui/badge';
+import { v4 as uuidv4 } from 'uuid';
+import Image from 'next/image';
+
+const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
+const ACCEPTED_IMAGE_TYPES = ["image/jpeg", "image/jpg", "image/png", "image/webp"];
 
 const vehicleSchema = z.object({
   type: z.string().min(3, 'El tipo es muy corto.'),
@@ -49,12 +55,20 @@ const vehicleSchema = z.object({
   ),
   country: z.string().min(2, 'El país es requerido.'),
   isForSale: z.boolean().default(false),
+  images: z.any()
+    .refine((files) => files?.length <= 5, `Máximo 5 imágenes.`)
+    .refine((files) => Array.from(files).every((file: any) => file.size <= MAX_FILE_SIZE), `Cada imagen debe pesar menos de 5MB.`)
+    .refine(
+      (files) => Array.from(files).every((file: any) => ACCEPTED_IMAGE_TYPES.includes(file.type)),
+      "Solo se aceptan formatos .jpg, .jpeg, .png y .webp."
+    ).optional(),
 });
 
 
 export default function MyVehiclesPage() {
   const { user, isUserLoading } = useUser();
   const firestore = useFirestore();
+  const storage = useStorage();
   const { toast } = useToast();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [editingVehicleId, setEditingVehicleId] = useState<string | null>(null);
@@ -87,6 +101,20 @@ export default function MyVehiclesPage() {
     },
   });
 
+  const uploadImages = async (files: FileList): Promise<string[]> => {
+    if (!storage || !user) {
+        throw new Error("Storage service not available.");
+    }
+    const imageUrls: string[] = [];
+    for (const file of Array.from(files)) {
+        const imageRef = storageRef(storage, `vehicles/${user.uid}/${uuidv4()}`);
+        const snapshot = await uploadBytes(imageRef, file);
+        const downloadURL = await getDownloadURL(snapshot.ref);
+        imageUrls.push(downloadURL);
+    }
+    return imageUrls;
+  };
+
   async function onSubmit(values: z.infer<typeof vehicleSchema>) {
     if (!user || !firestore) {
       toast({ variant: 'destructive', title: 'Error', description: 'Debes iniciar sesión.' });
@@ -97,8 +125,11 @@ export default function MyVehiclesPage() {
     
     try {
         const batch = writeBatch(firestore);
+        let uploadedImageUrls: string[] = [];
+        if (values.images && values.images.length > 0) {
+            uploadedImageUrls = await uploadImages(values.images);
+        }
 
-        // Fetch user data to get seller's name and whatsapp
         const userDocRef = doc(firestore, 'users', user.uid);
         const userDocSnap = await getDoc(userDocRef);
         const userData = userDocSnap.data() as User | undefined;
@@ -106,38 +137,44 @@ export default function MyVehiclesPage() {
         const sellerName = user.displayName || `${userData?.firstName} ${userData?.lastName}` || 'Vendedor Anónimo';
         const sellerWhatsapp = userData?.whatsappNumber || '';
 
-        const vehiclePayload: Omit<Vehicle, 'id'> = {
-            ...values,
-            userId: user.uid,
-            sellerName,
-            sellerWhatsapp,
-        };
         
         if (editingVehicleId) {
-            // Updating an existing vehicle
             const userVehicleRef = doc(firestore, `users/${user.uid}/vehicles`, editingVehicleId);
+            const existingVehicleSnap = await getDoc(userVehicleRef);
+            const existingVehicleData = existingVehicleSnap.data() as Vehicle;
+
+            const vehiclePayload: Partial<Vehicle> = {
+                ...values,
+                imageUrls: uploadedImageUrls.length > 0 ? uploadedImageUrls : existingVehicleData.imageUrls,
+                sellerName,
+                sellerWhatsapp,
+            };
+
             batch.update(userVehicleRef, vehiclePayload);
 
             const marketplaceVehicleRef = doc(firestore, 'marketplace', editingVehicleId);
 
             if (values.isForSale) {
-                // If it's for sale, create or update it in the marketplace
-                batch.set(marketplaceVehicleRef, { ...vehiclePayload, id: editingVehicleId });
+                batch.set(marketplaceVehicleRef, { ...existingVehicleData, ...vehiclePayload, id: editingVehicleId });
             } else {
-                // If it's not for sale, remove it from the marketplace
                 batch.delete(marketplaceVehicleRef);
             }
             
             await batch.commit();
-
             toast({
                 title: '¡Vehículo Actualizado!',
                 description: 'Tu vehículo ha sido actualizado.',
             });
             setEditingVehicleId(null);
         } else {
-            // Adding a new vehicle
             const userVehicleRef = doc(collection(firestore, `users/${user.uid}/vehicles`));
+             const vehiclePayload: Omit<Vehicle, 'id'> = {
+                ...values,
+                userId: user.uid,
+                sellerName,
+                sellerWhatsapp,
+                imageUrls: uploadedImageUrls
+            };
             const vehicleDataWithId = { ...vehiclePayload, id: userVehicleRef.id };
             batch.set(userVehicleRef, vehicleDataWithId);
 
@@ -175,13 +212,11 @@ export default function MyVehiclesPage() {
     try {
         const batch = writeBatch(firestore);
         
-        // Reference to the document in the user's private collection
         const userVehicleRef = doc(firestore, `users/${user.uid}/vehicles`, vehicleId);
         batch.delete(userVehicleRef);
 
-        // Reference to the document in the public marketplace collection
         const marketplaceVehicleRef = doc(firestore, 'marketplace', vehicleId);
-        batch.delete(marketplaceVehicleRef); // This will do nothing if it doesn't exist, which is fine.
+        batch.delete(marketplaceVehicleRef);
 
         await batch.commit();
 
@@ -202,7 +237,10 @@ export default function MyVehiclesPage() {
 
   function handleEditVehicle(vehicle: Vehicle) {
     setEditingVehicleId(vehicle.id);
-    form.reset(vehicle);
+    form.reset({
+        ...vehicle,
+        images: undefined, // Clear image input on edit
+    });
   }
 
   const isLoading = isUserLoading || areVehiclesLoading;
@@ -236,8 +274,26 @@ export default function MyVehiclesPage() {
                   <FormField control={form.control} name="currentMileage" render={({ field }) => (<FormItem><FormLabel>Kilometraje Actual</FormLabel><FormControl><Input type="number" placeholder="50000" {...field} /></FormControl><FormMessage /></FormItem>)} />
                   <FormField control={form.control} name="licensePlate" render={({ field }) => (<FormItem><FormLabel>Placa</FormLabel><FormControl><Input placeholder="ABC-123" {...field} /></FormControl><FormMessage /></FormItem>)} />
                   <FormField control={form.control} name="country" render={({ field }) => (<FormItem><FormLabel>País</FormLabel><FormControl><Input placeholder="Ej: Argentina" {...field} /></FormControl><FormMessage /></FormItem>)} />
-                  <div className="lg:col-span-2">
+                  <div className="lg:col-span-3">
                     <FormField control={form.control} name="vin" render={({ field }) => (<FormItem><FormLabel>Código VIN</FormLabel><FormControl><Input placeholder="17 caracteres" {...field} /></FormControl><FormMessage /></FormItem>)} />
+                  </div>
+                  <div className="lg:col-span-3">
+                     <FormField
+                        control={form.control}
+                        name="images"
+                        render={({ field: { onChange, value, ...rest } }) => (
+                          <FormItem>
+                            <FormLabel>Imágenes del Vehículo (hasta 5)</FormLabel>
+                            <FormControl>
+                                <Input type="file" multiple accept="image/*" onChange={(e) => onChange(e.target.files)} {...rest} />
+                            </FormControl>
+                            <FormDescription>
+                              Sube una o más imágenes de tu vehículo.
+                            </FormDescription>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
                   </div>
                 </div>
 
@@ -306,7 +362,11 @@ export default function MyVehiclesPage() {
                                 vehicles.map((vehicle) => (
                                     <TableRow key={vehicle.id}>
                                         <TableCell className="font-medium flex items-center gap-3">
-                                            <div className="w-16 h-10 rounded-md bg-muted flex items-center justify-center text-muted-foreground"><Car/></div>
+                                            <div className="w-16 h-10 rounded-md bg-muted flex items-center justify-center text-muted-foreground relative overflow-hidden">
+                                                {vehicle.imageUrls && vehicle.imageUrls[0] ? (
+                                                    <Image src={vehicle.imageUrls[0]} alt={`${vehicle.brand} ${vehicle.model}`} fill className="object-cover" />
+                                                ) : <Car/>}
+                                            </div>
                                             {vehicle.brand} {vehicle.model}
                                         </TableCell>
                                         <TableCell>{vehicle.year}</TableCell>
