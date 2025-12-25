@@ -1,9 +1,6 @@
 "use client";
 
 import { useState, useRef, useEffect } from 'react';
-import { useForm } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
-import * as z from 'zod';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
@@ -13,8 +10,6 @@ import { Loader2, Camera, AlertCircle, VideoOff } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { Alert, AlertDescription, AlertTitle } from '../ui/alert';
 import { cn } from '@/lib/utils';
-
-const FormSchema = z.object({});
 
 export function OBDII_Decoder() {
   const [result, setResult] = useState<DashboardScanOutput | null>(null);
@@ -42,53 +37,52 @@ export function OBDII_Decoder() {
       stopCamera();
     };
   }, []);
+  
+  const activateCamera = async () => {
+    if (isLoading || isCameraActive) return;
 
-  const handleScan = async () => {
-    if (isLoading) return;
-
-    // Step 1: Activate Camera if not already active
-    if (!isCameraActive) {
-        setIsLoading(true);
-        if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-            toast({ variant: 'destructive', title: 'Cámara no Soportada', description: 'Tu navegador no soporta el acceso a la cámara.' });
-            setHasCameraPermission(false);
-            setIsLoading(false);
-            return;
-        }
+    setIsLoading(true);
+    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+        toast({ variant: 'destructive', title: 'Cámara no Soportada', description: 'Tu navegador no soporta el acceso a la cámara.' });
+        setHasCameraPermission(false);
+        setIsLoading(false);
+        return;
+    }
+    
+    try {
+        const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } });
+        streamRef.current = stream;
         
-        try {
-            const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } });
-            streamRef.current = stream;
-            setHasCameraPermission(true);
-            
-            if (videoRef.current) {
-                videoRef.current.srcObject = stream;
-                // Wait for the video to load to prevent capturing a black screen
-                await new Promise<void>(resolve => {
-                    if (videoRef.current) {
-                        videoRef.current.onloadedmetadata = () => {
-                            setIsCameraActive(true);
-                            setIsLoading(false);
-                            resolve();
-                        };
-                    } else {
+        if (videoRef.current) {
+            videoRef.current.srcObject = stream;
+            // Wait for the video to load to prevent capturing a black screen
+            await new Promise<void>(resolve => {
+                if (videoRef.current) {
+                    videoRef.current.onloadedmetadata = () => {
+                        setHasCameraPermission(true);
+                        setIsCameraActive(true);
                         setIsLoading(false);
                         resolve();
-                    }
-                });
-            }
-        } catch (error) {
-            console.error('Error accessing camera:', error);
-            setHasCameraPermission(false);
-            setIsCameraActive(false);
-            toast({ variant: 'destructive', title: 'Acceso a la Cámara Denegado', description: 'Por favor, activa los permisos de la cámara.' });
-            setIsLoading(false);
+                    };
+                } else {
+                    setIsLoading(false);
+                    resolve();
+                }
+            });
         }
-        return; // Return after activating camera, user will click again to scan.
+    } catch (error) {
+        console.error('Error accessing camera:', error);
+        setHasCameraPermission(false);
+        setIsCameraActive(false);
+        toast({ variant: 'destructive', title: 'Acceso a la Cámara Denegado', description: 'Por favor, activa los permisos de la cámara.' });
+        setIsLoading(false);
     }
+  };
 
 
-    // Step 2: Capture Image and Analyze
+  const handleScan = async () => {
+    if (isLoading || !isCameraActive) return;
+
     setIsLoading(true);
     setResult(null);
 
@@ -157,7 +151,7 @@ export function OBDII_Decoder() {
                 <CardHeader>
                   <CardTitle>Scanner de tablero con IA</CardTitle>
                   <CardDescription>
-                    {isCameraActive ? 'Cámara activa. Presiona escanear.' : 'Presiona "Escanear con IA" para comenzar.'}
+                    {isCameraActive ? 'Cámara activa. Presiona escanear.' : 'Presiona "Activar Cámara" para comenzar.'}
                   </CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-4">
@@ -178,15 +172,21 @@ export function OBDII_Decoder() {
                         )}
                     </div>
                      {!isCameraActive ? (
-                        <Button onClick={handleScan} disabled={isLoading} className="w-full">
+                        <Button onClick={activateCamera} disabled={isLoading} className="w-full">
                             {isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Camera className="mr-2 h-4 w-4" />}
-                            Escanear con IA
+                            Activar Cámara
                         </Button>
                      ) : (
-                        <Button onClick={handleScan} disabled={isLoading} className="w-full">
-                            {isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Camera className="mr-2 h-4 w-4" />}
-                            Escanear Tablero
-                        </Button>
+                        <div className="flex gap-2">
+                            <Button onClick={handleScan} disabled={isLoading} className="w-full">
+                                {isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Camera className="mr-2 h-4 w-4" />}
+                                Escanear Tablero
+                            </Button>
+                            <Button onClick={stopCamera} variant="outline">
+                                <VideoOff className="mr-2 h-4 w-4" />
+                                Detener Cámara
+                            </Button>
+                        </div>
                      )}
                 </CardContent>
                 <CardFooter className="flex-col items-stretch">
