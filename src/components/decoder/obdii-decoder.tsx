@@ -14,62 +14,32 @@ import { cn } from '@/lib/utils';
 export function OBDII_Decoder() {
   const [result, setResult] = useState<DashboardScanOutput | null>(null);
   const [isLoading, setIsLoading] = useState(false);
-  const [hasCameraPermission, setHasCameraPermission] = useState<boolean | null>(null);
+  const [hasCameraPermission, setHasCameraPermission] = useState(true);
   const videoRef = useRef<HTMLVideoElement>(null);
-  const streamRef = useRef<MediaStream | null>(null);
   const { toast } = useToast();
 
- const stopCamera = () => {
-    if (streamRef.current) {
-      streamRef.current.getTracks().forEach(track => track.stop());
-      streamRef.current = null;
-    }
-    if (videoRef.current) {
-      videoRef.current.srcObject = null;
-    }
-    setHasCameraPermission(null); 
-    setResult(null);
-  };
+ useEffect(() => {
+    const getCameraPermission = async () => {
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({video: true});
+        setHasCameraPermission(true);
 
-  useEffect(() => {
-    // Cleanup function to stop camera stream when component unmounts or navigates away
-    return () => {
-       if (streamRef.current) {
-         streamRef.current.getTracks().forEach(track => track.stop());
-       }
-    };
-  }, []);
-  
-  const activateCamera = async () => {
-    if (isLoading) return;
-    setResult(null);
-    setIsLoading(true);
-
-    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-        toast({ variant: 'destructive', title: 'Cámara no Soportada', description: 'Tu navegador no soporta el acceso a la cámara.' });
-        setHasCameraPermission(false);
-        setIsLoading(false);
-        return;
-    }
-    
-    try {
-        const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } });
-        streamRef.current = stream;
-        
         if (videoRef.current) {
-            videoRef.current.srcObject = stream;
-            videoRef.current.onloadedmetadata = () => {
-                setHasCameraPermission(true);
-                setIsLoading(false);
-            };
+          videoRef.current.srcObject = stream;
         }
-    } catch (error) {
+      } catch (error) {
         console.error('Error accessing camera:', error);
         setHasCameraPermission(false);
-        toast({ variant: 'destructive', title: 'Acceso a la Cámara Denegado', description: 'Por favor, activa los permisos de la cámara.' });
-        setIsLoading(false);
-    }
-  };
+        toast({
+          variant: 'destructive',
+          title: 'Acceso a la Cámara Denegado',
+          description: 'Por favor, habilita los permisos de la cámara en la configuración de tu navegador para usar esta aplicación.',
+        });
+      }
+    };
+
+    getCameraPermission();
+  }, [toast]);
 
 
   const handleScan = async () => {
@@ -108,11 +78,8 @@ export function OBDII_Decoder() {
       if (output.indicators.length === 0) {
         toast({
           title: "No se encontraron testigos",
-          description: "La cámara se desactivará en 5 segundos."
+          description: "No se encontraron luces de advertencia en el tablero."
         });
-        setTimeout(() => {
-          stopCamera();
-        }, 5000);
       }
     } catch (e) {
       toast({
@@ -143,43 +110,24 @@ export function OBDII_Decoder() {
                 <CardHeader>
                   <CardTitle>Scanner de tablero con IA</CardTitle>
                   <CardDescription>
-                    {hasCameraPermission ? 'Cámara activa. Presiona escanear.' : 'Presiona "Activar Cámara" para comenzar.'}
+                     Apunta la cámara al tablero de tu vehículo y presiona escanear.
                   </CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-4">
                     <div className="w-full aspect-video bg-muted rounded-md overflow-hidden flex items-center justify-center relative">
-                        <video ref={videoRef} className={cn("w-full h-full object-cover", !hasCameraPermission && "hidden")} autoPlay muted playsInline />
-                         <div className={cn("flex flex-col items-center gap-2 text-muted-foreground", hasCameraPermission && "hidden")}>
-                            <Camera className="w-12 h-12" />
-                            <span>Cámara inactiva</span>
-                        </div>
-                        {hasCameraPermission === false && (
-                             <Alert variant="destructive" className="m-4">
-                                <AlertCircle className="h-4 w-4" />
-                                <AlertTitle>Se requiere acceso a la cámara</AlertTitle>
-                                <AlertDescription>
-                                  Por favor, permite el acceso a la cámara para utilizar esta función.
-                                </AlertDescription>
-                            </Alert>
+                        <video ref={videoRef} className="w-full h-full object-cover" autoPlay muted playsInline />
+                         { !hasCameraPermission && (
+                             <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/70 text-white p-4">
+                                <AlertCircle className="w-12 h-12 mb-4" />
+                                <h3 className="font-bold text-lg">Cámara no disponible</h3>
+                                <p className="text-center text-sm">Por favor, concede los permisos de cámara en tu navegador para continuar.</p>
+                            </div>
                         )}
                     </div>
-                     {!hasCameraPermission ? (
-                        <Button onClick={activateCamera} disabled={isLoading} className="w-full">
-                            {isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Camera className="mr-2 h-4 w-4" />}
-                            Activar Cámara
-                        </Button>
-                     ) : (
-                        <div className="flex gap-2">
-                            <Button onClick={handleScan} disabled={isLoading} className="w-full">
-                                {isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Camera className="mr-2 h-4 w-4" />}
-                                Escanear Tablero
-                            </Button>
-                            <Button onClick={stopCamera} variant="outline">
-                                <VideoOff className="mr-2 h-4 w-4" />
-                                Detener Cámara
-                            </Button>
-                        </div>
-                     )}
+                     <Button onClick={handleScan} disabled={isLoading || !hasCameraPermission} className="w-full">
+                        {isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Camera className="mr-2 h-4 w-4" />}
+                        Escanear Tablero
+                    </Button>
                 </CardContent>
                 <CardFooter className="flex-col items-stretch">
                     {result && (
