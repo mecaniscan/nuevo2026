@@ -46,11 +46,9 @@ export function OBDII_Decoder() {
   const handleScan = async () => {
     if (isLoading) return;
 
-    setIsLoading(true);
-    setResult(null);
-
     // Step 1: Activate Camera if not already active
     if (!isCameraActive) {
+        setIsLoading(true);
         if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
             toast({ variant: 'destructive', title: 'Cámara no Soportada', description: 'Tu navegador no soporta el acceso a la cámara.' });
             setHasCameraPermission(false);
@@ -58,19 +56,24 @@ export function OBDII_Decoder() {
             return;
         }
         
-        let stream: MediaStream;
         try {
-            stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } });
+            const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } });
             streamRef.current = stream;
             setHasCameraPermission(true);
-            setIsCameraActive(true);
+            
             if (videoRef.current) {
                 videoRef.current.srcObject = stream;
-                await new Promise(resolve => {
+                // Wait for the video to load to prevent capturing a black screen
+                await new Promise<void>(resolve => {
                     if (videoRef.current) {
-                        videoRef.current.onloadedmetadata = () => resolve(null);
+                        videoRef.current.onloadedmetadata = () => {
+                            setIsCameraActive(true);
+                            setIsLoading(false);
+                            resolve();
+                        };
                     } else {
-                        resolve(null);
+                        setIsLoading(false);
+                        resolve();
                     }
                 });
             }
@@ -80,19 +83,18 @@ export function OBDII_Decoder() {
             setIsCameraActive(false);
             toast({ variant: 'destructive', title: 'Acceso a la Cámara Denegado', description: 'Por favor, activa los permisos de la cámara.' });
             setIsLoading(false);
-            return;
         }
+        return; // Return after activating camera, user will click again to scan.
     }
 
 
-    // Give the camera a moment to adjust focus and exposure
-    await new Promise(resolve => setTimeout(resolve, 500));
+    // Step 2: Capture Image and Analyze
+    setIsLoading(true);
+    setResult(null);
 
-    // Step 2: Capture Image
     if (!videoRef.current) {
       toast({ variant: "destructive", title: "Error", description: "No se puede acceder al video." });
       setIsLoading(false);
-      // Don't stop camera if capture fails, user might want to retry
       return;
     }
 
@@ -113,8 +115,7 @@ export function OBDII_Decoder() {
        setIsLoading(false);
        return;
     }
-
-    // Step 3: Analyze Image
+    
     try {
       const output = await scanDashboardAction({ photoDataUri: dataUri });
       setResult(output);
