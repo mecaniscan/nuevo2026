@@ -14,47 +14,59 @@ import { cn } from '@/lib/utils';
 export function OBDII_Decoder() {
   const [result, setResult] = useState<DashboardScanOutput | null>(null);
   const [isLoading, setIsLoading] = useState(false);
-  const [hasCameraPermission, setHasCameraPermission] = useState<boolean | null>(null);
+  const [isCameraActive, setIsCameraActive] = useState(false);
   const videoRef = useRef<HTMLVideoElement>(null);
   const streamRef = useRef<MediaStream | null>(null);
   const { toast } = useToast();
 
-  useEffect(() => {
-    const getCameraPermission = async () => {
-      try {
-        const stream = await navigator.mediaDevices.getUserMedia({ video: true });
-        streamRef.current = stream;
-        if (videoRef.current) {
-          videoRef.current.srcObject = stream;
-        }
-        setHasCameraPermission(true);
-      } catch (error) {
-        console.error('Error accessing camera:', error);
-        setHasCameraPermission(false);
-        toast({
-          variant: 'destructive',
-          title: 'Acceso a la Cámara Denegado',
-          description: 'Por favor, habilita los permisos de la cámara en la configuración de tu navegador para usar esta aplicación.',
-        });
-      }
-    };
-
-    getCameraPermission();
-    
-    // Cleanup function to stop the camera when the component unmounts
-    return () => {
-        if (streamRef.current) {
-            streamRef.current.getTracks().forEach(track => track.stop());
-        }
+  const stopCamera = () => {
+    if (streamRef.current) {
+      streamRef.current.getTracks().forEach(track => track.stop());
+      streamRef.current = null;
     }
-  }, [toast]);
+    setIsCameraActive(false);
+  };
+  
+  // Cleanup camera on component unmount
+  useEffect(() => {
+    return () => {
+      stopCamera();
+    };
+  }, []);
 
 
   const handleScan = async () => {
-    if (isLoading || !hasCameraPermission || !videoRef.current) return;
-
     setIsLoading(true);
     setResult(null);
+
+    // Activate camera if not already active
+    if (!isCameraActive && videoRef.current) {
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({ 
+            video: { facingMode: 'environment' } 
+        });
+        streamRef.current = stream;
+        videoRef.current.srcObject = stream;
+        await videoRef.current.play();
+        setIsCameraActive(true);
+      } catch (error) {
+        console.error('Error accessing camera:', error);
+        toast({
+          variant: 'destructive',
+          title: 'Acceso a la Cámara Denegado',
+          description: 'Por favor, habilita los permisos de la cámara en la configuración de tu navegador.',
+        });
+        setIsLoading(false);
+        return;
+      }
+    }
+
+    // Ensure camera is ready before capturing
+    if (!videoRef.current || videoRef.current.readyState < 3) {
+      toast({ variant: "destructive", title: "Cámara no lista", description: "Espera un momento y vuelve a intentarlo." });
+      setIsLoading(false);
+      return;
+    }
 
     const canvas = document.createElement('canvas');
     canvas.width = videoRef.current.videoWidth;
@@ -82,8 +94,11 @@ export function OBDII_Decoder() {
       if (output.indicators.length === 0) {
         toast({
           title: "No se encontraron testigos",
-          description: "No se encontraron luces de advertencia en el tablero."
+          description: "La cámara se desactivará en 5 segundos."
         });
+        setTimeout(() => {
+          stopCamera();
+        }, 5000);
       }
     } catch (e) {
       toast({
@@ -120,23 +135,16 @@ export function OBDII_Decoder() {
                     <div className="w-full aspect-video bg-muted rounded-md overflow-hidden flex items-center justify-center relative">
                         <video 
                           ref={videoRef} 
-                          className={cn("w-full h-full object-cover", { 'hidden': !hasCameraPermission })} 
+                          className={cn("w-full h-full object-cover", { 'hidden': !isCameraActive })} 
                           autoPlay 
                           muted 
                           playsInline 
                         />
-                         {hasCameraPermission === null && <Loader2 className="w-12 h-12 animate-spin text-primary" />}
-                         {hasCameraPermission === false && (
-                             <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/70 text-white p-4">
-                                <AlertCircle className="w-12 h-12 mb-4" />
-                                <h3 className="font-bold text-lg">Cámara no disponible</h3>
-                                <p className="text-center text-sm">Por favor, concede los permisos de cámara en tu navegador para continuar.</p>
-                            </div>
-                        )}
+                         {!isCameraActive && <Camera className="w-12 h-12 text-muted-foreground" />}
                     </div>
-                     <Button onClick={handleScan} disabled={isLoading || !hasCameraPermission} className="w-full">
+                     <Button onClick={handleScan} disabled={isLoading} className="w-full">
                         {isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Camera className="mr-2 h-4 w-4" />}
-                        Escanear Tablero
+                        {isCameraActive ? "Escanear de Nuevo" : "Escanear Tablero con IA"}
                     </Button>
                 </CardContent>
                 <CardFooter className="flex-col items-stretch">
