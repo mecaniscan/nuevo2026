@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { scanDashboardAction } from '@/lib/actions';
 import type { DashboardScanOutput } from '@/ai/schemas';
-import { Loader2, Camera, AlertCircle, VideoOff } from 'lucide-react';
+import { Loader2, Camera, AlertCircle } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { Alert, AlertDescription, AlertTitle } from '../ui/alert';
 import { cn } from '@/lib/utils';
@@ -14,19 +14,20 @@ import { cn } from '@/lib/utils';
 export function OBDII_Decoder() {
   const [result, setResult] = useState<DashboardScanOutput | null>(null);
   const [isLoading, setIsLoading] = useState(false);
-  const [hasCameraPermission, setHasCameraPermission] = useState(true);
+  const [hasCameraPermission, setHasCameraPermission] = useState<boolean | null>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
+  const streamRef = useRef<MediaStream | null>(null);
   const { toast } = useToast();
 
- useEffect(() => {
+  useEffect(() => {
     const getCameraPermission = async () => {
       try {
-        const stream = await navigator.mediaDevices.getUserMedia({video: true});
-        setHasCameraPermission(true);
-
+        const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+        streamRef.current = stream;
         if (videoRef.current) {
           videoRef.current.srcObject = stream;
         }
+        setHasCameraPermission(true);
       } catch (error) {
         console.error('Error accessing camera:', error);
         setHasCameraPermission(false);
@@ -39,25 +40,27 @@ export function OBDII_Decoder() {
     };
 
     getCameraPermission();
+    
+    // Cleanup function to stop the camera when the component unmounts
+    return () => {
+        if (streamRef.current) {
+            streamRef.current.getTracks().forEach(track => track.stop());
+        }
+    }
   }, [toast]);
 
 
   const handleScan = async () => {
-    if (isLoading || !hasCameraPermission) return;
+    if (isLoading || !hasCameraPermission || !videoRef.current) return;
 
     setIsLoading(true);
     setResult(null);
-
-    if (!videoRef.current) {
-      toast({ variant: "destructive", title: "Error", description: "No se puede acceder al video." });
-      setIsLoading(false);
-      return;
-    }
 
     const canvas = document.createElement('canvas');
     canvas.width = videoRef.current.videoWidth;
     canvas.height = videoRef.current.videoHeight;
     const context = canvas.getContext('2d');
+    
     if (!context) {
       toast({ variant: "destructive", title: "Error", description: "No se pudo procesar la imagen." });
       setIsLoading(false);
@@ -75,6 +78,7 @@ export function OBDII_Decoder() {
     try {
       const output = await scanDashboardAction({ photoDataUri: dataUri });
       setResult(output);
+      
       if (output.indicators.length === 0) {
         toast({
           title: "No se encontraron testigos",
@@ -92,7 +96,6 @@ export function OBDII_Decoder() {
         setIsLoading(false);
     }
   };
-
 
   return (
     <section id="decoder" className="w-full py-12 md:py-24 lg:py-32">
@@ -115,8 +118,15 @@ export function OBDII_Decoder() {
                 </CardHeader>
                 <CardContent className="space-y-4">
                     <div className="w-full aspect-video bg-muted rounded-md overflow-hidden flex items-center justify-center relative">
-                        <video ref={videoRef} className="w-full h-full object-cover" autoPlay muted playsInline />
-                         { !hasCameraPermission && (
+                        <video 
+                          ref={videoRef} 
+                          className={cn("w-full h-full object-cover", { 'hidden': !hasCameraPermission })} 
+                          autoPlay 
+                          muted 
+                          playsInline 
+                        />
+                         {hasCameraPermission === null && <Loader2 className="w-12 h-12 animate-spin text-primary" />}
+                         {hasCameraPermission === false && (
                              <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/70 text-white p-4">
                                 <AlertCircle className="w-12 h-12 mb-4" />
                                 <h3 className="font-bold text-lg">Cámara no disponible</h3>

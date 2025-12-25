@@ -6,13 +6,13 @@ import * as z from 'zod';
 import { Button } from '@/components/ui/button';
 import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
-import { useUser, useFirestore, useMemoFirebase, FirestorePermissionError, errorEmitter, deleteDocumentNonBlocking, useDoc, useStorage } from '@/firebase';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { useUser, useFirestore, useMemoFirebase, FirestorePermissionError, errorEmitter, useDoc, useStorage } from '@/firebase';
 import { collection, query, orderBy, doc, writeBatch, getDoc, updateDoc } from 'firebase/firestore';
 import { ref as storageRef, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { useCollection } from '@/firebase/firestore/use-collection';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2, PlusCircle, Car, Trash2, Pencil, Save, Briefcase, BadgePercent, Upload, FileText, Wrench, Printer, Download, Share2 } from 'lucide-react';
+import { Loader2, PlusCircle, Car, Trash2, Pencil, Save, Briefcase, BadgePercent, FileText, Download, Share2 } from 'lucide-react';
 import Link from 'next/link';
 import type { Vehicle, User } from '@/lib/types';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -62,7 +62,6 @@ const VehicleCertificate = ({ vehicle, user }: { vehicle: Vehicle, user: User | 
     
     if (!user) return null;
 
-    const issueDate = format(new Date(), "yyyy-MM-dd");
     const validationUrl = `${window.location.origin}/validate-certificate/${vehicle.certificateNumber}`;
     const qrCodeUrl = `https://api.qrserver.com/v1/create-qr-code/?data=${encodeURIComponent(validationUrl)}&size=100x100&bgcolor=ffffff`;
 
@@ -142,7 +141,7 @@ const VehicleCertificate = ({ vehicle, user }: { vehicle: Vehicle, user: User | 
              <div id={`certificate-${vehicle.id}`} className="space-y-4 bg-white text-black p-8 rounded-lg">
                  <div className="flex justify-between items-start">
                     <div className="flex items-center gap-4">
-                        <Wrench className="h-10 w-10 text-primary" />
+                        <Car className="h-10 w-10 text-primary" />
                         <div>
                             <h1 className="text-2xl font-bold font-headline text-primary">CERTIFICADO DE VENTA PRIVADO</h1>
                             <p className="text-muted-foreground text-sm">Documento generado por MecaniScan</p>
@@ -417,6 +416,7 @@ export default function MyVehiclesPage() {
             description: 'El vehículo ha sido eliminado de tus registros y del marketplace.',
         });
     }).catch(error => {
+        console.error("Error deleting vehicle batch:", error);
         errorEmitter.emit('permission-error', new FirestorePermissionError({
             path: userVehicleRef.path,
             operation: 'delete',
