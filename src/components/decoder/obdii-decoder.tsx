@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { scanDashboardAction } from '@/lib/actions';
 import type { DashboardScanOutput } from '@/ai/schemas';
-import { Loader2, Camera, AlertCircle } from 'lucide-react';
+import { Loader2, Camera, VideoOff } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { Alert, AlertDescription, AlertTitle } from '../ui/alert';
 import { cn } from '@/lib/utils';
@@ -15,6 +15,7 @@ export function OBDII_Decoder() {
   const [result, setResult] = useState<DashboardScanOutput | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [isCameraActive, setIsCameraActive] = useState(false);
+  const [hasPermission, setHasPermission] = useState<boolean | null>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
   const streamRef = useRef<MediaStream | null>(null);
   const { toast } = useToast();
@@ -26,55 +27,55 @@ export function OBDII_Decoder() {
     }
     setIsCameraActive(false);
   };
-  
-  // Cleanup camera on component unmount
+
   useEffect(() => {
+    // Cleanup camera on component unmount
     return () => {
       stopCamera();
     };
   }, []);
 
+  const activateCamera = async () => {
+    if (!videoRef.current) return;
+    setIsLoading(true);
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ 
+        video: { facingMode: 'environment' } 
+      });
+      streamRef.current = stream;
+      videoRef.current.srcObject = stream;
+      await videoRef.current.play();
+      setIsCameraActive(true);
+      setHasPermission(true);
+    } catch (error) {
+      console.error('Error accessing camera:', error);
+      toast({
+        variant: 'destructive',
+        title: 'Acceso a la Cámara Denegado',
+        description: 'Por favor, habilita los permisos de la cámara en la configuración de tu navegador.',
+      });
+      setHasPermission(false);
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   const handleScan = async () => {
-    setIsLoading(true);
-    setResult(null);
-
-    // Activate camera if not already active
-    if (!isCameraActive && videoRef.current) {
-      try {
-        const stream = await navigator.mediaDevices.getUserMedia({ 
-            video: { facingMode: 'environment' } 
-        });
-        streamRef.current = stream;
-        videoRef.current.srcObject = stream;
-        await videoRef.current.play();
-        setIsCameraActive(true);
-      } catch (error) {
-        console.error('Error accessing camera:', error);
-        toast({
-          variant: 'destructive',
-          title: 'Acceso a la Cámara Denegado',
-          description: 'Por favor, habilita los permisos de la cámara en la configuración de tu navegador.',
-        });
-        setIsLoading(false);
-        return;
-      }
-    }
-
-    // Ensure camera is ready before capturing
-    if (!videoRef.current || videoRef.current.readyState < 3) {
-      toast({ variant: "destructive", title: "Cámara no lista", description: "Espera un momento y vuelve a intentarlo." });
-      setIsLoading(false);
+    if (!videoRef.current || !isCameraActive) {
+      toast({ variant: "destructive", title: "Cámara no activa", description: "Por favor, activa la cámara primero." });
       return;
     }
+    
+    setIsLoading(true);
+    setResult(null);
 
     const canvas = document.createElement('canvas');
     canvas.width = videoRef.current.videoWidth;
     canvas.height = videoRef.current.videoHeight;
     const context = canvas.getContext('2d');
     
-    if (!context) {
-      toast({ variant: "destructive", title: "Error", description: "No se pudo procesar la imagen." });
+    if (!context || canvas.width === 0 || canvas.height === 0) {
+      toast({ variant: "destructive", title: "Error de Captura", description: "No se pudo procesar la imagen de la cámara. Intenta de nuevo." });
       setIsLoading(false);
       return;
     }
@@ -141,11 +142,34 @@ export function OBDII_Decoder() {
                           playsInline 
                         />
                          {!isCameraActive && <Camera className="w-12 h-12 text-muted-foreground" />}
+                         {hasPermission === false && (
+                           <div className="absolute inset-0 flex items-center justify-center bg-black/50">
+                                <Alert variant="destructive" className="w-4/5">
+                                    <AlertTitle>Cámara denegada</AlertTitle>
+                                    <AlertDescription>Habilita los permisos en tu navegador.</AlertDescription>
+                                </Alert>
+                           </div>
+                         )}
                     </div>
-                     <Button onClick={handleScan} disabled={isLoading} className="w-full">
-                        {isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Camera className="mr-2 h-4 w-4" />}
-                        {isCameraActive ? "Escanear de Nuevo" : "Escanear Tablero con IA"}
-                    </Button>
+                    <div className="flex flex-col sm:flex-row gap-2">
+                        {!isCameraActive ? (
+                            <Button onClick={activateCamera} disabled={isLoading} className="w-full">
+                                {isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Camera className="mr-2 h-4 w-4" />}
+                                Activar Cámara
+                            </Button>
+                        ) : (
+                            <>
+                                <Button onClick={handleScan} disabled={isLoading} className="w-full">
+                                    {isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Camera className="mr-2 h-4 w-4" />}
+                                    Escanear Tablero
+                                </Button>
+                                <Button onClick={stopCamera} variant="outline" className="w-full sm:w-auto">
+                                    <VideoOff className="mr-2 h-4 w-4" />
+                                    Detener
+                                </Button>
+                            </>
+                        )}
+                    </div>
                 </CardContent>
                 <CardFooter className="flex-col items-stretch">
                     {result && (
