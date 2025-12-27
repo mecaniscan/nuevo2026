@@ -397,7 +397,7 @@ export default function MyVehiclesPage() {
     }
   }
 
-  function handleDeleteVehicle(vehicleId: string) {
+  async function handleDeleteVehicle(vehicleId: string) {
      if (!user || !firestore) {
       toast({ variant: 'destructive', title: 'Error', description: 'No autenticado.' });
       return;
@@ -411,18 +411,27 @@ export default function MyVehiclesPage() {
     const marketplaceVehicleRef = doc(firestore, 'marketplace', vehicleId);
     batch.delete(marketplaceVehicleRef);
 
-    batch.commit().then(() => {
+    try {
+        await batch.commit();
         toast({
             title: 'Vehículo Eliminado',
             description: 'El vehículo ha sido eliminado de tus registros y del marketplace.',
         });
-    }).catch(error => {
+    } catch (error: any) {
         console.error("Error deleting vehicle batch:", error);
-        errorEmitter.emit('permission-error', new FirestorePermissionError({
-            path: userVehicleRef.path,
-            operation: 'delete',
-        }));
-    });
+         if (error.code && error.code.includes('permission-denied')) {
+            errorEmitter.emit('permission-error', new FirestorePermissionError({
+                path: userVehicleRef.path,
+                operation: 'delete',
+            }));
+         } else {
+              toast({
+                variant: 'destructive',
+                title: 'Error Inesperado',
+                description: 'No se pudo eliminar el vehículo. ' + error.message,
+            });
+         }
+    }
   }
 
   function handleEditVehicle(vehicle: Vehicle) {
