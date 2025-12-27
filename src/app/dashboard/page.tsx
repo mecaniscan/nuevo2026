@@ -308,11 +308,11 @@ export default function DashboardPage() {
              <Card className="flex flex-col items-center justify-center p-8 text-center">
                 <CardHeader>
                     <CardTitle>Comienza a registrar tu actividad</CardTitle>
-                    <CardDescription>Añade tu vehículo y tu primer cambio de aceite para ver un resumen aquí.</CardDescription>
+                    <CardDescription>Añade tu primer cambio de aceite para ver un resumen aquí.</CardDescription>
                 </CardHeader>
                 <CardContent>
                      <Button asChild disabled={user.isAnonymous}>
-                        <Link href="/dashboard/my-vehicles">Añadir Vehículo</Link>
+                        <Link href="/dashboard/oil-changes">Registro de cambio aceite</Link>
                     </Button>
                     {user.isAnonymous && <p className='text-xs text-muted-foreground mt-2'>Regístrate para añadir vehículos.</p>}
                 </CardContent>
