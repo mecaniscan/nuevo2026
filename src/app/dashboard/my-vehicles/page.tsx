@@ -392,32 +392,36 @@ export default function MyVehiclesPage() {
   }
 
   async function handleDeleteVehicle(vehicleId: string) {
-     if (!user || !firestore) {
-      toast({ variant: 'destructive', title: 'Error', description: 'No autenticado.' });
-      return;
+    if (!user || !firestore) {
+        toast({ variant: 'destructive', title: 'Error', description: 'No autenticado.' });
+        return;
     }
     
-    const batch = writeBatch(firestore);
-    
-    const userVehicleRef = doc(firestore, `users/${user.uid}/vehicles`, vehicleId);
-    batch.delete(userVehicleRef);
-
     const marketplaceVehicleRef = doc(firestore, 'marketplace', vehicleId);
-    batch.delete(marketplaceVehicleRef);
+    const userVehicleRef = doc(firestore, `users/${user.uid}/vehicles`, vehicleId);
 
     try {
+        const batch = writeBatch(firestore);
+        
+        // Delete from marketplace first
+        batch.delete(marketplaceVehicleRef);
+        // Then delete from user's private collection
+        batch.delete(userVehicleRef);
+
         await batch.commit();
+
         toast({
             title: 'Vehículo Eliminado',
             description: 'El vehículo ha sido eliminado de tus registros y del marketplace.',
         });
-    } catch (error: any) {
+    } catch (error) {
+        console.error("Error deleting vehicle:", error);
         errorEmitter.emit('permission-error', new FirestorePermissionError({
-            path: marketplaceVehicleRef.path,
+            path: marketplaceVehicleRef.path, // Report error on the likely cause
             operation: 'delete',
         }));
     }
-  }
+}
 
   function handleEditVehicle(vehicle: Vehicle) {
     setEditingVehicleId(vehicle.id);
