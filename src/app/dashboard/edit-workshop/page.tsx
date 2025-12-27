@@ -123,50 +123,39 @@ export default function EditWorkshopPage() {
 
     setIsSubmitting(true);
     
-    try {
-      let imageUrl = workshop.imageUrl;
-      if (values.image && values.image.length > 0) {
-          const newImageUrl = await uploadImage(values.image[0]);
-          if (newImageUrl) {
-            imageUrl = newImageUrl;
-          } else {
-            // Halt submission if image upload fails
-            setIsSubmitting(false);
-            return;
-          }
-      }
-
-      const workshopRef = doc(firestore, 'workshops', workshop.id);
-      const { image, ...dataToUpdate } = values;
-      
-      const finalData = { ...dataToUpdate, imageUrl };
-      
-      await updateDoc(workshopRef, finalData);
-
-      toast({
-          title: '¡Taller Actualizado!',
-          description: 'La información de tu taller ha sido guardada.',
-      });
-      router.push('/dashboard');
-    } catch (error: any) {
-        console.error('Error updating workshop:', error);
-        if (error.code && error.code.includes('permission-denied')) {
-            const { image, ...dataToUpdate } = values;
-            errorEmitter.emit('permission-error', new FirestorePermissionError({
-                path: `/workshops/${workshop.id}`,
-                operation: 'update',
-                requestResourceData: { ...dataToUpdate, imageUrl: workshop.imageUrl }
-            }));
+    let imageUrl = workshop.imageUrl;
+    if (values.image && values.image.length > 0) {
+        const newImageUrl = await uploadImage(values.image[0]);
+        if (newImageUrl) {
+          imageUrl = newImageUrl;
         } else {
-            toast({
-                variant: 'destructive',
-                title: 'Error Inesperado',
-                description: 'No se pudo actualizar el taller. ' + error.message,
-            });
+          // Halt submission if image upload fails
+          setIsSubmitting(false);
+          return;
         }
-    } finally {
-        setIsSubmitting(false);
     }
+
+    const workshopRef = doc(firestore, 'workshops', workshop.id);
+    const { image, ...dataToUpdate } = values;
+    
+    const finalData = { ...dataToUpdate, imageUrl };
+    
+    updateDoc(workshopRef, finalData).then(() => {
+        toast({
+            title: '¡Taller Actualizado!',
+            description: 'La información de tu taller ha sido guardada.',
+        });
+        router.push('/dashboard');
+    }).catch((error) => {
+        const { image, ...dataToUpdate } = values;
+        errorEmitter.emit('permission-error', new FirestorePermissionError({
+            path: `/workshops/${workshop.id}`,
+            operation: 'update',
+            requestResourceData: { ...dataToUpdate, imageUrl: workshop.imageUrl }
+        }));
+    }).finally(() => {
+        setIsSubmitting(false);
+    });
   }
   
   if (isUserLoading || isWorkshopsLoading || (user && user.isAnonymous)) {

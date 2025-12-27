@@ -90,42 +90,31 @@ export default function ProfilePage() {
 
     setIsSubmitting(true);
     
-    try {
-      // Update Firestore document
-      const userRef = doc(firestore, 'users', user.uid);
-      const { email, ...dataToUpdate } = values; // Email is not updated here, id is not needed
-      
-      await updateDoc(userRef, dataToUpdate);
-
-      // Update Firebase Auth profile displayName
-      const newDisplayName = `${values.firstName} ${values.lastName}`;
-      if (user.displayName !== newDisplayName) {
-          await updateProfile(user, { displayName: newDisplayName });
-      }
-
-      toast({
-          title: '¡Perfil Actualizado!',
-          description: 'Tu información ha sido guardada correctamente.',
-      });
-      router.push('/dashboard');
-    } catch (error: any) {
-        console.error('Error updating profile:', error);
-        if (error.code && error.code.includes('permission-denied')) {
-            errorEmitter.emit('permission-error', new FirestorePermissionError({
-                path: `/users/${user.uid}`,
-                operation: 'update',
-                requestResourceData: values
-            }));
-        } else {
-            toast({
-                variant: 'destructive',
-                title: 'Error Inesperado',
-                description: 'No se pudo actualizar el perfil. ' + error.message,
-            });
+    // Update Firestore document
+    const userRef = doc(firestore, 'users', user.uid);
+    const { email, ...dataToUpdate } = values; // Email is not updated here, id is not needed
+    
+    updateDoc(userRef, dataToUpdate).then(async () => {
+        // Update Firebase Auth profile displayName
+        const newDisplayName = `${values.firstName} ${values.lastName}`;
+        if (user.displayName !== newDisplayName) {
+            await updateProfile(user, { displayName: newDisplayName });
         }
-    } finally {
+
+        toast({
+            title: '¡Perfil Actualizado!',
+            description: 'Tu información ha sido guardada correctamente.',
+        });
+        router.push('/dashboard');
+    }).catch((error) => {
+        errorEmitter.emit('permission-error', new FirestorePermissionError({
+            path: `/users/${user.uid}`,
+            operation: 'update',
+            requestResourceData: values
+        }));
+    }).finally(() => {
         setIsSubmitting(false);
-    }
+    });
   }
   
   const isLoading = isUserLoading || isUserDataLoading || (user && user.isAnonymous);

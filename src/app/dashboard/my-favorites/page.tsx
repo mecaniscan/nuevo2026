@@ -21,7 +21,6 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
-import { Badge } from '@/components/ui/badge';
 
 export default function MyFavoritesPage() {
   const { user, isUserLoading } = useUser();

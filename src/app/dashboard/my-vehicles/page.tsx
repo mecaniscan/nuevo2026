@@ -306,95 +306,89 @@ export default function MyVehiclesPage() {
 
     setIsSubmitting(true);
     
-    try {
-        const batch = writeBatch(firestore);
-        let uploadedImageUrls: string[] | undefined = undefined;
-        if (values.images && values.images.length > 0) {
+    const batch = writeBatch(firestore);
+    let uploadedImageUrls: string[] | undefined = undefined;
+    if (values.images && values.images.length > 0) {
+        try {
             uploadedImageUrls = await uploadImages(values.images);
+        } catch (error) {
+            toast({ variant: 'destructive', title: 'Error de Subida', description: 'No se pudieron subir las imágenes.' });
+            setIsSubmitting(false);
+            return;
+        }
+    }
+
+    const userDocSnap = await getDoc(userDocRef as any);
+    const userData = userDocSnap.data() as User | undefined;
+
+    const sellerName = user.displayName || `${userData?.firstName} ${userData?.lastName}` || 'Vendedor Anónimo';
+    const sellerWhatsapp = userData?.whatsappNumber || '';
+
+    const { images, ...restOfValues } = values;
+
+    if (editingVehicleId) {
+        const userVehicleRef = doc(firestore, `users/${user.uid}/vehicles`, editingVehicleId);
+        const existingVehicleSnap = await getDoc(userVehicleRef);
+        const existingVehicleData = existingVehicleSnap.data() as Vehicle;
+
+        const vehiclePayload: Partial<Vehicle> = {
+            ...restOfValues,
+            sellerName,
+            sellerWhatsapp,
+        };
+        if(uploadedImageUrls) {
+          vehiclePayload.imageUrls = uploadedImageUrls;
         }
 
-        const userDocSnap = await getDoc(userDocRef as any);
-        const userData = userDocSnap.data() as User | undefined;
+        batch.update(userVehicleRef, vehiclePayload);
 
-        const sellerName = user.displayName || `${userData?.firstName} ${userData?.lastName}` || 'Vendedor Anónimo';
-        const sellerWhatsapp = userData?.whatsappNumber || '';
+        const marketplaceVehicleRef = doc(firestore, 'marketplace', editingVehicleId);
 
-        const { images, ...restOfValues } = values;
-
-        if (editingVehicleId) {
-            const userVehicleRef = doc(firestore, `users/${user.uid}/vehicles`, editingVehicleId);
-            const existingVehicleSnap = await getDoc(userVehicleRef);
-            const existingVehicleData = existingVehicleSnap.data() as Vehicle;
-
-            const vehiclePayload: Partial<Vehicle> = {
-                ...restOfValues,
-                sellerName,
-                sellerWhatsapp,
-            };
-            if(uploadedImageUrls) {
-              vehiclePayload.imageUrls = uploadedImageUrls;
-            }
-
-            batch.update(userVehicleRef, vehiclePayload);
-
-            const marketplaceVehicleRef = doc(firestore, 'marketplace', editingVehicleId);
-
-            if (values.isForSale) {
-                batch.set(marketplaceVehicleRef, { ...existingVehicleData, ...vehiclePayload, id: editingVehicleId, userId: user.uid });
-            } else {
-                batch.delete(marketplaceVehicleRef);
-            }
+        if (values.isForSale) {
+            batch.set(marketplaceVehicleRef, { ...existingVehicleData, ...vehiclePayload, id: editingVehicleId, userId: user.uid });
         } else {
-            const userVehicleRef = doc(collection(firestore, `users/${user.uid}/vehicles`));
-            
-            const vehiclePayload: Vehicle = {
-                ...restOfValues,
-                id: userVehicleRef.id,
-                userId: user.uid,
-                sellerName,
-                sellerWhatsapp,
-                imageUrls: uploadedImageUrls || [],
-                certificateNumber: uuidv4(),
-                certificatePdfUrl: '',
-            };
-
-            batch.set(userVehicleRef, vehiclePayload);
-
-            if (values.isForSale) {
-                const marketplaceVehicleRef = doc(firestore, 'marketplace', userVehicleRef.id);
-                batch.set(marketplaceVehicleRef, vehiclePayload);
-            }
+            batch.delete(marketplaceVehicleRef);
         }
+    } else {
+        const userVehicleRef = doc(collection(firestore, `users/${user.uid}/vehicles`));
         
-        await batch.commit();
+        const vehiclePayload: Vehicle = {
+            ...restOfValues,
+            id: userVehicleRef.id,
+            userId: user.uid,
+            sellerName,
+            sellerWhatsapp,
+            imageUrls: uploadedImageUrls || [],
+            certificateNumber: uuidv4(),
+            certificatePdfUrl: '',
+        };
 
+        batch.set(userVehicleRef, vehiclePayload);
+
+        if (values.isForSale) {
+            const marketplaceVehicleRef = doc(firestore, 'marketplace', userVehicleRef.id);
+            batch.set(marketplaceVehicleRef, vehiclePayload);
+        }
+    }
+    
+    batch.commit().then(() => {
         toast({
             title: editingVehicleId ? '¡Vehículo Actualizado!' : '¡Vehículo Añadido!',
             description: `Tu vehículo ha sido ${editingVehicleId ? 'actualizado' : 'guardado'}.`,
         });
         form.reset();
         setEditingVehicleId(null);
-    } catch (error: any) {
-        console.error('Error saving vehicle:', error);
-        
-        if (error.code && error.code.includes('permission-denied')) {
-             const path = editingVehicleId ? `/users/${user.uid}/vehicles/${editingVehicleId}`: `/users/${user.uid}/vehicles`;
-             const operation = editingVehicleId ? 'update' : 'create';
-             errorEmitter.emit('permission-error', new FirestorePermissionError({
-                path: path,
-                operation: operation,
-                requestResourceData: values
-            }));
-        } else {
-            toast({
-                variant: 'destructive',
-                title: 'Error Inesperado',
-                description: 'No se pudo guardar el vehículo. ' + error.message,
-            });
-        }
-    } finally {
+    }).catch((error) => {
+        const path = editingVehicleId ? `/users/${user.uid}/vehicles/${editingVehicleId}`: `/users/${user.uid}/vehicles`;
+        const operation = editingVehicleId ? 'update' : 'create';
+        errorEmitter.emit('permission-error', new FirestorePermissionError({
+           path: path,
+           operation: operation,
+           requestResourceData: values
+        }));
+    }).finally(() => {
         setIsSubmitting(false);
-    }
+    });
   }
 
   async function handleDeleteVehicle(vehicleId: string) {
@@ -418,19 +412,10 @@ export default function MyVehiclesPage() {
             description: 'El vehículo ha sido eliminado de tus registros y del marketplace.',
         });
     } catch (error: any) {
-        console.error("Error deleting vehicle batch:", error);
-         if (error.code && error.code.includes('permission-denied')) {
-            errorEmitter.emit('permission-error', new FirestorePermissionError({
-                path: userVehicleRef.path,
-                operation: 'delete',
-            }));
-         } else {
-              toast({
-                variant: 'destructive',
-                title: 'Error Inesperado',
-                description: 'No se pudo eliminar el vehículo. ' + error.message,
-            });
-         }
+        errorEmitter.emit('permission-error', new FirestorePermissionError({
+            path: marketplaceVehicleRef.path,
+            operation: 'delete',
+        }));
     }
   }
 

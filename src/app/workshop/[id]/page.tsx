@@ -177,7 +177,7 @@ export default function WorkshopDetailPage() {
         };
         
         try {
-            addDocumentNonBlocking(collection(firestore, `users/${user.uid}/appointments`), appointmentData);
+            await addDocumentNonBlocking(collection(firestore, `users/${user.uid}/appointments`), appointmentData);
             
             // 2. Prepare and open WhatsApp link
             const date = format(values.appointmentDateTime, "eeee, dd 'de' MMMM 'de' yyyy", { locale: es });
@@ -218,7 +218,7 @@ export default function WorkshopDetailPage() {
       }
       setIsSubmittingReview(true);
       
-      const reviewCollection = collection(firestore, `workshops/${workshopId}/reviews`);
+      const reviewCollectionRef = collection(firestore, `workshops/${workshopId}/reviews`);
       const reviewData = {
         ...values,
         workshopId,
@@ -227,16 +227,15 @@ export default function WorkshopDetailPage() {
         createdAt: serverTimestamp(),
       };
 
-      addDocumentNonBlocking(reviewCollection, reviewData);
-      // In a real app, you'd use a transaction to update the average rating on the workshop doc.
-      // For simplicity, we just add the review here.
-      
-      toast({
-        title: "¡Reseña Enviada!",
-        description: "Gracias por compartir tu opinión.",
+      addDocumentNonBlocking(reviewCollectionRef, reviewData).then(() => {
+        toast({
+          title: "¡Reseña Enviada!",
+          description: "Gracias por compartir tu opinión.",
+        });
+        reviewForm.reset({rating: 0, comment: ""});
+      }).finally(() => {
+        setIsSubmittingReview(false);
       });
-      reviewForm.reset({rating: 0, comment: ""});
-      setIsSubmittingReview(false); // Do this optimistically
     }
 
     const formatDate = (dateValue: string | Timestamp | undefined) => {

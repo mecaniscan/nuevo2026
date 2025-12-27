@@ -203,13 +203,14 @@ service cloud.firestore {
      * @description Secures the public marketplace for vehicles.
      * @path /marketplace/{vehicleId}
      * @allow (get, list) Any user, signed in or not, can view vehicle listings.
-     * @allow (create, update, delete) Only the owner of the vehicle can manage their listing.
+     * @allow (create, update) Only the owner of the vehicle can manage their listing.
+     * @allow (delete) Only the owner of the vehicle can delete their listing.
      * @principle Public data is read-only for most users, with write access restricted to owners.
      */
     match /marketplace/{vehicleId} {
       allow get, list: if true;
       allow create, update: if isOwner(request.resource.data.userId);
-      allow delete: if isExistingOwner(resource.data.userId);
+      allow delete: if isOwner(resource.data.userId);
     }
   }
 }

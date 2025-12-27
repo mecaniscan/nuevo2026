@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { useUser, useFirestore, useMemoFirebase, FirestorePermissionError, errorEmitter } from '@/firebase';
+import { useUser, useFirestore, useMemoFirebase } from '@/firebase';
 import { collection, query, where, doc, writeBatch } from 'firebase/firestore';
 import { useCollection } from '@/firebase/firestore/use-collection';
 import { useToast } from '@/hooks/use-toast';
@@ -86,49 +86,40 @@ export default function EditServicesPage() {
     
     setIsSubmitting(true);
     
-    try {
-        const batch = writeBatch(firestore);
-        const servicesColRef = collection(firestore, `workshops/${workshop.id}/services`);
-        
-        const formIds = new Set(values.services.map(s => s.id).filter(Boolean));
+    const batch = writeBatch(firestore);
+    const servicesColRef = collection(firestore, `workshops/${workshop.id}/services`);
+    
+    const formIds = new Set(values.services.map(s => s.id).filter(Boolean));
 
-        currentServices?.forEach(serviceInDb => {
-          if (!formIds.has(serviceInDb.id)) {
-              const docRef = doc(servicesColRef, serviceInDb.id);
-              batch.delete(docRef);
-          }
-        });
-        
-        values.services.forEach(service => {
-          const docRef = service.id ? doc(servicesColRef, service.id) : doc(servicesColRef);
-          const { id, ...serviceData } = service; 
-          batch.set(docRef, { ...serviceData, id: docRef.id }, { merge: true });
-        });
+    currentServices?.forEach(serviceInDb => {
+      if (!formIds.has(serviceInDb.id)) {
+          const docRef = doc(servicesColRef, serviceInDb.id);
+          batch.delete(docRef);
+      }
+    });
+    
+    values.services.forEach(service => {
+      const docRef = service.id ? doc(servicesColRef, service.id) : doc(servicesColRef);
+      const { id, ...serviceData } = service; 
+      batch.set(docRef, { ...serviceData, id: docRef.id }, { merge: true });
+    });
 
-        await batch.commit();
+    batch.commit().then(() => {
         toast({
             title: '¡Servicios Actualizados!',
             description: 'Tu lista de servicios ha sido guardada.',
         });
         router.push('/dashboard');
-    } catch (error: any) {
+    }).catch((error) => {
         console.error('Error updating services:', error);
-        if (error.code && error.code.includes('permission-denied')) {
-            errorEmitter.emit('permission-error', new FirestorePermissionError({
-                path: `/workshops/${workshop.id}/services`,
-                operation: 'write',
-                requestResourceData: values.services
-            }));
-        } else {
-             toast({
-                variant: 'destructive',
-                title: 'Error Inesperado',
-                description: 'No se pudo guardar los servicios. ' + error.message,
-            });
-        }
-    } finally {
+        toast({
+            variant: 'destructive',
+            title: 'Error Inesperado',
+            description: 'No se pudo guardar los servicios. ' + error.message,
+        });
+    }).finally(() => {
         setIsSubmitting(false);
-    }
+    });
   }
 
   const isLoading = isUserLoading || isWorkshopsLoading || isServicesLoading;

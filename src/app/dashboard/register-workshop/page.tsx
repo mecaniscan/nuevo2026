@@ -143,21 +143,12 @@ export default function RegisterWorkshopPage() {
       });
       router.push('/dashboard/edit-services');
     } catch (error: any) {
-      console.error('Error registering workshop:', error);
-       if (error.code && error.code.includes('permission-denied')) {
-            const { image, ...dataToSave } = values;
-            errorEmitter.emit('permission-error', new FirestorePermissionError({
-                path: `/workshops`,
-                operation: 'create',
-                requestResourceData: { ...dataToSave, ownerId: user.uid }
-            }));
-        } else {
-            toast({
-                variant: 'destructive',
-                title: 'Error Inesperado',
-                description: 'No se pudo registrar el taller. ' + error.message,
-            });
-        }
+        const { image, ...dataToSave } = values;
+        errorEmitter.emit('permission-error', new FirestorePermissionError({
+            path: `/workshops`,
+            operation: 'create',
+            requestResourceData: { ...dataToSave, ownerId: user.uid }
+        }));
     } finally {
         setIsSubmitting(false);
     }
