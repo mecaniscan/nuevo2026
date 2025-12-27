@@ -369,7 +369,8 @@
         "licensePlate",
         "currentMileage",
         "isForSale",
-        "country"
+        "country",
+        "certificateNumber"
       ]
     },
     "FavoriteWorkshop": {

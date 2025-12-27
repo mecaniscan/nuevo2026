@@ -12,7 +12,7 @@ import { collection, query, orderBy, doc, writeBatch, getDoc, updateDoc } from '
 import { ref as storageRef, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { useCollection } from '@/firebase/firestore/use-collection';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2, PlusCircle, Car, Trash2, Pencil, Save, Briefcase, BadgePercent, FileText, Download, Share2 } from 'lucide-react';
+import { Loader2, PlusCircle, Car, Trash2, Pencil, Briefcase, BadgePercent, FileText, Download, Share2, Save } from 'lucide-react';
 import Link from 'next/link';
 import type { Vehicle, User } from '@/lib/types';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -355,6 +355,7 @@ export default function MyVehiclesPage() {
                 sellerWhatsapp,
                 imageUrls: uploadedImageUrls || [],
                 certificateNumber: uuidv4(),
+                certificatePdfUrl: '',
             };
 
             batch.set(userVehicleRef, vehiclePayload);
@@ -611,7 +612,7 @@ export default function MyVehiclesPage() {
                 <div className="flex gap-4">
                   <Button type="submit" disabled={isSubmitting}>
                     {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                    {editingVehicleId ? <><Save className="mr-2" /> Actualizar Vehículo</> : <><PlusCircle className="mr-2" /> Guardar Vehículo</>}
+                    {editingVehicleId ? <>Guardar Cambios</> : <><PlusCircle className="mr-2" /> Guardar Vehículo</>}
                   </Button>
                   {editingVehicleId && (
                     <Button variant="outline" onClick={() => { setEditingVehicleId(null); form.reset(); }}>Cancelar Edición</Button>
