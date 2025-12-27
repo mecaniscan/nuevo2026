@@ -448,85 +448,6 @@ export default function MyVehiclesPage() {
         </div>
 
         <Card>
-          <CardHeader>
-            <CardTitle>{editingVehicleId ? 'Editar Vehículo' : 'Añadir Nuevo Vehículo'}</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <Form {...form}>
-              <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                  <FormField control={form.control} name="type" render={({ field }) => (<FormItem><FormLabel>Tipo</FormLabel><FormControl><Input placeholder="Ej: Sedan, SUV" {...field} /></FormControl><FormMessage /></FormItem>)} />
-                  <FormField control={form.control} name="brand" render={({ field }) => (<FormItem><FormLabel>Marca</FormLabel><FormControl><Input placeholder="Ej: Toyota" {...field} /></FormControl><FormMessage /></FormItem>)} />
-                  <FormField control={form.control} name="model" render={({ field }) => (<FormItem><FormLabel>Modelo</FormLabel><FormControl><Input placeholder="Ej: Corolla" {...field} /></FormControl><FormMessage /></FormItem>)} />
-                  <FormField control={form.control} name="year" render={({ field }) => (<FormItem><FormLabel>Año</FormLabel><FormControl><Input type="number" placeholder="2022" {...field} /></FormControl><FormMessage /></FormItem>)} />
-                  <FormField control={form.control} name="price" render={({ field }) => (<FormItem><FormLabel>Precio ($)</FormLabel><FormControl><Input type="number" step="0.01" placeholder="25000.00" {...field} /></FormControl><FormMessage /></FormItem>)} />
-                  <FormField control={form.control} name="currentMileage" render={({ field }) => (<FormItem><FormLabel>Kilometraje Actual</FormLabel><FormControl><Input type="number" placeholder="50000" {...field} /></FormControl><FormMessage /></FormItem>)} />
-                  <FormField control={form.control} name="licensePlate" render={({ field }) => (<FormItem><FormLabel>Placa</FormLabel><FormControl><Input placeholder="ABC-123" {...field} /></FormControl><FormMessage /></FormItem>)} />
-                  <FormField control={form.control} name="country" render={({ field }) => (<FormItem><FormLabel>País</FormLabel><FormControl><Input placeholder="Ej: Argentina" {...field} /></FormControl><FormMessage /></FormItem>)} />
-                  <div className="lg:col-span-3">
-                    <FormField control={form.control} name="vin" render={({ field }) => (<FormItem><FormLabel>Código VIN</FormLabel><FormControl><Input placeholder="17 caracteres" {...field} /></FormControl><FormMessage /></FormItem>)} />
-                  </div>
-                  <div className="lg:col-span-3">
-                     <FormField
-                        control={form.control}
-                        name="images"
-                        render={({ field: { onChange, value, ...rest } }) => (
-                          <FormItem>
-                            <FormLabel>Imágenes del Vehículo</FormLabel>
-                            <FormControl>
-                                <Input type="file" multiple accept="image/*" onChange={(e) => onChange(e.target.files)} {...rest} />
-                            </FormControl>
-                            <FormDescription>
-                              Sube una o más imágenes de tu vehículo. La carga de imágenes es opcional.
-                            </FormDescription>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                  </div>
-                </div>
-
-                 <div className="space-y-4 pt-4 border-t">
-                    <FormField
-                      control={form.control}
-                      name="isForSale"
-                      render={({ field }) => (
-                        <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
-                          <div className="space-y-0.5">
-                            <FormLabel className="text-base flex items-center gap-2">
-                              <Briefcase /> Poner a la Venta
-                            </FormLabel>
-                            <FormDescription>
-                              Marca esta casilla para listar este vehículo en el Marketplace.
-                            </FormDescription>
-                          </div>
-                          <FormControl>
-                            <Switch
-                              checked={field.value}
-                              onCheckedChange={field.onChange}
-                            />
-                          </FormControl>
-                        </FormItem>
-                      )}
-                    />
-                </div>
-
-
-                <div className="flex gap-4">
-                  <Button type="submit" disabled={isSubmitting}>
-                    {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                    {editingVehicleId ? <><Save className="mr-2" /> Actualizar Vehículo</> : <><PlusCircle className="mr-2" /> Guardar Vehículo</>}
-                  </Button>
-                  {editingVehicleId && (
-                    <Button variant="outline" onClick={() => { setEditingVehicleId(null); form.reset(); }}>Cancelar Edición</Button>
-                  )}
-                </div>
-              </form>
-            </Form>
-          </CardContent>
-        </Card>
-        
-        <Card>
             <CardHeader>
                 <CardTitle>Mis Vehículos Registrados</CardTitle>
             </CardHeader>
@@ -620,6 +541,85 @@ export default function MyVehiclesPage() {
                     </Table>
                 )}
             </CardContent>
+        </Card>
+        
+        <Card>
+          <CardHeader>
+            <CardTitle>{editingVehicleId ? 'Editar Vehículo' : 'Añadir Nuevo Vehículo'}</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <Form {...form}>
+              <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                  <FormField control={form.control} name="type" render={({ field }) => (<FormItem><FormLabel>Tipo</FormLabel><FormControl><Input placeholder="Ej: Sedan, SUV" {...field} /></FormControl><FormMessage /></FormItem>)} />
+                  <FormField control={form.control} name="brand" render={({ field }) => (<FormItem><FormLabel>Marca</FormLabel><FormControl><Input placeholder="Ej: Toyota" {...field} /></FormControl><FormMessage /></FormItem>)} />
+                  <FormField control={form.control} name="model" render={({ field }) => (<FormItem><FormLabel>Modelo</FormLabel><FormControl><Input placeholder="Ej: Corolla" {...field} /></FormControl><FormMessage /></FormItem>)} />
+                  <FormField control={form.control} name="year" render={({ field }) => (<FormItem><FormLabel>Año</FormLabel><FormControl><Input type="number" placeholder="2022" {...field} /></FormControl><FormMessage /></FormItem>)} />
+                  <FormField control={form.control} name="price" render={({ field }) => (<FormItem><FormLabel>Precio ($)</FormLabel><FormControl><Input type="number" step="0.01" placeholder="25000.00" {...field} /></FormControl><FormMessage /></FormItem>)} />
+                  <FormField control={form.control} name="currentMileage" render={({ field }) => (<FormItem><FormLabel>Kilometraje Actual</FormLabel><FormControl><Input type="number" placeholder="50000" {...field} /></FormControl><FormMessage /></FormItem>)} />
+                  <FormField control={form.control} name="licensePlate" render={({ field }) => (<FormItem><FormLabel>Placa</FormLabel><FormControl><Input placeholder="ABC-123" {...field} /></FormControl><FormMessage /></FormItem>)} />
+                  <FormField control={form.control} name="country" render={({ field }) => (<FormItem><FormLabel>País</FormLabel><FormControl><Input placeholder="Ej: Argentina" {...field} /></FormControl><FormMessage /></FormItem>)} />
+                  <div className="lg:col-span-3">
+                    <FormField control={form.control} name="vin" render={({ field }) => (<FormItem><FormLabel>Código VIN</FormLabel><FormControl><Input placeholder="17 caracteres" {...field} /></FormControl><FormMessage /></FormItem>)} />
+                  </div>
+                  <div className="lg:col-span-3">
+                     <FormField
+                        control={form.control}
+                        name="images"
+                        render={({ field: { onChange, value, ...rest } }) => (
+                          <FormItem>
+                            <FormLabel>Imágenes del Vehículo</FormLabel>
+                            <FormControl>
+                                <Input type="file" multiple accept="image/*" onChange={(e) => onChange(e.target.files)} {...rest} />
+                            </FormControl>
+                            <FormDescription>
+                              Sube una o más imágenes de tu vehículo. La carga de imágenes es opcional.
+                            </FormDescription>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                  </div>
+                </div>
+
+                 <div className="space-y-4 pt-4 border-t">
+                    <FormField
+                      control={form.control}
+                      name="isForSale"
+                      render={({ field }) => (
+                        <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
+                          <div className="space-y-0.5">
+                            <FormLabel className="text-base flex items-center gap-2">
+                              <Briefcase /> Poner a la Venta
+                            </FormLabel>
+                            <FormDescription>
+                              Marca esta casilla para listar este vehículo en el Marketplace.
+                            </FormDescription>
+                          </div>
+                          <FormControl>
+                            <Switch
+                              checked={field.value}
+                              onCheckedChange={field.onChange}
+                            />
+                          </FormControl>
+                        </FormItem>
+                      )}
+                    />
+                </div>
+
+
+                <div className="flex gap-4">
+                  <Button type="submit" disabled={isSubmitting}>
+                    {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                    {editingVehicleId ? <><Save className="mr-2" /> Actualizar Vehículo</> : <><PlusCircle className="mr-2" /> Guardar Vehículo</>}
+                  </Button>
+                  {editingVehicleId && (
+                    <Button variant="outline" onClick={() => { setEditingVehicleId(null); form.reset(); }}>Cancelar Edición</Button>
+                  )}
+                </div>
+              </form>
+            </Form>
+          </CardContent>
         </Card>
       </div>
     </div>
