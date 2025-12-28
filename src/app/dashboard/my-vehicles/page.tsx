@@ -300,70 +300,67 @@ export default function MyVehiclesPage() {
     return imageUrls;
   };
 
-async function onSubmit(values: z.infer<typeof vehicleSchema>) {
-    if (!user || !firestore || !userDocRef || !storage || !userData) {
-        toast({ variant: 'destructive', title: 'Error', description: 'Debes iniciar sesión.' });
-        return;
+  async function onSubmit(values: z.infer<typeof vehicleSchema>) {
+    if (!user || !firestore || !userData) {
+      toast({ variant: 'destructive', title: 'Error', description: 'Debes iniciar sesión.' });
+      return;
     }
-
+  
     setIsSubmitting(true);
-
+  
     try {
-        const existingVehicle = editingVehicleId ? vehicles?.find(v => v.id === editingVehicleId) : undefined;
-        let finalImageUrls = existingVehicle?.imageUrls || [];
-
-        if (values.images && values.images.length > 0) {
-            finalImageUrls = await uploadImages(values.images);
-        }
-
-        const sellerName = user.displayName || `${userData.firstName} ${userData.lastName}` || 'Vendedor Anónimo';
-        const sellerWhatsapp = userData.whatsappNumber || '';
-
-        const vehicleId = editingVehicleId || doc(collection(firestore, `users/${user.uid}/vehicles`)).id;
-
-        const { images, ...formValues } = values;
-        
-        const vehiclePayload: Vehicle = {
-            ...formValues,
-            id: vehicleId,
-            userId: user.uid,
-            imageUrls: finalImageUrls,
-            sellerName,
-            sellerWhatsapp,
-            certificateNumber: existingVehicle?.certificateNumber || uuidv4(),
-        };
-        
-        const batch = writeBatch(firestore);
-        const userVehicleRef = doc(firestore, `users/${user.uid}/vehicles`, vehicleId);
-        const marketplaceVehicleRef = doc(firestore, 'marketplace', vehicleId);
-        
-        batch.set(userVehicleRef, vehiclePayload, { merge: true });
-
-        if (vehiclePayload.isForSale) {
-            batch.set(marketplaceVehicleRef, vehiclePayload, { merge: true });
-        } else {
-            batch.delete(marketplaceVehicleRef);
-        }
-        
-        await batch.commit();
-
-        toast({
-            title: editingVehicleId ? '¡Vehículo Actualizado!' : '¡Vehículo Añadido!',
-            description: `Tu vehículo ha sido ${editingVehicleId ? 'actualizado' : 'guardado'}.`,
-        });
-        form.reset();
-        setEditingVehicleId(null);
+      const existingVehicle = editingVehicleId ? vehicles?.find(v => v.id === editingVehicleId) : undefined;
+      let finalImageUrls = existingVehicle?.imageUrls || [];
+  
+      // Only upload new images if they are provided
+      if (values.images && values.images.length > 0) {
+        finalImageUrls = await uploadImages(values.images);
+      }
+  
+      const vehicleId = editingVehicleId || doc(collection(firestore, `users/${user.uid}/vehicles`)).id;
+      const { images, ...formValues } = values;
+  
+      const vehiclePayload: Vehicle = {
+        id: vehicleId,
+        userId: user.uid,
+        ...formValues,
+        imageUrls: finalImageUrls,
+        sellerName: `${userData.firstName} ${userData.lastName}`,
+        sellerWhatsapp: userData.whatsappNumber || '',
+        certificateNumber: existingVehicle?.certificateNumber || uuidv4(),
+      };
+  
+      const batch = writeBatch(firestore);
+      const userVehicleRef = doc(firestore, `users/${user.uid}/vehicles`, vehicleId);
+      const marketplaceVehicleRef = doc(firestore, 'marketplace', vehicleId);
+  
+      batch.set(userVehicleRef, vehiclePayload, { merge: true });
+  
+      if (vehiclePayload.isForSale) {
+        batch.set(marketplaceVehicleRef, vehiclePayload, { merge: true });
+      } else {
+        batch.delete(marketplaceVehicleRef);
+      }
+      
+      await batch.commit();
+  
+      toast({
+        title: editingVehicleId ? '¡Vehículo Actualizado!' : '¡Vehículo Añadido!',
+        description: `Tu vehículo ha sido ${editingVehicleId ? 'actualizado' : 'guardado'}.`,
+      });
+      form.reset();
+      setEditingVehicleId(null);
     } catch (error: any) {
-        console.error("Error submitting vehicle:", error);
-        toast({
-            variant: 'destructive',
-            title: 'Error al guardar',
-            description: error.message || 'No se pudo guardar el vehículo.',
-        });
+      console.error("Error submitting vehicle:", error);
+      toast({
+        variant: 'destructive',
+        title: 'Error al guardar',
+        description: error.message || 'No se pudo guardar el vehículo.',
+      });
     } finally {
-        setIsSubmitting(false);
+      setIsSubmitting(false);
     }
-}
+  }
 
 
   async function handleDeleteVehicle(vehicleId: string) {
@@ -598,3 +595,5 @@ async function onSubmit(values: z.infer<typeof vehicleSchema>) {
     </div>
   );
 }
+
+    
