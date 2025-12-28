@@ -1,7 +1,7 @@
 'use client';
 
 import { useUser, useFirestore, useMemoFirebase, deleteDocumentNonBlocking, useDoc } from '@/firebase';
-import { collection, query, where, doc, orderBy, limit } from 'firebase/firestore';
+import { collection, query, where, doc, orderBy, limit, getDocs, writeBatch } from 'firebase/firestore';
 import { useCollection } from '@/firebase/firestore/use-collection';
 import type { Workshop, Appointment, OilChange, Vehicle } from '@/lib/types';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -99,12 +99,12 @@ export default function DashboardPage() {
 
   const { data: workshops, isLoading: isWorkshopsLoading } = useCollection<Workshop>(userWorkshopsQuery);
     
-  const appointmentsCollection = useMemoFirebase(() => {
+  const appointmentsQuery = useMemoFirebase(() => {
     if (!firestore || !user) return null;
-    return collection(firestore, 'users', user.uid, 'appointments');
+    return query(collection(firestore, 'appointments'), where('userId', '==', user.uid));
   }, [firestore, user]);
 
-  const { data: appointments, isLoading: isAppointmentsLoading } = useCollection<Appointment>(appointmentsCollection);
+  const { data: appointments, isLoading: isAppointmentsLoading } = useCollection<Appointment>(appointmentsQuery);
 
   const oilChangesQuery = useMemoFirebase(() => {
     if (!firestore || !user) return null;
@@ -131,21 +131,25 @@ export default function DashboardPage() {
       return;
     }
     try {
+      const batch = writeBatch(firestore);
+
+      // Delete workshop if it exists
       if (workshops && workshops.length > 0) {
         const workshopRef = doc(firestore, 'workshops', workshops[0].id);
-        deleteDocumentNonBlocking(workshopRef);
+        batch.delete(workshopRef);
       }
       
-      if (appointments && appointments.length > 0) {
-        appointments.forEach(apt => {
-          const appointmentRef = doc(firestore, 'users', user.uid, 'appointments', apt.id);
-          deleteDocumentNonBlocking(appointmentRef);
-        });
-      }
+      // Delete user's appointments
+      const appointmentsColRef = collection(firestore, 'appointments');
+      const userAppointmentsQuery = query(appointmentsColRef, where('userId', '==', user.uid));
+      const appointmentsSnapshot = await getDocs(userAppointmentsQuery);
+      appointmentsSnapshot.forEach(doc => batch.delete(doc.ref));
 
+      // Delete user document
       const userDocRef = doc(firestore, 'users', user.uid);
-      deleteDocumentNonBlocking(userDocRef);
+      batch.delete(userDocRef);
 
+      await batch.commit();
       await user.delete();
 
       toast({ title: 'Cuenta Eliminada', description: 'Tu cuenta y todos tus datos han sido eliminados.' });
