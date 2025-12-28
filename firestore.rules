@@ -1,43 +1,54 @@
 /**
- * This ruleset defines the security model for the MecaniScan application.
+ * Core Philosophy: This ruleset establishes a multi-faceted security model.
+ * It enforces strict user ownership for personal profiles, provides a public-read
+ * model with owner-only writes for shared data like workshops, secures collaborative
+ * documents (appointments) by checking relationships, and offers a public,
+ * read-only collection for global data (OBD codes).
  *
- * Core Philosophy:
- * The security model enforces a strict user-ownership paradigm for all user-generated
- * content, ensuring that users can only access and manage their own data.
- * Publicly available data, such as workshop and marketplace listings, is readable
- * by anyone but is not modifiable by unauthorized clients. This creates a clear separation
- * between private user spaces and the public data commons.
- *
- * Data Structure:
- * The data is organized into several top-level collections: 'users', 'workshops', and 'marketplace'.
- * All data private to a user, such as 'appointments', 'oilChanges', and 'vehicles',
- * is stored in a subcollection directly under that user's document in the '/users/{userId}' path.
- * Data specific to a workshop, like 'reviews' and 'services', is stored in subcollections
- * under the workshop's document.
- * The 'marketplace' collection stores denormalized copies of vehicles for sale.
+ * Data Structure: The data is organized into four top-level collections:
+ * - /users/{userId}: Private user-specific data.
+ * - /workshops/{workshopId}: Publicly visible workshop listings.
+ * - /appointments/{appointmentId}: Records linking users and workshops.
+ * - /obd_codes/{obdCodeId}: A global, read-only collection of diagnostic codes.
  *
  * Key Security Decisions:
- * - User Data Privacy: A user can only read, write, and query data within their
- *   own document tree (e.g., /users/their-own-id/...).
- * - User Enumeration Disabled: Listing documents in the top-level 'users'
- *   collection is explicitly forbidden to protect user privacy.
- * - Public Data is Read-Only (for most users): The 'workshops' and 'marketplace' collections are
- *   publicly readable. Owners can manage their own listings.
- * - Default Deny: Any operation not explicitly granted is denied.
+ * - User Isolation: Users can only access their own document within the /users
+ *   collection. Listing users is disabled to protect privacy.
+ * - Public Listings, Private Control: The /workshops collection is readable by
+ *   anyone, allowing for public browsing and searching. However, only the user
+ *   designated in the workshop's 'ownerId' field can create, modify, or delete it.
+ * - Relational Access Control: Access to an appointment in /appointments is granted
+ *   to two parties: the user who booked it ('userId') and the owner of the
+ *   associated workshop ('workshopId'). This requires a cross-collection 'get'
+ *   to verify workshop ownership, a secure and standard pattern for this use case.
+ * - Public Read-Only Data: The /obd_codes collection is treated as globally
+ *   accessible reference data. Client-side write operations are completely blocked.
+ * - Secure Queries: General listing on the /appointments collection is disabled.
+ *   This is a critical security measure to prevent data leakage. Clients must
+ *   use specific, indexed queries (e.g., `where('userId', '==', currentUser.uid)`)
+ *   to fetch data, and the 'get' rules will secure access to each document
+ *   retrieved by the query.
  *
  * Denormalization for Authorization:
- * To ensure fast and secure authorization checks, key identifying information is
- * denormalized. For instance, a 'Vehicle' document listed in '/marketplace/{vehicleId}' must
- * contain a 'userId' field that matches the authenticated user creating the listing.
+ * The security model relies on denormalized IDs for efficient authorization.
+ * - The `ownerId` field on a Workshop document allows for direct ownership checks
+ *   without needing to traverse other collections.
+ * - The `userId` and `workshopId` fields on an Appointment document are essential
+ *   for implementing relational access control, allowing both the user and the
+ *   workshop owner to manage the appointment.
  *
+ * Structural Segregation:
+ * The use of distinct top-level collections for different data types (/users,
+ * /workshops, /appointments) creates a clear and secure separation of concerns,
+ * simplifying rules and preventing unintended data access.
  */
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    // ------------------------------------------------------------------------
+    //-------------------------------------------------------------------------
     // Helper Functions
-    // ------------------------------------------------------------------------
+    //-------------------------------------------------------------------------
 
     /**
      * Checks if a user is authenticated.
@@ -47,170 +58,140 @@ service cloud.firestore {
     }
 
     /**
-     * Checks if the currently authenticated user's ID matches the provided userId.
-     * This is the core of the ownership model.
-     * @param userId The user ID to check against the authenticated user.
+     * Checks if the requesting user's UID matches the provided userId.
      */
     function isOwner(userId) {
       return isSignedIn() && request.auth.uid == userId;
     }
 
     /**
-     * Validates that the document being operated on already exists in Firestore.
-     * Essential for secure update and delete operations.
+     * Checks if the document being operated on already exists.
      */
-    function isExistingDocument() {
+    function isExistingDoc() {
       return resource != null;
     }
 
     /**
-     * Combines ownership check with an existence check.
-     * Ensures an owner can't modify a document that doesn't exist.
-     * @param userId The user ID to check against the authenticated user.
+     * Checks if the requesting user is the owner of an existing document.
+     * Used for secure update and delete operations.
      */
-    function isExistingOwner(userId) {
-      return isOwner(userId) && isExistingDocument();
+    function isExistingOwner(ownerId) {
+      return isOwner(ownerId) && isExistingDoc();
+    }
+
+    /**
+     * On create, validates that a document's internal ID matches the path ID.
+     * This enforces relational integrity from the client.
+     */
+    function documentIdMatches(docId) {
+      return request.resource.data.id == docId;
     }
     
     /**
-     * Checks if the incoming workshop data is valid for a create operation.
-     * The new workshop must be owned by the person creating it.
+     * On update, validates that a document's internal ID is immutable.
+     * Prevents re-assigning the document's core identifier.
      */
-    function isValidNewWorkshop() {
-      return request.resource.data.ownerId == request.auth.uid;
+    function documentIdIsUnchanged() {
+      return request.resource.data.id == resource.data.id;
+    }
+
+    /**
+     * On appointment create, validates the user is creating it for themselves.
+     */
+    function isAppointmentCreator() {
+      return isOwner(request.resource.data.userId);
     }
     
     /**
-     * Checks if the incoming workshop data is valid for an update.
-     * The ownerId cannot be changed.
+     * On appointment update, ensures the core relationships are not changed.
      */
-    function isValidWorkshopUpdate() {
+    function appointmentRelationshipsAreUnchanged() {
+      return request.resource.data.userId == resource.data.userId && request.resource.data.workshopId == resource.data.workshopId;
+    }
+
+    /**
+     * On workshop create, validates the owner is the signed-in user.
+     */
+    function isWorkshopCreator() {
+      return isOwner(request.resource.data.ownerId);
+    }
+
+    /**
+     * On workshop update, ensures the owner field cannot be changed.
+     */
+    function workshopOwnerIsUnchanged() {
       return request.resource.data.ownerId == resource.data.ownerId;
     }
 
-
-    // ------------------------------------------------------------------------
-    // Collection Rules
-    // ------------------------------------------------------------------------
-
     /**
-     * @description Controls access to the public directory of workshops.
-     * @path /workshops/{workshopId}
-     * @allow (get, list) Any user, signed in or not, can read workshop data.
-     * @deny (create, update, delete) Any client trying to modify workshop data.
-     * @principle Public data should be read-only for clients to prevent vandalism.
+     * Checks if the user is either the one who booked the appointment
+     * or the owner of the workshop associated with the appointment.
+     * This requires one 'get' call, which is a standard and secure pattern.
      */
-    match /workshops/{workshopId} {
-      allow get: if true;
-      allow list: if true;
-      allow create: if isSignedIn() && isValidNewWorkshop();
-      allow update: if isExistingOwner(resource.data.ownerId) && isValidWorkshopUpdate();
-      allow delete: if isExistingOwner(resource.data.ownerId);
-
-      /**
-       * @description Secures workshop reviews.
-       * @path /workshops/{workshopId}/reviews/{reviewId}
-       * @allow (list, get) Any user can read reviews.
-       * @allow (create) Authenticated users can create reviews.
-       * @allow (update, delete) Only the review's owner can modify or delete it.
-       */
-      match /reviews/{reviewId} {
-        allow list: if true;
-        allow get: if true;
-        allow create: if isSignedIn() && request.resource.data.userId == request.auth.uid;
-        allow update, delete: if isExistingOwner(resource.data.userId);
-      }
-      
-      /**
-       * @description Secures workshop services.
-       * @path /workshops/{workshopId}/services/{serviceId}
-       * @allow (list, get) Any user can read services for a workshop.
-       * @allow (create, update, delete) Only the workshop owner can manage their services.
-       */
-       match /services/{serviceId} {
-         allow list, get: if true;
-         allow create, update, delete: if isOwner(get(/databases/$(database)/documents/workshops/$(workshopId)).data.ownerId);
-       }
+    function isAppointmentParticipant(appointment) {
+      let isUser = isOwner(appointment.userId);
+      let isWorkshopOwner = isOwner(get(/databases/$(database)/documents/workshops/$(appointment.workshopId)).data.ownerId);
+      return isUser || isWorkshopOwner;
     }
 
     /**
-     * @description Secures user profile documents.
+     * @description Rules for a user's own profile document.
      * @path /users/{userId}
-     * @allow (get, update, delete) A user can manage their own profile.
-     * @allow (create) A new user can create their own profile document.
-     * @deny (get) Another user trying to read someone else's profile.
-     * @deny (list) Any client trying to get a list of all application users.
-     * @principle Restricts access to a user's own data tree and prevents user enumeration.
+     * @allow (create) A new user signs up and creates their own profile document: `users/abc` by user `abc`.
+     * @deny (get) User `xyz` tries to read the profile of user `abc`: `users/abc`.
+     * @principle Restricts access to a user's own data tree, a core privacy principle.
      */
     match /users/{userId} {
       allow get: if isOwner(userId);
       allow list: if false;
-      allow create: if isOwner(userId) && request.resource.data.id == userId;
-      allow update: if isExistingOwner(userId);
-      allow delete: if isExistingOwner(userId);
-
-      /**
-       * @description Secures a user's appointments subcollection.
-       * @path /users/{userId}/appointments/{appointmentId}
-       * @allow (get, list, create, update, delete) A user can manage their own appointments.
-       * @deny (get) A user trying to access another user's appointment.
-       * @principle Enforces strict data ownership for sensitive subcollections.
-       */
-      match /appointments/{appointmentId} {
-        allow get: if isOwner(userId);
-        allow list: if isOwner(userId);
-        allow create: if isOwner(userId) && request.resource.data.userId == userId;
-        allow update: if isExistingOwner(userId) && request.resource.data.userId == resource.data.userId;
-        allow delete: if isExistingOwner(userId);
-      }
-      
-      /**
-       * @description Secures a user's oil changes subcollection.
-       * @path /users/{userId}/oilChanges/{oilChangeId}
-       * @allow (get, list, create, update, delete) A user can manage their own oil change records.
-       */
-      match /oilChanges/{oilChangeId} {
-        allow get, list: if isOwner(userId);
-        allow create: if isOwner(userId) && request.resource.data.userId == userId;
-        allow update: if isExistingOwner(userId) && request.resource.data.userId == resource.data.userId;
-        allow delete: if isExistingOwner(userId);
-      }
-      
-      /**
-       * @description Secures a user's vehicles subcollection.
-       * @path /users/{userId}/vehicles/{vehicleId}
-       * @allow (read) User can read their own vehicle records.
-       * @allow (write) User can create, update, or delete their vehicle records if the record contains their userId.
-       */
-      match /vehicles/{vehicleId} {
-        allow get, list: if isOwner(userId);
-        allow create: if isOwner(userId) && request.resource.data.userId == userId;
-        allow update: if isOwner(userId);
-        allow delete: if isExistingOwner(userId) && resource.data.userId == userId;
-      }
-      
-      /**
-       * @description Secures a user's favorite workshops subcollection.
-       * @path /users/{userId}/favorites/{workshopId}
-       * @allow (read, write) A user can manage their own list of favorite workshops.
-       */
-      match /favorites/{workshopId} {
-        allow get, list, create, update, delete: if isOwner(userId);
-      }
+      allow create: if isOwner(userId) && documentIdMatches(userId);
+      allow update: if isOwner(userId) && isExistingDoc() && documentIdIsUnchanged();
+      allow delete: if isOwner(userId) && isExistingDoc();
     }
-    
+
     /**
-     * @description Secures the public marketplace for vehicles.
-     * @path /marketplace/{vehicleId}
-     * @allow (get, list) Any user, signed in or not, can view vehicle listings.
-     * @allow (create, update) Only the owner of the vehicle can manage their listing.
-     * @allow (delete) Only the owner of the vehicle can delete their listing.
-     * @principle Public data is read-only for most users, with write access restricted to owners.
+     * @description Rules for workshop documents. Workshops are public to read but can only be written by their owner.
+     * @path /workshops/{workshopId}
+     * @allow (list) Any user, signed in or not, can list all workshops.
+     * @deny (update) A user who does not own workshop `xyz` tries to modify it.
+     * @principle Enforces document ownership for writes while allowing public read access for discovery.
      */
-    match /marketplace/{vehicleId} {
-      allow get, list: if true;
-      allow create, update: if isOwner(request.resource.data.userId);
-      allow delete: if isOwner(resource.data.userId);
+    match /workshops/{workshopId} {
+      allow get: if true;
+      allow list: if true;
+      allow create: if isWorkshopCreator();
+      allow update: if isExistingOwner(resource.data.ownerId) && workshopOwnerIsUnchanged();
+      allow delete: if isExistingOwner(resource.data.ownerId);
+    }
+
+    /**
+     * @description Rules for appointment documents. Access is shared between the user who booked and the workshop owner.
+     * @path /appointments/{appointmentId}
+     * @allow (get) The user who created appointment `123` can read it.
+     * @deny (list) Any user attempts to list all appointments in the collection. This is blocked to prevent data leakage.
+     * @principle Secures a document based on relationships to other documents (user and workshop).
+     */
+    match /appointments/{appointmentId} {
+      allow get: if isSignedIn() && isAppointmentParticipant(resource.data);
+      allow list: if false;
+      allow create: if isAppointmentCreator();
+      allow update: if isExistingDoc() && isAppointmentParticipant(resource.data) && appointmentRelationshipsAreUnchanged();
+      allow delete: if isExistingDoc() && isAppointmentParticipant(resource.data);
+    }
+
+    /**
+     * @description Rules for the OBD codes collection, which is public, read-only reference data.
+     * @path /obd_codes/{obdCodeId}
+     * @allow (get) Any user, signed in or not, can read an OBD code definition.
+     * @deny (create) Any client attempts to create a new OBD code document.
+     * @principle Establishes a globally readable but client-immutable data collection.
+     */
+    match /obd_codes/{obdCodeId} {
+      allow get: if true;
+      allow list: if true;
+      allow create: if false;
+      allow update: if false;
+      allow delete: if false;
     }
   }
 }
