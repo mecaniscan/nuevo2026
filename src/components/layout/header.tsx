@@ -13,7 +13,7 @@ import {
   DropdownMenuLabel
 } from '@/components/ui/dropdown-menu';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Avatar, AvatarFallback, AvatarImage } from '../ui/avatar';
 import { cn } from '@/lib/utils';
 
@@ -37,6 +37,12 @@ export function Header() {
   const { user, isUserLoading } = useUser();
   const auth = useAuth();
   const [isSheetOpen, setIsSheetOpen] = useState(false);
+  const [isClient, setIsClient] = useState(false);
+
+  useEffect(() => {
+    setIsClient(true);
+  }, []);
+
 
   const handleLogout = () => {
     initiateSignOut(auth);
@@ -61,29 +67,31 @@ export function Header() {
         </div>
         
         {/* Mobile Menu */}
-        <Sheet open={isSheetOpen} onOpenChange={setIsSheetOpen}>
-          <SheetTrigger asChild>
-            <Button
-              variant="ghost"
-              size="icon"
-              className="md:hidden"
-            >
-              <PanelLeft className="h-5 w-5" />
-              <span className="sr-only">Abrir Menú</span>
-            </Button>
-          </SheetTrigger>
-          <SheetContent side="left" className="pr-0">
-            <Link href="/" className="mr-6 flex items-center space-x-2 mb-6" onClick={() => setIsSheetOpen(false)}>
-                <Wrench className="h-6 w-6 text-primary" />
-                <span className="font-bold">MecaniScan</span>
-            </Link>
-            <div className="flex flex-col space-y-3">
-                 <Link href="/#workshops" onClick={() => setIsSheetOpen(false)} className="text-muted-foreground transition-colors hover:text-primary">Talleres</Link>
-                 <Link href="/marketplace" onClick={() => setIsSheetOpen(false)} className="text-muted-foreground transition-colors hover:text-primary">Marketplace</Link>
-                 <Link href="/#decoder" onClick={() => setIsSheetOpen(false)} className="text-muted-foreground transition-colors hover:text-primary">Scanner IA</Link>
-            </div>
-          </SheetContent>
-        </Sheet>
+        {isClient && (
+          <Sheet open={isSheetOpen} onOpenChange={setIsSheetOpen}>
+            <SheetTrigger asChild>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="md:hidden"
+              >
+                <PanelLeft className="h-5 w-5" />
+                <span className="sr-only">Abrir Menú</span>
+              </Button>
+            </SheetTrigger>
+            <SheetContent side="left" className="pr-0">
+              <Link href="/" className="mr-6 flex items-center space-x-2 mb-6" onClick={() => setIsSheetOpen(false)}>
+                  <Wrench className="h-6 w-6 text-primary" />
+                  <span className="font-bold">MecaniScan</span>
+              </Link>
+              <div className="flex flex-col space-y-3">
+                  <Link href="/#workshops" onClick={() => setIsSheetOpen(false)} className="text-muted-foreground transition-colors hover:text-primary">Talleres</Link>
+                  <Link href="/marketplace" onClick={() => setIsSheetOpen(false)} className="text-muted-foreground transition-colors hover:text-primary">Marketplace</Link>
+                  <Link href="/#decoder" onClick={() => setIsSheetOpen(false)} className="text-muted-foreground transition-colors hover:text-primary">Scanner IA</Link>
+              </div>
+            </SheetContent>
+          </Sheet>
+        )}
         <div className="flex flex-1 items-center justify-start md:justify-center">
              <div className="md:hidden">
                 <Link href="/" className="flex items-center space-x-2">
