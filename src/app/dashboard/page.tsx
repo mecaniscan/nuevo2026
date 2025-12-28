@@ -111,14 +111,6 @@ export default function DashboardPage() {
   }, [firestore, user, nextOilChange]);
   const { data: mainVehicle, isLoading: isVehicleLoading } = useDoc<Vehicle>(vehicleQuery);
   
-  const userAppointmentsQuery = useMemoFirebase(() => {
-    if (!firestore || !user) return null;
-    return query(collection(firestore, 'appointments'), where('userId', '==', user.uid));
-    }, [firestore, user]);
-
-  const { data: appointments, isLoading: isAppointmentsLoading } = useCollection<Appointment>(userAppointmentsQuery);
-
-
   // --- Event Handlers ---
   const handleLogout = () => {
     if (auth) {
@@ -194,7 +186,7 @@ export default function DashboardPage() {
   }
 
   // --- Loading and Auth States ---
-  const isLoading = isUserLoading || isWorkshopsLoading || isAppointmentsLoading || isOilChangesLoading || isVehicleLoading;
+  const isLoading = isUserLoading || isWorkshopsLoading || isOilChangesLoading || isVehicleLoading;
   if (isUserLoading) {
     return (
       <div className="flex min-h-screen items-center justify-center">
@@ -328,7 +320,7 @@ export default function DashboardPage() {
                 href="/dashboard/my-appointments"
                 icon={<Calendar className="h-8 w-8 text-primary"/>}
                 title="Citas por WhatsApp"
-                description={`Tienes ${appointments?.length || 0} citas guardadas.`}
+                description="Gestiona tus citas guardadas."
             />
         </div>
         
