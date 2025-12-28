@@ -1,0 +1,32 @@
+rules_version = '2';
+
+service firebase.storage {
+  match /b/{bucket}/o {
+
+    // Helper Functions
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    // Allow users to write to their own folders for vehicles, workshops and certificates.
+    // Allow public read for all files.
+    match /vehicles/{userId}/{allPaths=**} {
+      allow read: if true;
+      allow write: if isOwner(userId);
+    }
+
+    match /workshops/{userId}/{allPaths=**} {
+      allow read: if true;
+      allow write: if isOwner(userId);
+    }
+    
+    match /certificates/{userId}/{allPaths=**} {
+        allow read: if true;
+        allow write: if isOwner(userId);
+    }
+  }
+}
