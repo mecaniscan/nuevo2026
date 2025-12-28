@@ -3,7 +3,6 @@ import { Wrench, LogOut, PanelLeft, ShoppingCart, User, Search, Settings } from 
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { useUser, useAuth } from '@/firebase';
-import { initiateSignOut } from '@/firebase/non-blocking-login';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -16,6 +15,7 @@ import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import { useState, useEffect } from 'react';
 import { Avatar, AvatarFallback, AvatarImage } from '../ui/avatar';
 import { cn } from '@/lib/utils';
+import { initiateSignOut } from '@/firebase/non-blocking-login';
 
 function MainNav({ className }: { className?: string }) {
   return (
@@ -45,7 +45,9 @@ export function Header() {
 
 
   const handleLogout = () => {
-    initiateSignOut(auth);
+    if (auth) {
+      initiateSignOut(auth);
+    }
   };
   
   const getInitials = (name: string | null | undefined) => {

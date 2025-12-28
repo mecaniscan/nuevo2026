@@ -209,72 +209,35 @@
     ]
   },
   "firestore": {
-    "structure": [
-      {
-        "path": "/users/{userId}",
-        "definition": {
-          "entityName": "UserProfile",
-          "schema": {
-            "$ref": "#/backend/entities/UserProfile"
-          },
-          "description": "Stores user profile information. Path-based ownership enables simple security rules.",
-          "params": [
-            {
-              "name": "userId",
-              "description": "The unique identifier of the user."
-            }
-          ]
-        }
+    "/users/{userId}": {
+      "schema": {
+        "$ref": "#/entities/UserProfile"
       },
-      {
-        "path": "/workshops/{workshopId}",
-        "definition": {
-          "entityName": "Workshop",
-          "schema": {
-            "$ref": "#/backend/entities/Workshop"
-          },
-          "description": "Stores workshop information, including ownerId for access control. No denormalized authorization data is needed as the `ownerId` is present. Enables listing all workshops.",
-          "params": [
-            {
-              "name": "workshopId",
-              "description": "The unique identifier of the workshop."
-            }
-          ]
-        }
+      "description": "Stores user profile information. Path-based ownership enables simple security rules."
+    },
+    "/workshops/{workshopId}": {
+      "schema": {
+        "$ref": "#/entities/Workshop"
       },
-      {
-        "path": "/appointments/{appointmentId}",
-        "definition": {
-          "entityName": "Appointment",
-          "schema": {
-            "$ref": "#/backend/entities/Appointment"
-          },
-          "description": "Stores appointment information, including userId and workshopId. This setup facilitates queries by user or workshop. Enables listing all appointments.",
-          "params": [
-            {
-              "name": "appointmentId",
-              "description": "The unique identifier of the appointment."
-            }
-          ]
-        }
+      "description": "Stores workshop information, including ownerId for access control. No denormalized authorization data is needed as the `ownerId` is present. Enables listing all workshops."
+    },
+    "/appointments/{appointmentId}": {
+      "schema": {
+        "$ref": "#/entities/Appointment"
       },
-      {
-        "path": "/obd_codes/{obdCodeId}",
-        "definition": {
-          "entityName": "ObdCode",
-          "schema": {
-            "$ref": "#/backend/entities/ObdCode"
-          },
-          "description": "Stores OBDII error codes and related information. Accessible by all users.",
-          "params": [
-            {
-              "name": "obdCodeId",
-              "description": "The unique identifier of the OBD code."
-            }
-          ]
-        }
-      }
-    ],
-    "reasoning": "The Firestore data structure is designed to support the MechConnect application, focusing on workshop registration, appointment booking, and OBDII scanner service identification. The structure prioritizes authorization independence and query optimization.\n\n**Authorization Independence:**\n\n*   **Workshops:** Workshops are owned by users, and the `ownerId` is stored directly within the workshop document. This avoids the need for `get()` calls to parent user documents to verify ownership.\n*   **Appointments:**  The `userId` and `workshopId` are stored directly within the appointment document. This approach provides authorization independence by avoiding the need to fetch parent documents to validate user and workshop relationships for appointment access.\n\n**Structural Segregation and QAPs:**\n\n*   User profiles are stored in `/users/{userId}`. This path-based ownership provides secure and scalable access to user data.\n*   Workshops are stored in `/workshops/{workshopId}`.  Listing workshops requires no filtering. Each workshop document directly stores all the data needed for filtering.\n*   Appointments are stored in `/appointments/{appointmentId}`.  To query appointments for a specific user, we would create an index on `userId`. To query for a specific workshop we would create an index on `workshopId`.\n*   OBD codes are stored in `/obd_codes/{obdCodeId}`. This is a global collection.\n\nThis structure facilitates simple and robust security rules, avoiding complex hierarchical authorization dependencies and enabling efficient listing and querying of data."
+      "description": "Stores appointment information, including userId and workshopId. This setup facilitates queries by user or workshop. Enables listing all appointments."
+    },
+    "/obd_codes/{obdCodeId}": {
+      "schema": {
+        "$ref": "#/entities/ObdCode"
+      },
+      "description": "Stores OBDII error codes and related information. Accessible by all users."
+    },
+    "/marketplace/{vehicleId}": {
+      "schema": {
+        "$ref": "#/entities/Vehicle"
+      },
+      "description": "Publicly readable collection of vehicles for sale. This collection should be populated by a backend process that mirrors documents from the private `users/{userId}/vehicles` collection when `isForSale` is true."
+    }
   }
 }

@@ -1,5 +1,5 @@
 'use client';
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
@@ -8,7 +8,7 @@ import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, For
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { useUser, useFirestore, useMemoFirebase, FirestorePermissionError, errorEmitter, useDoc, useStorage, useCollection } from '@/firebase';
-import { collection, query, orderBy, doc, writeBatch, getDoc } from 'firebase/firestore';
+import { collection, query, orderBy, doc, writeBatch } from 'firebase/firestore';
 import { ref as storageRef, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { useToast } from '@/hooks/use-toast';
 import { Loader2, PlusCircle, Car, Trash2, Pencil, Briefcase, BadgePercent, FileText, Download, Share2, Save } from 'lucide-react';
@@ -250,15 +250,15 @@ export default function MyVehiclesPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [editingVehicleId, setEditingVehicleId] = useState<string | null>(null);
 
-  const vehiclesCollection = useMemoFirebase(() => {
+  const vehiclesCollectionRef = useMemoFirebase(() => {
     if (!firestore || !user) return null;
     return collection(firestore, `users/${user.uid}/vehicles`);
   }, [firestore, user]);
 
   const vehiclesQuery = useMemoFirebase(() => {
-    if (!vehiclesCollection) return null;
-    return query(vehiclesCollection, orderBy('brand'));
-  }, [vehiclesCollection]);
+    if (!vehiclesCollectionRef) return null;
+    return query(vehiclesCollectionRef, orderBy('brand'));
+  }, [vehiclesCollectionRef]);
 
   const { data: vehicles, isLoading: areVehiclesLoading } = useCollection<Vehicle>(vehiclesQuery);
   
@@ -300,7 +300,7 @@ export default function MyVehiclesPage() {
   };
 
   async function onSubmit(values: z.infer<typeof vehicleSchema>) {
-    if (!user || !firestore || !userData) {
+    if (!user || !firestore || !userData || !vehiclesCollectionRef) {
       toast({ variant: 'destructive', title: 'Error', description: 'Debes iniciar sesión.' });
       return;
     }
@@ -315,7 +315,7 @@ export default function MyVehiclesPage() {
         finalImageUrls = await uploadImages(values.images);
       }
   
-      const vehicleId = editingVehicleId || doc(collection(firestore, `users/${user.uid}/vehicles`)).id;
+      const vehicleId = editingVehicleId || doc(vehiclesCollectionRef).id;
       const { images, ...formValues } = values;
   
       const vehiclePayload: Vehicle = {
@@ -330,32 +330,30 @@ export default function MyVehiclesPage() {
       };
   
       const batch = writeBatch(firestore);
-      const userVehicleRef = doc(firestore, `users/${user.uid}/vehicles`, vehicleId);
-      const marketplaceVehicleRef = doc(firestore, 'marketplace', vehicleId);
-  
+      const userVehicleRef = doc(vehiclesCollectionRef, vehicleId);
+      
+      // The `marketplace` collection is now read-only for clients.
+      // Logic to sync to marketplace should be handled by a backend function (e.g., Cloud Function)
+      // that listens for changes on `users/{userId}/vehicles` where `isForSale` is true.
       batch.set(userVehicleRef, vehiclePayload, { merge: true });
-  
-      if (vehiclePayload.isForSale) {
-        batch.set(marketplaceVehicleRef, vehiclePayload, { merge: true });
-      } else {
-        batch.delete(marketplaceVehicleRef);
-      }
       
       await batch.commit();
   
       toast({
         title: editingVehicleId ? '¡Vehículo Actualizado!' : '¡Vehículo Añadido!',
-        description: `Tu vehículo ha sido ${editingVehicleId ? 'actualizado' : 'guardado'}.`,
+        description: `Tu vehículo ha sido ${editingVehicleId ? 'actualizado' : 'guardado'}. Si está a la venta, aparecerá en el marketplace en breve.`,
       });
       form.reset();
       setEditingVehicleId(null);
     } catch (error: any) {
       console.error("Error submitting vehicle:", error);
-      toast({
-        variant: 'destructive',
-        title: 'Error al guardar',
-        description: error.message || 'No se pudo guardar el vehículo.',
-      });
+      const { images, ...formValues } = values;
+
+      errorEmitter.emit('permission-error', new FirestorePermissionError({
+          path: editingVehicleId ? `users/${user.uid}/vehicles/${editingVehicleId}` : `users/${user.uid}/vehicles`,
+          operation: editingVehicleId ? 'update' : 'create',
+          requestResourceData: formValues,
+      }));
     } finally {
       setIsSubmitting(false);
     }
@@ -363,30 +361,27 @@ export default function MyVehiclesPage() {
 
 
   async function handleDeleteVehicle(vehicleId: string) {
-    if (!user || !firestore) {
+    if (!user || !firestore || !vehiclesCollectionRef) {
         toast({ variant: 'destructive', title: 'Error', description: 'No autenticado.' });
         return;
     }
     
     const batch = writeBatch(firestore);
-    const marketplaceVehicleRef = doc(firestore, 'marketplace', vehicleId);
-    const userVehicleRef = doc(firestore, `users/${user.uid}/vehicles`, vehicleId);
+    const userVehicleRef = doc(vehiclesCollectionRef, vehicleId);
+    
+    // Deleting from the user's private collection should trigger a backend function
+    // to remove it from the public marketplace if it exists there.
+    batch.delete(userVehicleRef);
     
     try {
-        batch.delete(marketplaceVehicleRef);
-        batch.delete(userVehicleRef);
         await batch.commit();
         toast({
             title: 'Vehículo Eliminado',
-            description: 'El vehículo ha sido eliminado de tus registros y del marketplace.',
+            description: 'El vehículo ha sido eliminado de tus registros.',
         });
     } catch (error: any) {
         console.error("Error deleting vehicle:", error);
          errorEmitter.emit('permission-error', new FirestorePermissionError({
-            path: marketplaceVehicleRef.path,
-            operation: 'delete',
-        }));
-        errorEmitter.emit('permission-error', new FirestorePermissionError({
              path: userVehicleRef.path,
              operation: 'delete',
         }));
@@ -400,6 +395,23 @@ export default function MyVehiclesPage() {
         images: undefined,
     });
   }
+  
+  function cancelEdit() {
+    setEditingVehicleId(null);
+    form.reset({
+      type: '',
+      brand: '',
+      model: '',
+      year: new Date().getFullYear(),
+      vin: '',
+      licensePlate: '',
+      price: 0,
+      currentMileage: 0,
+      country: '',
+      isForSale: false,
+    });
+  }
+
 
   const isLoading = isUserLoading || areVehiclesLoading || isUserDataLoading;
   
@@ -583,7 +595,7 @@ export default function MyVehiclesPage() {
                     {editingVehicleId ? <>Guardar Cambios</> : <><PlusCircle className="mr-2" /> Guardar Vehículo</>}
                   </Button>
                   {editingVehicleId && (
-                    <Button variant="outline" onClick={() => { setEditingVehicleId(null); form.reset(); }}>Cancelar Edición</Button>
+                    <Button variant="outline" onClick={cancelEdit}>Cancelar Edición</Button>
                   )}
                 </div>
               </form>
@@ -594,5 +606,3 @@ export default function MyVehiclesPage() {
     </div>
   );
 }
-
-    

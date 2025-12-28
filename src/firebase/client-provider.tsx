@@ -4,11 +4,10 @@ import React, { useMemo, type ReactNode, useEffect } from 'react';
 import { FirebaseProvider, useUser } from '@/firebase/provider';
 import { initializeFirebase } from '@/firebase';
 import { initiateAnonymousSignIn } from './non-blocking-login';
-import { useAuth } from '.';
+import { Auth } from 'firebase/auth';
 
-function AuthInitializer({ children }: { children: ReactNode }) {
+function AuthInitializer({ children, auth }: { children: ReactNode, auth: Auth | null }) {
   const { user, isUserLoading } = useUser();
-  const auth = useAuth();
   
   useEffect(() => {
     // If the auth check is complete and there's still no user,
@@ -37,7 +36,7 @@ export function FirebaseClientProvider({ children }: { children: ReactNode }) {
       firestore={firebaseServices.firestore}
       storage={firebaseServices.storage}
     >
-      <AuthInitializer>
+      <AuthInitializer auth={firebaseServices.auth}>
         {children}
       </AuthInitializer>
     </FirebaseProvider>
