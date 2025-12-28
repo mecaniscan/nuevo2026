@@ -7,9 +7,8 @@ import * as z from 'zod';
 import { useParams, useRouter } from 'next/navigation';
 import Image from 'next/image';
 import { useDoc, useUser, useFirestore, useMemoFirebase, useCollection, FirestorePermissionError, errorEmitter } from '@/firebase';
-import { doc, collection, query, serverTimestamp, Timestamp, writeBatch, deleteDoc, setDoc } from 'firebase/firestore';
+import { doc, collection, query, serverTimestamp, Timestamp, writeBatch, deleteDoc, setDoc, addDoc } from 'firebase/firestore';
 import type { Workshop, Appointment, Service, Review, FavoriteWorkshop } from '@/lib/types';
-import { addDocumentNonBlocking } from '@/firebase/non-blocking-updates';
 import { Loader2, MapPin, ScanLine, Star, Calendar as CalendarIcon, Wrench, MessageSquare, Send, Heart, Phone, Car } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -166,8 +165,11 @@ export default function WorkshopDetailPage() {
 
         setIsSubmitting(true);
 
-        // 1. Save appointment record to Firestore
-        const appointmentData = {
+        const appointmentCollectionRef = collection(firestore, `appointments`);
+        const appointmentRef = doc(appointmentCollectionRef);
+        
+        const appointmentData: Appointment = {
+          id: appointmentRef.id,
           workshopId: workshop.id,
           workshopName: workshop.name,
           userId: user.uid,
@@ -177,9 +179,8 @@ export default function WorkshopDetailPage() {
         };
         
         try {
-            await addDocumentNonBlocking(collection(firestore, `users/${user.uid}/appointments`), appointmentData);
+            await setDoc(appointmentRef, appointmentData);
             
-            // 2. Prepare and open WhatsApp link
             const date = format(values.appointmentDateTime, "eeee, dd 'de' MMMM 'de' yyyy", { locale: es });
             const message = `Hola ${workshop.name}, me gustaría agendar una cita para el día ${date}. El motivo es: "${values.description}". ¿Tienen disponibilidad?`;
             const whatsappUrl = `https://wa.me/${workshop.whatsappNumber.replace(/\D/g, '')}?text=${encodeURIComponent(message)}`;
@@ -191,11 +192,9 @@ export default function WorkshopDetailPage() {
                 description: 'Redirigiendo a WhatsApp para que confirmes tu cita con el taller.',
             });
             appointmentForm.reset();
-            router.push('/dashboard');
+            router.push('/dashboard/my-appointments');
 
         } catch (error) {
-             // This catch block is for client-side errors, not Firestore permission errors
-             // which are handled by addDocumentNonBlocking.
              console.error('Error creating appointment record:', error);
              toast({
                 variant: 'destructive',
@@ -219,20 +218,29 @@ export default function WorkshopDetailPage() {
       setIsSubmittingReview(true);
       
       const reviewCollectionRef = collection(firestore, `workshops/${workshopId}/reviews`);
+      const reviewRef = doc(reviewCollectionRef);
+
       const reviewData = {
         ...values,
+        id: reviewRef.id,
         workshopId,
         userId: user.uid,
         authorName: user.displayName || user.email,
         createdAt: serverTimestamp(),
       };
 
-      addDocumentNonBlocking(reviewCollectionRef, reviewData).then(() => {
+      setDoc(reviewRef, reviewData).then(() => {
         toast({
           title: "¡Reseña Enviada!",
           description: "Gracias por compartir tu opinión.",
         });
         reviewForm.reset({rating: 0, comment: ""});
+      }).catch(error => {
+          errorEmitter.emit('permission-error', new FirestorePermissionError({
+            path: reviewRef.path,
+            operation: 'create',
+            requestResourceData: reviewData
+        }));
       }).finally(() => {
         setIsSubmittingReview(false);
       });

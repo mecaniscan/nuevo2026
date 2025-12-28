@@ -34,7 +34,7 @@ export function WorkshopCard({ workshop }: WorkshopCardProps) {
         </div>
       </CardHeader>
       <div className="p-6 flex-grow flex flex-col">
-        <CardTitle className="text-xl mb-2">{workshop.name}</CardTitle>
+        <h3 className="text-xl font-semibold mb-2">{workshop.name}</h3>
         <div className="flex items-center gap-2 text-sm text-muted-foreground mb-4">
             <MapPin className="h-4 w-4 shrink-0" /> <span>{workshop.address}, {workshop.city}</span>
         </div>
@@ -62,5 +62,3 @@ export function WorkshopCard({ workshop }: WorkshopCardProps) {
     </Card>
   );
 }
-
-    

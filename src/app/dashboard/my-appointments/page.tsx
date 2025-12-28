@@ -1,7 +1,7 @@
 'use client';
 import React from 'react';
 import { useUser, useFirestore, useMemoFirebase, deleteDocumentNonBlocking } from '@/firebase';
-import { collection, query, orderBy, Timestamp, doc } from 'firebase/firestore';
+import { collection, query, where, Timestamp, doc } from 'firebase/firestore';
 import { useCollection } from '@/firebase/firestore/use-collection';
 import type { Appointment } from '@/lib/types';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -31,14 +31,14 @@ export default function MyAppointmentsPage() {
   const { toast } = useToast();
 
   const appointmentsCollection = useMemoFirebase(() => {
-    if (!firestore || !user) return null;
-    return collection(firestore, `users/${user.uid}/appointments`);
-  }, [firestore, user]);
+    if (!firestore) return null;
+    return collection(firestore, `appointments`);
+  }, [firestore]);
 
   const appointmentsQuery = useMemoFirebase(() => {
-    if (!appointmentsCollection) return null;
-    return query(appointmentsCollection, orderBy('appointmentDateTime', 'desc'));
-  }, [appointmentsCollection]);
+    if (!appointmentsCollection || !user) return null;
+    return query(appointmentsCollection, where('userId', '==', user.uid));
+  }, [appointmentsCollection, user]);
 
   const { data: appointments, isLoading: areAppointmentsLoading } = useCollection<Appointment>(appointmentsQuery);
 
@@ -47,7 +47,7 @@ export default function MyAppointmentsPage() {
       toast({ variant: 'destructive', title: 'Error', description: 'No autenticado.' });
       return;
     }
-    const docRef = doc(firestore, `users/${user.uid}/appointments`, appointmentId);
+    const docRef = doc(firestore, `appointments`, appointmentId);
     deleteDocumentNonBlocking(docRef);
     toast({
       title: 'Cita Cancelada',
@@ -56,7 +56,13 @@ export default function MyAppointmentsPage() {
   };
 
   const formatDate = (dateString: string) => {
-    return format(new Date(dateString), "eeee, dd 'de' MMMM 'de' yyyy", { locale: es });
+    try {
+        const date = new Date(dateString);
+        if(isNaN(date.getTime())) throw new Error('Invalid date');
+        return format(date, "eeee, dd 'de' MMMM 'de' yyyy", { locale: es });
+    } catch(e) {
+        return "Fecha inválida";
+    }
   };
 
   const getStatusBadge = (status: Appointment['status']) => {
