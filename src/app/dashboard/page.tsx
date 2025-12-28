@@ -1,8 +1,7 @@
 'use client';
 
-import { useUser, useFirestore, useMemoFirebase, deleteDocumentNonBlocking, useDoc } from '@/firebase';
+import { useUser, useFirestore, useMemoFirebase, deleteDocumentNonBlocking, useDoc, useCollection } from '@/firebase';
 import { collection, query, where, doc, orderBy, limit, getDocs, writeBatch } from 'firebase/firestore';
-import { useCollection } from '@/firebase/firestore/use-collection';
 import type { Workshop, Appointment, OilChange, Vehicle } from '@/lib/types';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';

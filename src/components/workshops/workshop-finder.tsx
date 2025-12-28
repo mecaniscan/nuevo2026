@@ -28,7 +28,7 @@ export function WorkshopFinder() {
     if (showObdOnly) {
       return query(workshopsCollection, where('obdScannerService', '==', true));
     }
-    return workshopsCollection;
+    return query(workshopsCollection);
   }, [workshopsCollection, showObdOnly]);
 
   const { data: workshops, isLoading: isWorkshopsLoading } = useCollection<Workshop>(workshopsQuery);
@@ -45,15 +45,19 @@ export function WorkshopFinder() {
         setAreServicesLoading(true);
         const servicesMap = new Map<string, Service[]>();
         
-        for (const workshop of workshops) {
-            const servicesColRef = collection(firestore, `workshops/${workshop.id}/services`);
-            const servicesSnapshot = await getDocs(servicesColRef);
-            const services = servicesSnapshot.docs.map(doc => ({ ...doc.data(), id: doc.id } as Service));
-            servicesMap.set(workshop.id, services);
+        try {
+            for (const workshop of workshops) {
+                const servicesColRef = collection(firestore, `workshops/${workshop.id}/services`);
+                const servicesSnapshot = await getDocs(servicesColRef);
+                const services = servicesSnapshot.docs.map(doc => ({ ...doc.data(), id: doc.id } as Service));
+                servicesMap.set(workshop.id, services);
+            }
+            setAllServices(servicesMap);
+        } catch (error) {
+            console.error("Error fetching services for workshops:", error);
+        } finally {
+            setAreServicesLoading(false);
         }
-
-        setAllServices(servicesMap);
-        setAreServicesLoading(false);
     }
     fetchAllServices();
   }, [workshops, firestore]);

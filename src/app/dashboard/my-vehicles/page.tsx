@@ -7,10 +7,9 @@ import { Button } from '@/components/ui/button';
 import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { useUser, useFirestore, useMemoFirebase, FirestorePermissionError, errorEmitter, useDoc, useStorage } from '@/firebase';
+import { useUser, useFirestore, useMemoFirebase, FirestorePermissionError, errorEmitter, useDoc, useStorage, useCollection } from '@/firebase';
 import { collection, query, orderBy, doc, writeBatch, getDoc } from 'firebase/firestore';
 import { ref as storageRef, uploadBytes, getDownloadURL } from 'firebase/storage';
-import { useCollection } from '@/firebase/firestore/use-collection';
 import { useToast } from '@/hooks/use-toast';
 import { Loader2, PlusCircle, Car, Trash2, Pencil, Briefcase, BadgePercent, FileText, Download, Share2, Save } from 'lucide-react';
 import Link from 'next/link';
@@ -312,7 +311,6 @@ export default function MyVehiclesPage() {
       const existingVehicle = editingVehicleId ? vehicles?.find(v => v.id === editingVehicleId) : undefined;
       let finalImageUrls = existingVehicle?.imageUrls || [];
   
-      // Only upload new images if they are provided
       if (values.images && values.images.length > 0) {
         finalImageUrls = await uploadImages(values.images);
       }
@@ -321,6 +319,7 @@ export default function MyVehiclesPage() {
       const { images, ...formValues } = values;
   
       const vehiclePayload: Vehicle = {
+        ...existingVehicle,
         id: vehicleId,
         userId: user.uid,
         ...formValues,

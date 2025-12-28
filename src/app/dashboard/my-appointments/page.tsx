@@ -1,8 +1,7 @@
 'use client';
 import React from 'react';
-import { useUser, useFirestore, useMemoFirebase, deleteDocumentNonBlocking } from '@/firebase';
+import { useUser, useFirestore, useMemoFirebase, deleteDocumentNonBlocking, useCollection } from '@/firebase';
 import { collection, query, where, Timestamp, doc } from 'firebase/firestore';
-import { useCollection } from '@/firebase/firestore/use-collection';
 import type { Appointment } from '@/lib/types';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
