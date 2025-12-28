@@ -87,9 +87,9 @@ export default function DashboardPage() {
 
   // --- Data Fetching ---
   const workshopsCollection = useMemoFirebase(() => {
-    if (!firestore) return null;
+    if (!firestore || !user) return null;
     return collection(firestore, 'workshops');
-  }, [firestore]);
+  }, [firestore, user]);
 
   const userWorkshopsQuery = useMemoFirebase(() => {
     if (!workshopsCollection || !user) return null;
@@ -121,11 +121,13 @@ export default function DashboardPage() {
 
   // --- Event Handlers ---
   const handleLogout = () => {
-    initiateSignOut(auth);
+    if (auth) {
+      initiateSignOut(auth);
+    }
   };
 
   const handleDeleteAccount = async () => {
-    if (!user || !firestore || user.isAnonymous) {
+    if (!user || !firestore) {
       toast({ variant: 'destructive', title: 'Error', description: 'No se pudo eliminar la cuenta.' });
       return;
     }
@@ -138,7 +140,7 @@ export default function DashboardPage() {
         batch.delete(workshopRef);
       }
       
-      // Delete user's appointments
+      // Delete user's appointments from the root collection
       const appointmentsColRef = collection(firestore, 'appointments');
       const userAppointmentsQuery = query(appointmentsColRef, where('userId', '==', user.uid));
       const appointmentsSnapshot = await getDocs(userAppointmentsQuery);
@@ -168,6 +170,7 @@ export default function DashboardPage() {
   });
 
   async function onLoginSubmit(values: z.infer<typeof loginSchema>) {
+    if (!auth) return;
     setIsLoggingIn(true);
     try {
       await initiateEmailSignIn(auth, values.email, values.password);
@@ -192,7 +195,7 @@ export default function DashboardPage() {
 
   // --- Loading and Auth States ---
   const isLoading = isUserLoading || isWorkshopsLoading || isAppointmentsLoading || isOilChangesLoading || isVehicleLoading;
-  if (isLoading) {
+  if (isUserLoading) {
     return (
       <div className="flex min-h-screen items-center justify-center">
         <Loader2 className="h-12 w-12 animate-spin text-primary" />
@@ -292,11 +295,7 @@ export default function DashboardPage() {
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-8">
         <div>
           <h1 className="text-3xl font-bold font-headline text-primary">Panel de Control</h1>
-           {user.isAnonymous ? (
-             <p className="text-muted-foreground">Estás navegando como invitado. <Link href="/register" className='text-primary underline'>Crea una cuenta</Link> para guardar tus datos.</p>
-           ) : (
-            <p className="text-muted-foreground">Bienvenido, {user.displayName || user.email}. Aquí puedes gestionar tu actividad.</p>
-           )}
+          <p className="text-muted-foreground">Bienvenido, {user.displayName || user.email}. Aquí puedes gestionar tu actividad.</p>
         </div>
         <Button onClick={handleLogout} variant="outline" className="mt-4 sm:mt-0">
           <LogOut className="mr-2 h-4 w-4" />
@@ -315,10 +314,9 @@ export default function DashboardPage() {
                     <CardDescription>Añade tu primer cambio de aceite para ver un resumen aquí.</CardDescription>
                 </CardHeader>
                 <CardContent>
-                     <Button asChild disabled={user.isAnonymous}>
+                     <Button asChild>
                         <Link href="/dashboard/oil-changes">Registro de cambio aceite</Link>
                     </Button>
-                    {user.isAnonymous && <p className='text-xs text-muted-foreground mt-2'>Regístrate para añadir vehículos.</p>}
                 </CardContent>
             </Card>
           )}
@@ -351,7 +349,6 @@ export default function DashboardPage() {
                 icon={<Car className="h-8 w-8 text-primary"/>}
                 title="Mis Vehículos"
                 description="Registra y gestiona tus vehículos."
-                disabled={user.isAnonymous}
             />
         </div>
 
@@ -362,7 +359,6 @@ export default function DashboardPage() {
                 icon={<Droplets className="h-8 w-8 text-primary"/>}
                 title="Cambios de Aceite"
                 description="Lleva un historial de los cambios de aceite."
-                disabled={user.isAnonymous}
             />
         </div>
 
@@ -384,19 +380,19 @@ export default function DashboardPage() {
                     <CardTitle className="flex items-center gap-2"><Settings /> Configuración de la Cuenta</CardTitle>
                 </CardHeader>
                 <CardContent className="flex flex-col items-start gap-4 sm:flex-row sm:items-center">
-                    <Button asChild variant="outline" disabled={user.isAnonymous}>
+                    <Button asChild variant="outline">
                       <Link href="/dashboard/profile">
                         <Pencil className="mr-2 h-4 w-4" /> Editar Perfil
                       </Link>
                     </Button>
-                    <Button asChild variant={hasWorkshop ? "outline" : "default"} disabled={user.isAnonymous}>
+                    <Button asChild variant={hasWorkshop ? "outline" : "default"}>
                         <Link href={hasWorkshop ? "/dashboard/edit-workshop" : "/dashboard/register-workshop"}>
                             {hasWorkshop ? <><Wrench className="mr-2 h-4 w-4" />Gestionar mi Taller</> : <><Building className="mr-2 h-4 w-4" />Registrar mi Taller</>}
                         </Link>
                     </Button>
                     <AlertDialog>
                         <AlertDialogTrigger asChild>
-                            <Button variant="destructive" disabled={user.isAnonymous}>
+                            <Button variant="destructive">
                                <Trash2/> Eliminar Cuenta
                             </Button>
                         </AlertDialogTrigger>
@@ -414,7 +410,6 @@ export default function DashboardPage() {
                             </AlertDialogFooter>
                         </AlertDialogContent>
                     </AlertDialog>
-                    {user.isAnonymous && <p className="text-xs text-muted-foreground">Debes tener una cuenta permanente para poder editar tu perfil, gestionar un taller o eliminar tu cuenta.</p>}
                 </CardContent>
             </Card>
         </div>

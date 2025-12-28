@@ -66,15 +66,15 @@ service cloud.firestore {
      */
     match /workshops/{workshopId} {
       allow get, list: if true;
-      allow create: if isWorkshopCreator();
-      allow update: if isOwner(resource.data.ownerId) && workshopOwnerIsUnchanged();
-      allow delete: if isOwner(resource.data.ownerId);
+      allow create: if isSignedIn() && isWorkshopCreator();
+      allow update: if isSignedIn() && isOwner(resource.data.ownerId) && workshopOwnerIsUnchanged();
+      allow delete: if isSignedIn() && isOwner(resource.data.ownerId);
       
       // Workshop subcollections (e.g., services, reviews)
       match /services/{serviceId} {
         allow read: if true;
         // Writes are handled by the workshop owner, inherited from the parent `update` rule logic
-        allow write: if isOwner(get(/databases/$(database)/documents/workshops/$(workshopId)).data.ownerId);
+        allow write: if isSignedIn() && isOwner(get(/databases/$(database)/documents/workshops/$(workshopId)).data.ownerId);
       }
       
       match /reviews/{reviewId} {
@@ -93,9 +93,9 @@ service cloud.firestore {
     match /appointments/{appointmentId} {
       allow get: if isSignedIn() && isAppointmentParticipant(resource.data);
       allow list: if false; // Prevent listing all appointments. Queries must be used.
-      allow create: if isOwner(request.resource.data.userId);
-      allow update: if isAppointmentParticipant(resource.data);
-      allow delete: if isAppointmentParticipant(resource.data);
+      allow create: if isSignedIn() && isOwner(request.resource.data.userId);
+      allow update: if isSignedIn() && isAppointmentParticipant(resource.data);
+      allow delete: if isSignedIn() && isAppointmentParticipant(resource.data);
     }
 
     /**
