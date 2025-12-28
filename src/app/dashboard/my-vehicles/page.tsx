@@ -309,12 +309,11 @@ async function onSubmit(values: z.infer<typeof vehicleSchema>) {
     setIsSubmitting(true);
 
     try {
-        const { images, ...formValues } = values;
         const existingVehicle = editingVehicleId ? vehicles?.find(v => v.id === editingVehicleId) : undefined;
         let finalImageUrls = existingVehicle?.imageUrls || [];
 
-        if (images && images.length > 0) {
-            finalImageUrls = await uploadImages(images);
+        if (values.images && values.images.length > 0) {
+            finalImageUrls = await uploadImages(values.images);
         }
 
         const sellerName = user.displayName || `${userData.firstName} ${userData.lastName}` || 'Vendedor Anónimo';
@@ -322,8 +321,9 @@ async function onSubmit(values: z.infer<typeof vehicleSchema>) {
 
         const vehicleId = editingVehicleId || doc(collection(firestore, `users/${user.uid}/vehicles`)).id;
 
+        const { images, ...formValues } = values;
+        
         const vehiclePayload: Vehicle = {
-            ...existingVehicle,
             ...formValues,
             id: vehicleId,
             userId: user.uid,
@@ -372,11 +372,11 @@ async function onSubmit(values: z.infer<typeof vehicleSchema>) {
         return;
     }
     
-    const userVehicleRef = doc(firestore, `users/${user.uid}/vehicles`, vehicleId);
+    const batch = writeBatch(firestore);
     const marketplaceVehicleRef = doc(firestore, 'marketplace', vehicleId);
+    const userVehicleRef = doc(firestore, `users/${user.uid}/vehicles`, vehicleId);
     
     try {
-        const batch = writeBatch(firestore);
         batch.delete(marketplaceVehicleRef);
         batch.delete(userVehicleRef);
         await batch.commit();
@@ -386,13 +386,13 @@ async function onSubmit(values: z.infer<typeof vehicleSchema>) {
         });
     } catch (error: any) {
         console.error("Error deleting vehicle:", error);
-        errorEmitter.emit('permission-error', new FirestorePermissionError({
-             path: userVehicleRef.path,
-             operation: 'delete',
-        }));
          errorEmitter.emit('permission-error', new FirestorePermissionError({
             path: marketplaceVehicleRef.path,
             operation: 'delete',
+        }));
+        errorEmitter.emit('permission-error', new FirestorePermissionError({
+             path: userVehicleRef.path,
+             operation: 'delete',
         }));
     }
 }
