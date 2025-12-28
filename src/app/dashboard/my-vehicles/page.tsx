@@ -301,7 +301,7 @@ export default function MyVehiclesPage() {
   };
 
   async function onSubmit(values: z.infer<typeof vehicleSchema>) {
-    if (!user || !firestore || !userDocRef) {
+    if (!user || !firestore || !userDocRef || !storage) {
         toast({ variant: 'destructive', title: 'Error', description: 'Debes iniciar sesión.' });
         return;
     }
@@ -309,9 +309,7 @@ export default function MyVehiclesPage() {
     setIsSubmitting(true);
 
     try {
-        const batch = writeBatch(firestore);
-        
-        let uploadedImageUrls: string[] | undefined = undefined;
+        let uploadedImageUrls: string[] | undefined;
         if (values.images && values.images.length > 0) {
             uploadedImageUrls = await uploadImages(values.images);
         }
@@ -326,9 +324,8 @@ export default function MyVehiclesPage() {
         const vehicleId = editingVehicleId || doc(collection(firestore, `users/${user.uid}/vehicles`)).id;
         const userVehicleRef = doc(firestore, `users/${user.uid}/vehicles`, vehicleId);
         const marketplaceVehicleRef = doc(firestore, 'marketplace', vehicleId);
-
-        // Prepare the payload
-        let vehiclePayload: Partial<Vehicle> = {
+        
+        const vehiclePayload: Partial<Vehicle> = {
             ...restOfValues,
             userId: user.uid,
             sellerName,
@@ -339,11 +336,11 @@ export default function MyVehiclesPage() {
             vehiclePayload.imageUrls = uploadedImageUrls;
         }
 
+        const batch = writeBatch(firestore);
+
         if (editingVehicleId) {
-             // Update existing vehicle
             batch.update(userVehicleRef, vehiclePayload);
         } else {
-            // Create new vehicle
             vehiclePayload.id = vehicleId;
             vehiclePayload.certificateNumber = uuidv4();
             vehiclePayload.certificatePdfUrl = '';
@@ -351,8 +348,9 @@ export default function MyVehiclesPage() {
         }
 
         if (values.isForSale) {
+            const currentVehicleData = vehicles?.find(v => v.id === editingVehicleId) || {};
             const marketplacePayload = { 
-                ...(editingVehicleId ? vehicles?.find(v => v.id === editingVehicleId) : {}),
+                ...currentVehicleData,
                 ...vehiclePayload, 
                 id: vehicleId,
             };
@@ -388,14 +386,13 @@ export default function MyVehiclesPage() {
         return;
     }
     
-    const batch = writeBatch(firestore);
     const userVehicleRef = doc(firestore, `users/${user.uid}/vehicles`, vehicleId);
     const marketplaceVehicleRef = doc(firestore, 'marketplace', vehicleId);
     
-    batch.delete(userVehicleRef);
-    batch.delete(marketplaceVehicleRef);
-    
     try {
+        const batch = writeBatch(firestore);
+        batch.delete(marketplaceVehicleRef);
+        batch.delete(userVehicleRef);
         await batch.commit();
         toast({
             title: 'Vehículo Eliminado',
@@ -403,10 +400,15 @@ export default function MyVehiclesPage() {
         });
     } catch (error: any) {
         console.error("Error deleting vehicle:", error);
+        const permError = new FirestorePermissionError({
+             path: marketplaceVehicleRef.path,
+             operation: 'delete',
+        });
+        errorEmitter.emit('permission-error', permError);
         toast({
             variant: 'destructive',
             title: 'Error al Eliminar',
-            description: error.message || 'No se pudo eliminar el vehículo.',
+            description: 'No se pudo eliminar el vehículo. ' + error.message,
         });
     }
 }
