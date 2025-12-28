@@ -301,7 +301,7 @@ export default function MyVehiclesPage() {
   };
 
   async function onSubmit(values: z.infer<typeof vehicleSchema>) {
-    if (!user || !firestore || !userDocRef) {
+    if (!user || !firestore || !userDocRef || !storage) {
         toast({ variant: 'destructive', title: 'Error', description: 'Debes iniciar sesión.' });
         return;
     }
@@ -326,7 +326,10 @@ export default function MyVehiclesPage() {
         
         const { images, ...restOfValues } = values;
         
+        const existingVehicleData = editingVehicleId ? vehicles?.find(v => v.id === editingVehicleId) : {};
+
         const vehiclePayload: Partial<Vehicle> = {
+            ...existingVehicleData,
             ...restOfValues,
             userId: user.uid,
             sellerName,
@@ -347,9 +350,7 @@ export default function MyVehiclesPage() {
         }
 
         if (values.isForSale) {
-            const currentVehicleData = vehicles?.find(v => v.id === editingVehicleId) || {};
             const marketplacePayload = { 
-                ...currentVehicleData,
                 ...vehiclePayload, 
                 id: vehicleId,
             };
@@ -400,14 +401,9 @@ export default function MyVehiclesPage() {
     } catch (error: any) {
         console.error("Error deleting vehicle:", error);
         errorEmitter.emit('permission-error', new FirestorePermissionError({
-             path: marketplaceVehicleRef.path,
+             path: userVehicleRef.path,
              operation: 'delete',
         }));
-        toast({
-            variant: 'destructive',
-            title: 'Error al Eliminar',
-            description: 'No se pudo eliminar el vehículo. ' + error.message,
-        });
     }
 }
 
