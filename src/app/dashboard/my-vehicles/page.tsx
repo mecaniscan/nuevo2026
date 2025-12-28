@@ -301,7 +301,7 @@ export default function MyVehiclesPage() {
   };
 
   async function onSubmit(values: z.infer<typeof vehicleSchema>) {
-    if (!user || !firestore || !userDocRef || !storage) {
+    if (!user || !firestore || !userDocRef) {
         toast({ variant: 'destructive', title: 'Error', description: 'Debes iniciar sesión.' });
         return;
     }
@@ -319,11 +319,12 @@ export default function MyVehiclesPage() {
         const sellerName = user.displayName || `${userData?.firstName} ${userData?.lastName}` || 'Vendedor Anónimo';
         const sellerWhatsapp = userData?.whatsappNumber || '';
 
-        const { images, ...restOfValues } = values;
-        
+        const batch = writeBatch(firestore);
         const vehicleId = editingVehicleId || doc(collection(firestore, `users/${user.uid}/vehicles`)).id;
         const userVehicleRef = doc(firestore, `users/${user.uid}/vehicles`, vehicleId);
         const marketplaceVehicleRef = doc(firestore, 'marketplace', vehicleId);
+        
+        const { images, ...restOfValues } = values;
         
         const vehiclePayload: Partial<Vehicle> = {
             ...restOfValues,
@@ -335,8 +336,6 @@ export default function MyVehiclesPage() {
         if (uploadedImageUrls) {
             vehiclePayload.imageUrls = uploadedImageUrls;
         }
-
-        const batch = writeBatch(firestore);
 
         if (editingVehicleId) {
             batch.update(userVehicleRef, vehiclePayload);
@@ -400,11 +399,10 @@ export default function MyVehiclesPage() {
         });
     } catch (error: any) {
         console.error("Error deleting vehicle:", error);
-        const permError = new FirestorePermissionError({
+        errorEmitter.emit('permission-error', new FirestorePermissionError({
              path: marketplaceVehicleRef.path,
              operation: 'delete',
-        });
-        errorEmitter.emit('permission-error', permError);
+        }));
         toast({
             variant: 'destructive',
             title: 'Error al Eliminar',
