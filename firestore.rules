@@ -193,5 +193,20 @@ service cloud.firestore {
       allow update: if false;
       allow delete: if false;
     }
+
+    /**
+     * @description Publicly readable vehicle marketplace. Only the vehicle owner can write or delete.
+     * @path /marketplace/{vehicleId}
+     * @allow (list) Any user, signed in or not, can list all vehicles for sale.
+     * @deny (update) A user who does not own the vehicle tries to modify it.
+     * @principle Enforces document ownership for writes while allowing public read access.
+     */
+    match /marketplace/{vehicleId} {
+        allow get: if true;
+        allow list: if true;
+        allow create: if isOwner(request.resource.data.userId);
+        allow update: if isExistingOwner(resource.data.userId);
+        allow delete: if isExistingOwner(resource.data.userId);
+    }
   }
 }
