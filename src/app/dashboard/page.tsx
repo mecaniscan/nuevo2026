@@ -30,6 +30,7 @@ import React from 'react';
 import { Progress } from '@/components/ui/progress';
 import { cn } from '@/lib/utils';
 import { initiateEmailSignIn } from '@/firebase/non-blocking-login';
+import { signOut } from 'firebase/auth';
 
 
 const loginSchema = z.object({
@@ -97,13 +98,6 @@ export default function DashboardPage() {
 
   const { data: workshops, isLoading: isWorkshopsLoading } = useCollection<Workshop>(userWorkshopsQuery);
     
-  const appointmentsQuery = useMemoFirebase(() => {
-    if (!firestore || !user) return null;
-    return query(collection(firestore, 'appointments'), where('userId', '==', user.uid));
-  }, [firestore, user]);
-
-  const { data: appointments, isLoading: isAppointmentsLoading } = useCollection<Appointment>(appointmentsQuery);
-
   const oilChangesQuery = useMemoFirebase(() => {
     if (!firestore || !user) return null;
     return query(collection(firestore, `users/${user.uid}/oilChanges`), orderBy('nextChangeMileage', 'asc'), limit(1));
@@ -116,6 +110,13 @@ export default function DashboardPage() {
     return doc(firestore, `users/${user.uid}/vehicles`, nextOilChange.vehicleId);
   }, [firestore, user, nextOilChange]);
   const { data: mainVehicle, isLoading: isVehicleLoading } = useDoc<Vehicle>(vehicleQuery);
+  
+  const userAppointmentsQuery = useMemoFirebase(() => {
+    if (!firestore || !user) return null;
+    return query(collection(firestore, 'appointments'), where('userId', '==', user.uid));
+    }, [firestore, user]);
+
+  const { data: appointments, isLoading: isAppointmentsLoading } = useCollection<Appointment>(userAppointmentsQuery);
 
 
   // --- Event Handlers ---
