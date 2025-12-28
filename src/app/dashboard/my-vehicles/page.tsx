@@ -300,8 +300,8 @@ export default function MyVehiclesPage() {
     return imageUrls;
   };
 
-  async function onSubmit(values: z.infer<typeof vehicleSchema>) {
-    if (!user || !firestore || !userDocRef || !storage) {
+async function onSubmit(values: z.infer<typeof vehicleSchema>) {
+    if (!user || !firestore || !userDocRef || !storage || !userData) {
         toast({ variant: 'destructive', title: 'Error', description: 'Debes iniciar sesión.' });
         return;
     }
@@ -309,52 +309,38 @@ export default function MyVehiclesPage() {
     setIsSubmitting(true);
 
     try {
-        let uploadedImageUrls: string[] | undefined;
-        if (values.images && values.images.length > 0) {
-            uploadedImageUrls = await uploadImages(values.images);
+        const { images, ...formValues } = values;
+        const existingVehicle = editingVehicleId ? vehicles?.find(v => v.id === editingVehicleId) : undefined;
+        let finalImageUrls = existingVehicle?.imageUrls || [];
+
+        if (images && images.length > 0) {
+            finalImageUrls = await uploadImages(images);
         }
 
-        const userDocSnap = await getDoc(userDocRef);
-        const userData = userDocSnap.data() as User | undefined;
-        const sellerName = user.displayName || `${userData?.firstName} ${userData?.lastName}` || 'Vendedor Anónimo';
-        const sellerWhatsapp = userData?.whatsappNumber || '';
+        const sellerName = user.displayName || `${userData.firstName} ${userData.lastName}` || 'Vendedor Anónimo';
+        const sellerWhatsapp = userData.whatsappNumber || '';
 
-        const batch = writeBatch(firestore);
         const vehicleId = editingVehicleId || doc(collection(firestore, `users/${user.uid}/vehicles`)).id;
+
+        const vehiclePayload: Vehicle = {
+            ...existingVehicle,
+            ...formValues,
+            id: vehicleId,
+            userId: user.uid,
+            imageUrls: finalImageUrls,
+            sellerName,
+            sellerWhatsapp,
+            certificateNumber: existingVehicle?.certificateNumber || uuidv4(),
+        };
+        
+        const batch = writeBatch(firestore);
         const userVehicleRef = doc(firestore, `users/${user.uid}/vehicles`, vehicleId);
         const marketplaceVehicleRef = doc(firestore, 'marketplace', vehicleId);
         
-        const { images, ...restOfValues } = values;
-        
-        const existingVehicleData = editingVehicleId ? vehicles?.find(v => v.id === editingVehicleId) : {};
+        batch.set(userVehicleRef, vehiclePayload, { merge: true });
 
-        const vehiclePayload: Partial<Vehicle> = {
-            ...existingVehicleData,
-            ...restOfValues,
-            userId: user.uid,
-            sellerName,
-            sellerWhatsapp,
-        };
-
-        if (uploadedImageUrls) {
-            vehiclePayload.imageUrls = uploadedImageUrls;
-        }
-
-        if (editingVehicleId) {
-            batch.update(userVehicleRef, vehiclePayload);
-        } else {
-            vehiclePayload.id = vehicleId;
-            vehiclePayload.certificateNumber = uuidv4();
-            vehiclePayload.certificatePdfUrl = '';
-            batch.set(userVehicleRef, vehiclePayload as Vehicle);
-        }
-
-        if (values.isForSale) {
-            const marketplacePayload = { 
-                ...vehiclePayload, 
-                id: vehicleId,
-            };
-            batch.set(marketplaceVehicleRef, marketplacePayload, { merge: true });
+        if (vehiclePayload.isForSale) {
+            batch.set(marketplaceVehicleRef, vehiclePayload, { merge: true });
         } else {
             batch.delete(marketplaceVehicleRef);
         }
@@ -403,6 +389,10 @@ export default function MyVehiclesPage() {
         errorEmitter.emit('permission-error', new FirestorePermissionError({
              path: userVehicleRef.path,
              operation: 'delete',
+        }));
+         errorEmitter.emit('permission-error', new FirestorePermissionError({
+            path: marketplaceVehicleRef.path,
+            operation: 'delete',
         }));
     }
 }
@@ -556,7 +546,7 @@ export default function MyVehiclesPage() {
                                 <Input type="file" multiple accept="image/*" onChange={(e) => onChange(e.target.files)} {...rest} />
                             </FormControl>
                             <FormDescription>
-                              Sube una o más imágenes de tu vehículo. La carga de imágenes es opcional.
+                              Sube una o más imágenes de tu vehículo. Si estás editando, las nuevas imágenes reemplazarán a las anteriores.
                             </FormDescription>
                             <FormMessage />
                           </FormItem>
