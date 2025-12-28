@@ -7,7 +7,6 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Loader2, Calendar, Wrench, Trash2, Settings, Pencil, LogOut, User as UserIcon, Lock, Building, ArrowRight, Droplets, Car, Gauge, ScanLine, Heart } from 'lucide-react';
 import Link from 'next/link';
-import { initiateSignOut } from '@/firebase/non-blocking-login';
 import { useAuth } from '@/firebase';
 import { useToast } from '@/hooks/use-toast';
 import {
@@ -122,7 +121,7 @@ export default function DashboardPage() {
   // --- Event Handlers ---
   const handleLogout = () => {
     if (auth) {
-      initiateSignOut(auth);
+      signOut(auth);
     }
   };
 
