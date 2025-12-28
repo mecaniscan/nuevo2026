@@ -4,26 +4,43 @@ import {
   signInAnonymously,
   createUserWithEmailAndPassword,
   signInWithEmailAndPassword,
+  signOut,
   // Assume getAuth and app are initialized elsewhere
 } from 'firebase/auth';
 
 /** Initiate anonymous sign-in (non-blocking). */
 export function initiateAnonymousSignIn(authInstance: Auth): void {
   // CRITICAL: Call signInAnonymously directly. Do NOT use 'await signInAnonymously(...)'.
-  signInAnonymously(authInstance);
+  signInAnonymously(authInstance).catch(error => {
+    // Optional: Add logging or emit a global error event if needed
+    console.error("Anonymous sign-in failed:", error);
+  });
   // Code continues immediately. Auth state change is handled by onAuthStateChanged listener.
 }
 
 /** Initiate email/password sign-up (non-blocking). */
-export function initiateEmailSignUp(authInstance: Auth, email: string, password: string): void {
+export function initiateEmailSignUp(authInstance: Auth, email: string, password: string): Promise<void> {
   // CRITICAL: Call createUserWithEmailAndPassword directly. Do NOT use 'await createUserWithEmailAndPassword(...)'.
-  createUserWithEmailAndPassword(authInstance, email, password);
+  return createUserWithEmailAndPassword(authInstance, email, password).then(() => {}).catch(error => {
+    console.error("Email sign-up failed:", error);
+    throw error; // Re-throw to be caught by the calling function's catch block
+  });
   // Code continues immediately. Auth state change is handled by onAuthStateChanged listener.
 }
 
 /** Initiate email/password sign-in (non-blocking). */
-export function initiateEmailSignIn(authInstance: Auth, email: string, password: string): void {
+export function initiateEmailSignIn(authInstance: Auth, email: string, password: string): Promise<void> {
   // CRITICAL: Call signInWithEmailAndPassword directly. Do NOT use 'await signInWithEmailAndPassword(...)'.
-  signInWithEmailAndPassword(authInstance, email, password);
+  return signInWithEmailAndPassword(authInstance, email, password).then(() => {}).catch(error => {
+    console.error("Email sign-in failed:", error);
+    throw error; // Re-throw to be caught by the calling function's catch block
+  });
   // Code continues immediately. Auth state change is handled by onAuthStateChanged listener.
+}
+
+/** Initiate sign-out (non-blocking). */
+export function initiateSignOut(authInstance: Auth): void {
+    signOut(authInstance).catch(error => {
+        console.error("Sign-out failed:", error);
+    });
 }

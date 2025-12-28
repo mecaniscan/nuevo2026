@@ -8,7 +8,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Loader2, Calendar, Wrench, Trash2, Settings, Pencil, LogOut, User as UserIcon, Lock, Building, ArrowRight, Droplets, Car, Gauge, ScanLine, Heart } from 'lucide-react';
 import Link from 'next/link';
-import { initiateSignOut, initiateEmailSignIn } from '@/firebase/non-blocking-login';
+import { initiateSignOut } from '@/firebase/non-blocking-login';
 import { useAuth } from '@/firebase';
 import { useToast } from '@/hooks/use-toast';
 import {
@@ -31,6 +31,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import React from 'react';
 import { Progress } from '@/components/ui/progress';
 import { cn } from '@/lib/utils';
+import { initiateEmailSignIn } from '@/firebase/non-blocking-login';
 
 
 const loginSchema = z.object({
