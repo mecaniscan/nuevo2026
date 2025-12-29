@@ -86,15 +86,15 @@ export default function DashboardPage() {
   const [isLoggingIn, setIsLoggingIn] = React.useState(false);
 
   // --- Data Fetching ---
-  const workshopsCollection = useMemoFirebase(() => {
+  const workshopsCollectionRef = useMemoFirebase(() => {
     if (!firestore || !user) return null;
     return collection(firestore, 'workshops');
   }, [firestore, user]);
 
   const userWorkshopsQuery = useMemoFirebase(() => {
-    if (!workshopsCollection || !user) return null;
-    return query(workshopsCollection, where('ownerId', '==', user.uid));
-  }, [workshopsCollection, user]);
+    if (!workshopsCollectionRef || !user) return null;
+    return query(workshopsCollectionRef, where('ownerId', '==', user.uid));
+  }, [workshopsCollectionRef, user]);
 
   const { data: workshops, isLoading: isWorkshopsLoading } = useCollection<Workshop>(userWorkshopsQuery);
     
