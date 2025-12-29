@@ -234,9 +234,7 @@
       "description": "Stores OBDII error codes and related information. Accessible by all users."
     },
     "/marketplace/{vehicleId}": {
-      "schema": {
-        "$ref": "#/entities/Vehicle"
-      },
+      "schema": "Vehicle",
       "description": "Publicly readable collection of vehicles for sale. This collection should be populated by a backend process that mirrors documents from the private `users/{userId}/vehicles` collection when `isForSale` is true."
     }
   }
