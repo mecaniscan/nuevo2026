@@ -31,6 +31,10 @@ import { Badge } from '@/components/ui/badge';
 import { v4 as uuidv4 } from 'uuid';
 import Image from 'next/image';
 
+const MAX_IMAGES = 3;
+const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
+const ACCEPTED_IMAGE_TYPES = ["image/jpeg", "image/jpg", "image/png", "image/webp"];
+
 const vehicleSchema = z.object({
   type: z.string().min(3, 'El tipo es muy corto.'),
   brand: z.string().min(2, 'La marca es requerida.'),
@@ -51,7 +55,11 @@ const vehicleSchema = z.object({
   ),
   country: z.string().min(2, 'El país es requerido.'),
   isForSale: z.boolean().default(false),
-  images: z.any().optional(),
+  images: z.any()
+    .refine((files) => !files || files.length === 0 || files.length <= MAX_IMAGES, `No puedes subir más de ${MAX_IMAGES} imágenes.`)
+    .refine((files) => !files || Array.from(files).every((file: any) => file.size <= MAX_FILE_SIZE), `Cada imagen no debe superar los 5MB.`)
+    .refine((files) => !files || Array.from(files).every((file: any) => ACCEPTED_IMAGE_TYPES.includes(file.type)), "Solo se aceptan formatos .jpg, .jpeg, .png y .webp.")
+    .optional(),
 });
 
 
@@ -152,8 +160,7 @@ export default function MyVehiclesPage() {
         title: editingVehicleId ? '¡Vehículo Actualizado!' : '¡Vehículo Añadido!',
         description: `Tu vehículo ha sido ${editingVehicleId ? 'actualizado' : 'guardado'}. Si está a la venta, aparecerá en el marketplace en breve.`,
       });
-      form.reset();
-      setEditingVehicleId(null);
+      cancelEdit();
     } catch (error: any) {
       console.error("Error submitting vehicle:", error);
       const { images, ...formValues } = values;
@@ -201,6 +208,7 @@ export default function MyVehiclesPage() {
         ...vehicle,
         images: undefined,
     });
+    window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
   }
   
   function cancelEdit() {
@@ -348,12 +356,12 @@ export default function MyVehiclesPage() {
                         name="images"
                         render={({ field: { onChange, value, ...rest } }) => (
                           <FormItem>
-                            <FormLabel>Imágenes del Vehículo</FormLabel>
+                            <FormLabel>Imágenes del Vehículo (hasta {MAX_IMAGES})</FormLabel>
                             <FormControl>
                                 <Input type="file" multiple accept="image/*" onChange={(e) => onChange(e.target.files)} {...rest} />
                             </FormControl>
                             <FormDescription>
-                              Sube una o más imágenes de tu vehículo. Si estás editando, las nuevas imágenes reemplazarán a las anteriores.
+                              Sube hasta {MAX_IMAGES} imágenes. Si estás editando, las nuevas imágenes reemplazarán a las anteriores.
                             </FormDescription>
                             <FormMessage />
                           </FormItem>
