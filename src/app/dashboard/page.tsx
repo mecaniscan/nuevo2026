@@ -7,7 +7,6 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Loader2, Calendar, Wrench, Trash2, Settings, Pencil, LogOut, User as UserIcon, Lock, Building, ArrowRight, Droplets, Car, Gauge, ScanLine, Heart } from 'lucide-react';
 import Link from 'next/link';
-import { useAuth } from '@/firebase';
 import { useToast } from '@/hooks/use-toast';
 import {
   AlertDialog,
@@ -30,7 +29,7 @@ import React from 'react';
 import { Progress } from '@/components/ui/progress';
 import { cn } from '@/lib/utils';
 import { initiateEmailSignIn } from '@/firebase/non-blocking-login';
-import { signOut } from 'firebase/auth';
+import { signOut, Auth } from 'firebase/auth';
 
 
 const loginSchema = z.object({
@@ -81,20 +80,21 @@ const VehicleSummaryCard = ({ vehicle, oilChange }: { vehicle: Vehicle, oilChang
 export default function DashboardPage() {
   const { user, isUserLoading } = useUser();
   const firestore = useFirestore();
-  const auth = useAuth();
+  const auth = useMemoFirebase<Auth | null>(() => {
+    try {
+        return useUser().user ? (useUser() as any).auth : null;
+    } catch {
+        return null;
+    }
+  }, [useUser().user]);
   const { toast } = useToast();
   const [isLoggingIn, setIsLoggingIn] = React.useState(false);
 
   // --- Data Fetching ---
-  const workshopsCollectionRef = useMemoFirebase(() => {
-    if (!firestore || !user) return null;
-    return collection(firestore, 'workshops');
-  }, [firestore, user]);
-
   const userWorkshopsQuery = useMemoFirebase(() => {
-    if (!workshopsCollectionRef || !user) return null;
-    return query(workshopsCollectionRef, where('ownerId', '==', user.uid));
-  }, [workshopsCollectionRef, user]);
+    if (!firestore || !user?.uid) return null;
+    return query(collection(firestore, 'workshops'), where('ownerId', '==', user.uid));
+  }, [firestore, user?.uid]);
 
   const { data: workshops, isLoading: isWorkshopsLoading } = useCollection<Workshop>(userWorkshopsQuery);
     
