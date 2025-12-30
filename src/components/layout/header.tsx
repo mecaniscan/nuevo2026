@@ -15,7 +15,7 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/co
 import { useState, useEffect } from 'react';
 import { Avatar, AvatarFallback, AvatarImage } from '../ui/avatar';
 import { cn } from '@/lib/utils';
-import { initiateSignOut } from '@/firebase/non-blocking-login';
+import { signOut } from 'firebase/auth';
 
 function MainNav({ className }: { className?: string }) {
   return (
@@ -46,7 +46,7 @@ export function Header() {
 
   const handleLogout = () => {
     if (auth) {
-      initiateSignOut(auth);
+      signOut(auth);
     }
   };
   
@@ -82,8 +82,8 @@ export function Header() {
               </Button>
             </SheetTrigger>
             <SheetContent side="left" className="pr-0">
-              <SheetHeader>
-                <SheetTitle className="sr-only">Menú Principal</SheetTitle>
+               <SheetHeader>
+                  <SheetTitle className="sr-only">Menú Principal</SheetTitle>
               </SheetHeader>
               <Link href="/" className="mr-6 flex items-center space-x-2 mb-6" onClick={() => setIsSheetOpen(false)}>
                   <Wrench className="h-6 w-6 text-primary" />
