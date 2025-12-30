@@ -29,7 +29,7 @@ import React from 'react';
 import { Progress } from '@/components/ui/progress';
 import { cn } from '@/lib/utils';
 import { initiateEmailSignIn } from '@/firebase/non-blocking-login';
-import { signOut, Auth } from 'firebase/auth';
+import { signOut } from 'firebase/auth';
 
 
 const loginSchema = z.object({
@@ -93,16 +93,16 @@ export default function DashboardPage() {
   const { data: workshops, isLoading: isWorkshopsLoading } = useCollection<Workshop>(userWorkshopsQuery);
     
   const oilChangesQuery = useMemoFirebase(() => {
-    if (!firestore || !user) return null;
+    if (!firestore || !user?.uid) return null;
     return query(collection(firestore, `users/${user.uid}/oilChanges`), orderBy('nextChangeMileage', 'asc'), limit(1));
-  }, [firestore, user]);
+  }, [firestore, user?.uid]);
   const { data: nextOilChanges, isLoading: isOilChangesLoading } = useCollection<OilChange>(oilChangesQuery);
   const nextOilChange = nextOilChanges?.[0];
 
   const vehicleQuery = useMemoFirebase(() => {
-    if (!firestore || !user || !nextOilChange) return null;
+    if (!firestore || !user?.uid || !nextOilChange) return null;
     return doc(firestore, `users/${user.uid}/vehicles`, nextOilChange.vehicleId);
-  }, [firestore, user, nextOilChange]);
+  }, [firestore, user?.uid, nextOilChange]);
   const { data: mainVehicle, isLoading: isVehicleLoading } = useDoc<Vehicle>(vehicleQuery);
   
   // --- Event Handlers ---
@@ -127,10 +127,12 @@ export default function DashboardPage() {
       }
       
       // Delete user's appointments from the root collection
-      const appointmentsColRef = collection(firestore, 'appointments');
-      const userAppointmentsQuery = query(appointmentsColRef, where('userId', '==', user.uid));
-      const appointmentsSnapshot = await getDocs(userAppointmentsQuery);
-      appointmentsSnapshot.forEach(doc => batch.delete(doc.ref));
+      if (user?.uid) {
+        const appointmentsColRef = collection(firestore, 'appointments');
+        const userAppointmentsQuery = query(appointmentsColRef, where('userId', '==', user.uid));
+        const appointmentsSnapshot = await getDocs(userAppointmentsQuery);
+        appointmentsSnapshot.forEach(doc => batch.delete(doc.ref));
+      }
 
       // Delete user document
       const userDocRef = doc(firestore, 'users', user.uid);
