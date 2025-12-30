@@ -30,9 +30,9 @@ export default function MyAppointmentsPage() {
   const { toast } = useToast();
 
   const appointmentsQuery = useMemoFirebase(() => {
-    if (!firestore || !user?.uid) return null;
+    if (!firestore || !user) return null;
     return query(collection(firestore, 'appointments'), where('userId', '==', user.uid));
-  }, [firestore, user?.uid]);
+  }, [firestore, user]);
 
   const { data: appointments, isLoading: areAppointmentsLoading } = useCollection<Appointment>(appointmentsQuery);
 
@@ -73,6 +73,32 @@ export default function MyAppointmentsPage() {
   };
 
   const isLoading = isUserLoading || areAppointmentsLoading;
+
+  if (isUserLoading) {
+    return (
+      <div className="flex min-h-screen items-center justify-center">
+        <Loader2 className="h-12 w-12 animate-spin text-primary" />
+      </div>
+    );
+  }
+
+  if (!user) {
+    return (
+      <div className="container mx-auto py-12 flex items-center justify-center">
+        <Card className="w-full max-w-lg text-center">
+          <CardHeader>
+            <CardTitle>Acceso Restringido</CardTitle>
+            <CardDescription>Debes iniciar sesión para ver tus citas.</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <Button asChild>
+              <Link href="/dashboard">Ir a Iniciar Sesión</Link>
+            </Button>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
 
   return (
     <div className="container mx-auto py-12">

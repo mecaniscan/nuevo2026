@@ -1,6 +1,6 @@
 'use client';
 
-import { useUser, useFirestore, useMemoFirebase, useAuth, useDoc, useCollection } from '@/firebase';
+import { useUser, useFirestore, useMemoFirebase, useDoc, useCollection } from '@/firebase';
 import { collection, query, where, doc, orderBy, limit, getDocs, writeBatch } from 'firebase/firestore';
 import type { Workshop, Appointment, OilChange, Vehicle } from '@/lib/types';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -25,7 +25,7 @@ import * as z from 'zod';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import React from 'react';
+import React, { useEffect } from 'react';
 import { Progress } from '@/components/ui/progress';
 import { cn } from '@/lib/utils';
 import { initiateEmailSignIn } from '@/firebase/non-blocking-login';
@@ -80,35 +80,42 @@ const VehicleSummaryCard = ({ vehicle, oilChange }: { vehicle: Vehicle, oilChang
 export default function DashboardPage() {
   const { user, isUserLoading } = useUser();
   const firestore = useFirestore();
-  const auth = useAuth();
   const { toast } = useToast();
   const [isLoggingIn, setIsLoggingIn] = React.useState(false);
+  const [authInstance, setAuthInstance] = React.useState<any>(null);
+
+  useEffect(() => {
+    import('firebase/auth').then(authModule => {
+      const auth = authModule.getAuth();
+      setAuthInstance(auth);
+    });
+  }, []);
 
   // --- Data Fetching ---
   const userWorkshopsQuery = useMemoFirebase(() => {
-    if (!firestore || !user?.uid) return null;
+    if (!firestore || !user) return null;
     return query(collection(firestore, 'workshops'), where('ownerId', '==', user.uid));
-  }, [firestore, user?.uid]);
+  }, [firestore, user]);
 
   const { data: workshops, isLoading: isWorkshopsLoading } = useCollection<Workshop>(userWorkshopsQuery);
     
   const oilChangesQuery = useMemoFirebase(() => {
-    if (!firestore || !user?.uid) return null;
+    if (!firestore || !user) return null;
     return query(collection(firestore, `users/${user.uid}/oilChanges`), orderBy('nextChangeMileage', 'asc'), limit(1));
-  }, [firestore, user?.uid]);
+  }, [firestore, user]);
   const { data: nextOilChanges, isLoading: isOilChangesLoading } = useCollection<OilChange>(oilChangesQuery);
   const nextOilChange = nextOilChanges?.[0];
 
   const vehicleQuery = useMemoFirebase(() => {
-    if (!firestore || !user?.uid || !nextOilChange) return null;
+    if (!firestore || !user || !nextOilChange) return null;
     return doc(firestore, `users/${user.uid}/vehicles`, nextOilChange.vehicleId);
-  }, [firestore, user?.uid, nextOilChange]);
+  }, [firestore, user, nextOilChange]);
   const { data: mainVehicle, isLoading: isVehicleLoading } = useDoc<Vehicle>(vehicleQuery);
   
   // --- Event Handlers ---
   const handleLogout = () => {
-    if (auth) {
-      signOut(auth);
+    if (authInstance) {
+      signOut(authInstance);
     }
   };
 
@@ -158,10 +165,10 @@ export default function DashboardPage() {
   });
 
   async function onLoginSubmit(values: z.infer<typeof loginSchema>) {
-    if (!auth) return;
+    if (!authInstance) return;
     setIsLoggingIn(true);
     try {
-      await initiateEmailSignIn(auth, values.email, values.password);
+      await initiateEmailSignIn(authInstance, values.email, values.password);
     } catch (error: any) {
       if (error.code === 'auth/invalid-credential' || error.code === 'auth/wrong-password' || error.code === 'auth/user-not-found') {
         toast({
@@ -378,6 +385,13 @@ export default function DashboardPage() {
                             {hasWorkshop ? <><Wrench className="mr-2 h-4 w-4" />Gestionar mi Taller</> : <><Building className="mr-2 h-4 w-4" />Registrar mi Taller</>}
                         </Link>
                     </Button>
+                     {hasWorkshop && (
+                        <Button asChild variant="outline">
+                            <Link href="/dashboard/edit-services">
+                                <Wrench className="mr-2 h-4 w-4" />Gestionar Servicios
+                            </Link>
+                        </Button>
+                    )}
                     <AlertDialog>
                         <AlertDialogTrigger asChild>
                             <Button variant="destructive">

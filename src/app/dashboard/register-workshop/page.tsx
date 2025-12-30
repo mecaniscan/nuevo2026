@@ -60,15 +60,10 @@ export default function RegisterWorkshopPage() {
   }, [isUserLoading, user, router, toast]);
 
   // Fetch User's Workshops
-  const workshopsCollection = useMemoFirebase(() => {
-    if (!firestore) return null;
-    return collection(firestore, 'workshops');
-  }, [firestore]);
-
   const userWorkshopsQuery = useMemoFirebase(() => {
-    if (!workshopsCollection || !user) return null;
-    return query(workshopsCollection, where('ownerId', '==', user.uid));
-  }, [workshopsCollection, user]);
+    if (!firestore || !user) return null;
+    return query(collection(firestore, 'workshops'), where('ownerId', '==', user.uid));
+  }, [firestore, user]);
 
   const { data: workshops, isLoading: isWorkshopsLoading } = useCollection<Workshop>(userWorkshopsQuery);
 
@@ -153,9 +148,9 @@ export default function RegisterWorkshopPage() {
     }
   }
   
-  const isLoading = isUserLoading || isWorkshopsLoading || (user && user.isAnonymous);
+  const isLoading = isUserLoading || isWorkshopsLoading;
 
-  if (isLoading) {
+  if (isLoading || (user && user.isAnonymous)) {
     return <div className="flex h-screen items-center justify-center"><Loader2 className="w-12 h-12 animate-spin text-primary" /></div>;
   }
 
@@ -169,7 +164,7 @@ export default function RegisterWorkshopPage() {
           </CardHeader>
           <CardContent>
             <Button asChild>
-              <Link href="/">Volver al Inicio</Link>
+              <Link href="/dashboard">Ir a Iniciar Sesión</Link>
             </Button>
           </CardContent>
         </Card>

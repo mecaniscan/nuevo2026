@@ -30,6 +30,7 @@ import { Switch } from '@/components/ui/switch';
 import { Badge } from '@/components/ui/badge';
 import { v4 as uuidv4 } from 'uuid';
 import Image from 'next/image';
+import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from '@/components/ui/carousel';
 
 const MAX_IMAGES = 3;
 const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
@@ -230,6 +231,32 @@ export default function MyVehiclesPage() {
 
   const isLoading = isUserLoading || areVehiclesLoading || isUserDataLoading;
   
+  if (isUserLoading) {
+    return (
+      <div className="flex min-h-screen items-center justify-center">
+        <Loader2 className="h-12 w-12 animate-spin text-primary" />
+      </div>
+    );
+  }
+
+  if (!user) {
+    return (
+      <div className="container mx-auto py-12 flex items-center justify-center">
+        <Card className="w-full max-w-lg text-center">
+          <CardHeader>
+            <CardTitle>Acceso Restringido</CardTitle>
+            <CardDescription>Debes iniciar sesión para gestionar tus vehículos.</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <Button asChild>
+              <Link href="/dashboard">Ir a Iniciar Sesión</Link>
+            </Button>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
   return (
     <div className="container mx-auto py-12">
       <div className="max-w-6xl mx-auto space-y-8">

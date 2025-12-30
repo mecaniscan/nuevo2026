@@ -61,15 +61,10 @@ export default function EditWorkshopPage() {
   }, [isUserLoading, user, router, toast]);
 
   // Fetch User's Workshop
-  const workshopsCollection = useMemoFirebase(() => {
-    if (!firestore) return null;
-    return collection(firestore, 'workshops');
-  }, [firestore]);
-
   const userWorkshopsQuery = useMemoFirebase(() => {
-    if (!workshopsCollection || !user) return null;
-    return query(workshopsCollection, where('ownerId', '==', user.uid));
-  }, [workshopsCollection, user]);
+    if (!firestore || !user) return null;
+    return query(collection(firestore, 'workshops'), where('ownerId', '==', user.uid));
+  }, [firestore, user]);
 
   const { data: workshops, isLoading: isWorkshopsLoading } = useCollection<Workshop>(userWorkshopsQuery);
   const workshop = workshops?.[0];
@@ -157,7 +152,9 @@ export default function EditWorkshopPage() {
     });
   }
   
-  if (isUserLoading || isWorkshopsLoading || (user && user.isAnonymous)) {
+  const isLoading = isUserLoading || isWorkshopsLoading;
+
+  if (isLoading || (user && user.isAnonymous)) {
     return <div className="flex h-screen items-center justify-center"><Loader2 className="w-12 h-12 animate-spin text-primary" /></div>;
   }
 
@@ -171,7 +168,7 @@ export default function EditWorkshopPage() {
           </CardHeader>
           <CardContent>
             <Button asChild>
-              <Link href="/">Volver al Inicio</Link>
+              <Link href="/dashboard">Ir a Iniciar Sesión</Link>
             </Button>
           </CardContent>
         </Card>

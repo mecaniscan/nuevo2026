@@ -38,15 +38,10 @@ export default function EditServicesPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   
   // Fetch User's Workshop
-  const workshopsCollection = useMemoFirebase(() => {
-    if (!firestore) return null;
-    return collection(firestore, 'workshops');
-  }, [firestore]);
-
   const userWorkshopsQuery = useMemoFirebase(() => {
-    if (!workshopsCollection || !user) return null;
-    return query(workshopsCollection, where('ownerId', '==', user.uid));
-  }, [workshopsCollection, user]);
+    if (!firestore || !user) return null;
+    return query(collection(firestore, 'workshops'), where('ownerId', '==', user.uid));
+  }, [firestore, user]);
 
   const { data: workshops, isLoading: isWorkshopsLoading } = useCollection<Workshop>(userWorkshopsQuery);
   const workshop = workshops?.[0];
@@ -132,7 +127,7 @@ export default function EditServicesPage() {
       <div className="container mx-auto py-12 flex items-center justify-center">
         <Card className="w-full max-w-lg">
           <CardHeader><CardTitle>Acceso Restringido</CardTitle></CardHeader>
-          <CardContent><Button asChild><Link href="/">Volver al Inicio</Link></Button></CardContent>
+          <CardContent><Button asChild><Link href="/dashboard">Ir a Iniciar Sesión</Link></Button></CardContent>
         </Card>
       </div>
     );

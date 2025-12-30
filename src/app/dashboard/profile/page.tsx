@@ -117,9 +117,9 @@ export default function ProfilePage() {
     });
   }
   
-  const isLoading = isUserLoading || isUserDataLoading || (user && user.isAnonymous);
+  const isLoading = isUserLoading || isUserDataLoading;
 
-  if (isLoading) {
+  if (isLoading || (user && user.isAnonymous)) {
     return <div className="flex h-screen items-center justify-center"><Loader2 className="w-12 h-12 animate-spin text-primary" /></div>;
   }
 

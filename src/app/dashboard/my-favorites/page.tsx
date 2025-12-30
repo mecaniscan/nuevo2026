@@ -26,15 +26,10 @@ export default function MyFavoritesPage() {
   const firestore = useFirestore();
   const { toast } = useToast();
 
-  const favoritesCollection = useMemoFirebase(() => {
-    if (!firestore || !user) return null;
-    return collection(firestore, `users/${user.uid}/favorites`);
-  }, [firestore, user]);
-
   const favoritesQuery = useMemoFirebase(() => {
-    if (!favoritesCollection) return null;
-    return query(favoritesCollection, orderBy('addedAt', 'desc'));
-  }, [favoritesCollection]);
+    if (!firestore || !user) return null;
+    return query(collection(firestore, `users/${user.uid}/favorites`), orderBy('addedAt', 'desc'));
+  }, [firestore, user]);
 
   const { data: favorites, isLoading: areFavoritesLoading } = useCollection<FavoriteWorkshop>(favoritesQuery);
 
@@ -52,6 +47,32 @@ export default function MyFavoritesPage() {
   };
 
   const isLoading = isUserLoading || areFavoritesLoading;
+
+   if (isUserLoading) {
+    return (
+      <div className="flex min-h-screen items-center justify-center">
+        <Loader2 className="h-12 w-12 animate-spin text-primary" />
+      </div>
+    );
+  }
+
+  if (!user) {
+    return (
+      <div className="container mx-auto py-12 flex items-center justify-center">
+        <Card className="w-full max-w-lg text-center">
+          <CardHeader>
+            <CardTitle>Acceso Restringido</CardTitle>
+            <CardDescription>Debes iniciar sesión para ver tus favoritos.</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <Button asChild>
+              <Link href="/dashboard">Ir a Iniciar Sesión</Link>
+            </Button>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
 
   return (
     <div className="container mx-auto py-12">
