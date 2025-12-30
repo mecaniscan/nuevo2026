@@ -1,6 +1,6 @@
 'use client';
 
-import { useUser, useFirestore, useMemoFirebase, deleteDocumentNonBlocking, useDoc, useCollection } from '@/firebase';
+import { useUser, useFirestore, useMemoFirebase, useAuth, useDoc, useCollection } from '@/firebase';
 import { collection, query, where, doc, orderBy, limit, getDocs, writeBatch } from 'firebase/firestore';
 import type { Workshop, Appointment, OilChange, Vehicle } from '@/lib/types';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -80,13 +80,7 @@ const VehicleSummaryCard = ({ vehicle, oilChange }: { vehicle: Vehicle, oilChang
 export default function DashboardPage() {
   const { user, isUserLoading } = useUser();
   const firestore = useFirestore();
-  const auth = useMemoFirebase<Auth | null>(() => {
-    try {
-        return useUser().user ? (useUser() as any).auth : null;
-    } catch {
-        return null;
-    }
-  }, [useUser().user]);
+  const auth = useAuth();
   const { toast } = useToast();
   const [isLoggingIn, setIsLoggingIn] = React.useState(false);
 
