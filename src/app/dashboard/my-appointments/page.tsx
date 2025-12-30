@@ -29,15 +29,10 @@ export default function MyAppointmentsPage() {
   const firestore = useFirestore();
   const { toast } = useToast();
 
-  const appointmentsCollection = useMemoFirebase(() => {
-    if (!firestore) return null;
-    return collection(firestore, `appointments`);
-  }, [firestore]);
-
   const appointmentsQuery = useMemoFirebase(() => {
-    if (!appointmentsCollection || !user) return null;
-    return query(appointmentsCollection, where('userId', '==', user.uid));
-  }, [appointmentsCollection, user]);
+    if (!firestore || !user?.uid) return null;
+    return query(collection(firestore, 'appointments'), where('userId', '==', user.uid));
+  }, [firestore, user?.uid]);
 
   const { data: appointments, isLoading: areAppointmentsLoading } = useCollection<Appointment>(appointmentsQuery);
 
