@@ -60,6 +60,7 @@ const vehicleSchema = z.object({
     .refine((files) => !files || files.length === 0 || files.length <= MAX_IMAGES, `No puedes subir más de ${MAX_IMAGES} imágenes.`)
     .refine((files) => !files || Array.from(files).every((file: any) => file.size <= MAX_FILE_SIZE), `Cada imagen no debe superar los 5MB.`)
     .refine((files) => !files || Array.from(files).every((file: any) => ACCEPTED_IMAGE_TYPES.includes(file.type)), "Solo se aceptan formatos .jpg, .jpeg, .png y .webp.")
+    .nullable()
     .optional(),
 });
 
@@ -133,7 +134,6 @@ export default function MyVehiclesPage() {
       const existingVehicle = editingVehicleId ? vehicles?.find(v => v.id === editingVehicleId) : undefined;
       let finalImageUrls = existingVehicle?.imageUrls || [];
   
-      // Only upload new images if they are provided, replacing old ones.
       if (values.images && values.images.length > 0) {
         finalImageUrls = await uploadImages(values.images);
       }
