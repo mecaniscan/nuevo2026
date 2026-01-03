@@ -31,7 +31,7 @@ export default function MyAppointmentsPage() {
   const { toast } = useToast();
 
   const appointmentsQuery = useMemoFirebase(() => {
-    if (!firestore || !user) return null;
+    if (!firestore || !user?.uid) return null; // Ensure user and user.uid are available
     return query(collection(firestore, 'appointments'), where('userId', '==', user.uid));
   }, [firestore, user]);
 
@@ -44,19 +44,11 @@ export default function MyAppointmentsPage() {
     }
     const docRef = doc(firestore, `appointments`, appointmentId);
     
-    // Use a try-catch or promise-based approach for non-blocking operations if they return promises
-    try {
-        deleteDocumentNonBlocking(docRef);
-        toast({
-          title: 'Cita Cancelada',
-          description: 'La cita ha sido eliminada de tu agenda.',
-        });
-    } catch (error) {
-        errorEmitter.emit('permission-error', new FirestorePermissionError({
-            path: docRef.path,
-            operation: 'delete'
-        }));
-    }
+    deleteDocumentNonBlocking(docRef);
+    toast({
+      title: 'Cita Cancelada',
+      description: 'La cita ha sido eliminada de tu agenda.',
+    });
   };
 
   const formatDate = (dateString: string) => {
@@ -84,7 +76,7 @@ export default function MyAppointmentsPage() {
 
   const isLoading = isUserLoading || areAppointmentsLoading;
 
-  if (isLoading) {
+  if (isLoading && !appointments) { // Show loader only on initial load
     return (
       <div className="flex min-h-screen items-center justify-center">
         <Loader2 className="h-12 w-12 animate-spin text-primary" />
@@ -92,7 +84,7 @@ export default function MyAppointmentsPage() {
     );
   }
 
-  if (!user) {
+  if (!user && !isUserLoading) {
     return (
       <div className="container mx-auto py-12 flex items-center justify-center">
         <Card className="w-full max-w-lg text-center">
