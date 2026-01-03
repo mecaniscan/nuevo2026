@@ -72,6 +72,7 @@ export default function MyVehiclesPage() {
   const { toast } = useToast();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [editingVehicleId, setEditingVehicleId] = useState<string | null>(null);
+  const [imagePreviews, setImagePreviews] = useState<string[]>([]);
 
   const vehiclesCollectionRef = useMemoFirebase(() => {
     if (!firestore || !user) return null;
@@ -108,6 +109,27 @@ export default function MyVehiclesPage() {
     },
   });
 
+  const imagesFieldValue = form.watch('images');
+
+  useEffect(() => {
+    let urls: string[] = [];
+    if (imagesFieldValue && imagesFieldValue.length > 0) {
+      urls = Array.from(imagesFieldValue).map(file => URL.createObjectURL(file as File));
+      setImagePreviews(urls);
+    } else {
+      const editingVehicle = editingVehicleId ? vehicles?.find(v => v.id === editingVehicleId) : null;
+      if (editingVehicle?.imageUrls) {
+        setImagePreviews(editingVehicle.imageUrls);
+      } else {
+        setImagePreviews([]);
+      }
+    }
+
+    return () => {
+      urls.forEach(url => URL.revokeObjectURL(url));
+    };
+  }, [imagesFieldValue, editingVehicleId, vehicles]);
+
   const uploadImages = async (files: FileList): Promise<string[]> => {
     if (!storage || !user) {
         throw new Error("Storage service not available.");
@@ -132,8 +154,9 @@ export default function MyVehiclesPage() {
   
     try {
       const existingVehicle = editingVehicleId ? vehicles?.find(v => v.id === editingVehicleId) : undefined;
-      let finalImageUrls = existingVehicle?.imageUrls || [];
+      let finalImageUrls: string[] = existingVehicle?.imageUrls || [];
   
+      // If new images are uploaded, process them. Otherwise, keep the existing ones.
       if (values.images && values.images.length > 0) {
         finalImageUrls = await uploadImages(values.images);
       }
@@ -226,6 +249,7 @@ export default function MyVehiclesPage() {
       country: '',
       isForSale: false,
     });
+    setImagePreviews([]);
   }
 
 
@@ -394,6 +418,18 @@ export default function MyVehiclesPage() {
                           </FormItem>
                         )}
                       />
+                      {imagePreviews.length > 0 && (
+                        <div className="mt-4">
+                            <FormLabel>Vista Previa de Imágenes</FormLabel>
+                            <div className="mt-2 grid grid-cols-2 sm:grid-cols-3 gap-4">
+                                {imagePreviews.map((preview, index) => (
+                                    <div key={index} className="relative aspect-video w-full overflow-hidden rounded-md">
+                                        <Image src={preview} alt={`Vista previa de imagen ${index + 1}`} fill className="object-cover"/>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                      )}
                   </div>
                 </div>
 
