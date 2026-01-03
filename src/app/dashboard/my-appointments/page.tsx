@@ -1,6 +1,7 @@
 'use client';
 import React from 'react';
-import { useUser, useFirestore, useMemoFirebase, deleteDocumentNonBlocking, useCollection } from '@/firebase';
+import { useUser, useFirestore, useMemoFirebase, useCollection, FirestorePermissionError, errorEmitter } from '@/firebase';
+import { deleteDocumentNonBlocking } from '@/firebase/non-blocking-updates';
 import { collection, query, where, Timestamp, doc } from 'firebase/firestore';
 import type { Appointment } from '@/lib/types';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -42,11 +43,20 @@ export default function MyAppointmentsPage() {
       return;
     }
     const docRef = doc(firestore, `appointments`, appointmentId);
-    deleteDocumentNonBlocking(docRef);
-    toast({
-      title: 'Cita Cancelada',
-      description: 'La cita ha sido eliminada de tu agenda.',
-    });
+    
+    // Use a try-catch or promise-based approach for non-blocking operations if they return promises
+    try {
+        deleteDocumentNonBlocking(docRef);
+        toast({
+          title: 'Cita Cancelada',
+          description: 'La cita ha sido eliminada de tu agenda.',
+        });
+    } catch (error) {
+        errorEmitter.emit('permission-error', new FirestorePermissionError({
+            path: docRef.path,
+            operation: 'delete'
+        }));
+    }
   };
 
   const formatDate = (dateString: string) => {
@@ -74,7 +84,7 @@ export default function MyAppointmentsPage() {
 
   const isLoading = isUserLoading || areAppointmentsLoading;
 
-  if (isUserLoading) {
+  if (isLoading) {
     return (
       <div className="flex min-h-screen items-center justify-center">
         <Loader2 className="h-12 w-12 animate-spin text-primary" />
