@@ -6,7 +6,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { useParams, useRouter } from 'next/navigation';
 import Image from 'next/image';
-import { useDoc, useUser, useFirestore, useMemoFirebase, useCollection, FirestorePermissionError, errorEmitter } from '@/firebase';
+import { useDoc, useUser, useFirestore, useMemoFirebase, useCollection, FirestorePermissionError, errorEmitter, setDocumentNonBlocking } from '@/firebase';
 import { doc, collection, query, serverTimestamp, Timestamp, writeBatch, deleteDoc, setDoc, addDoc } from 'firebase/firestore';
 import type { Workshop, Appointment, Service, Review, FavoriteWorkshop } from '@/lib/types';
 import { Loader2, MapPin, ScanLine, Star, Calendar as CalendarIcon, Wrench, MessageSquare, Send, Heart, Phone, Car } from 'lucide-react';
@@ -179,7 +179,7 @@ export default function WorkshopDetailPage() {
         };
         
         try {
-            await setDoc(appointmentRef, appointmentData);
+            setDocumentNonBlocking(appointmentRef, appointmentData, { merge: false });
             
             const date = format(values.appointmentDateTime, "eeee, dd 'de' MMMM 'de' yyyy", { locale: es });
             const message = `Hola ${workshop.name}, me gustaría agendar una cita para el día ${date}. El motivo es: "${values.description}". ¿Tienen disponibilidad?`;
