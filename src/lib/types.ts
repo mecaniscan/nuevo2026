@@ -24,6 +24,8 @@ export type Appointment = {
     workshopId: string;
     workshopName?: string; // Denormalized for easy display
     userId: string;
+    vehicleId: string; // Added field
+    vehicleName: string; // Added field
     appointmentDateTime: string;
     description: string;
     status: 'scheduled' | 'completed' | 'cancelled';

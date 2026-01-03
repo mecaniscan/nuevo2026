@@ -8,7 +8,7 @@ import { useParams, useRouter } from 'next/navigation';
 import Image from 'next/image';
 import { useDoc, useUser, useFirestore, useMemoFirebase, useCollection, FirestorePermissionError, errorEmitter, setDocumentNonBlocking } from '@/firebase';
 import { doc, collection, query, serverTimestamp, Timestamp, writeBatch, deleteDoc, setDoc, addDoc } from 'firebase/firestore';
-import type { Workshop, Appointment, Service, Review, FavoriteWorkshop } from '@/lib/types';
+import type { Workshop, Appointment, Service, Review, FavoriteWorkshop, Vehicle } from '@/lib/types';
 import { Loader2, MapPin, ScanLine, Star, Calendar as CalendarIcon, Wrench, MessageSquare, Send, Heart, Phone, Car } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -22,8 +22,10 @@ import { format } from 'date-fns';
 import { useToast } from '@/hooks/use-toast';
 import Link from 'next/link';
 import { es } from 'date-fns/locale';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 const appointmentSchema = z.object({
+    vehicleId: z.string({ required_error: 'Debes seleccionar un vehículo.' }),
     appointmentDateTime: z.date({
         required_error: 'Se requiere una fecha para la cita.',
     }),
@@ -72,6 +74,13 @@ export default function WorkshopDetailPage() {
         return collection(firestore, `workshops/${workshopId}/reviews`);
       }, [firestore, workshopId]);
     const { data: reviews, isLoading: areReviewsLoading } = useCollection<Review>(reviewsCollection);
+
+    // Fetch User's Vehicles
+    const vehiclesCollectionRef = useMemoFirebase(() => {
+        if (!firestore || !user) return null;
+        return collection(firestore, `users/${user.uid}/vehicles`);
+    }, [firestore, user]);
+    const { data: vehicles, isLoading: areVehiclesLoading } = useCollection<Vehicle>(vehiclesCollectionRef);
 
     const userHasReviewed = useMemo(() => {
         if (!user || !reviews) return false;
@@ -158,12 +167,19 @@ export default function WorkshopDetailPage() {
 
 
     async function onAppointmentSubmit(values: z.infer<typeof appointmentSchema>) {
-        if (!workshop || !workshop.whatsappNumber || !user || !firestore) {
+        if (!workshop || !workshop.whatsappNumber || !user || !firestore || !vehicles) {
             toast({ variant: 'destructive', title: 'Error', description: 'Falta información para agendar la cita.' });
             return;
         }
 
         setIsSubmitting(true);
+        
+        const selectedVehicle = vehicles.find(v => v.id === values.vehicleId);
+        if (!selectedVehicle) {
+            toast({ variant: 'destructive', title: 'Error', description: 'Vehículo seleccionado no válido.' });
+            setIsSubmitting(false);
+            return;
+        }
 
         const appointmentCollectionRef = collection(firestore, `appointments`);
         const appointmentRef = doc(appointmentCollectionRef);
@@ -173,6 +189,8 @@ export default function WorkshopDetailPage() {
           workshopId: workshop.id,
           workshopName: workshop.name,
           userId: user.uid,
+          vehicleId: selectedVehicle.id,
+          vehicleName: `${selectedVehicle.brand} ${selectedVehicle.model}`,
           appointmentDateTime: values.appointmentDateTime.toISOString(),
           description: values.description,
           status: 'scheduled',
@@ -182,7 +200,7 @@ export default function WorkshopDetailPage() {
             setDocumentNonBlocking(appointmentRef, appointmentData, { merge: false });
             
             const date = format(values.appointmentDateTime, "eeee, dd 'de' MMMM 'de' yyyy", { locale: es });
-            const message = `Hola ${workshop.name}, me gustaría agendar una cita para el día ${date}. El motivo es: "${values.description}". ¿Tienen disponibilidad?`;
+            const message = `Hola ${workshop.name}, me gustaría agendar una cita para mi ${selectedVehicle.brand} ${selectedVehicle.model} el día ${date}. El motivo es: "${values.description}". ¿Tienen disponibilidad?`;
             const whatsappUrl = `https://wa.me/${workshop.whatsappNumber.replace(/\D/g, '')}?text=${encodeURIComponent(message)}`;
             
             window.open(whatsappUrl, '_blank');
@@ -252,7 +270,7 @@ export default function WorkshopDetailPage() {
         return format(date, 'dd MMM yyyy', { locale: es });
     };
 
-    if (isWorkshopLoading || isUserLoading || isServicesLoading || areReviewsLoading || isFavoriteLoading) {
+    if (isWorkshopLoading || isUserLoading || isServicesLoading || areReviewsLoading || isFavoriteLoading || areVehiclesLoading) {
         return (
             <div className="flex min-h-screen items-center justify-center">
                 <Loader2 className="h-16 w-16 animate-spin text-primary" />
@@ -445,72 +463,104 @@ export default function WorkshopDetailPage() {
                     </CardHeader>
                     <CardContent>
                         {user ? (
-                        <Form {...appointmentForm}>
-                            <form onSubmit={appointmentForm.handleSubmit(onAppointmentSubmit)} className="space-y-6">
-                                 <FormField
-                                    control={appointmentForm.control}
-                                    name="appointmentDateTime"
-                                    render={({ field }) => (
-                                        <FormItem className="flex flex-col">
-                                        <FormLabel>Fecha de la Cita</FormLabel>
-                                        <Popover>
-                                            <PopoverTrigger asChild>
-                                            <FormControl>
-                                                <Button
-                                                variant={"outline"}
-                                                className={cn(
-                                                    "w-full pl-3 text-left font-normal",
-                                                    !field.value && "text-muted-foreground"
-                                                )}
-                                                >
-                                                {field.value ? (
-                                                    format(field.value, "PPP", { locale: es })
-                                                ) : (
-                                                    <span>Elige una fecha</span>
-                                                )}
-                                                <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
-                                                </Button>
-                                            </FormControl>
-                                            </PopoverTrigger>
-                                            <PopoverContent className="w-auto p-0" align="start">
-                                            <Calendar
-                                                mode="single"
-                                                selected={field.value}
-                                                onSelect={field.onChange}
-                                                disabled={(date) =>
-                                                    date < new Date(new Date().toDateString())
-                                                }
-                                                initialFocus
-                                            />
-                                            </PopoverContent>
-                                        </Popover>
-                                        <FormMessage />
-                                        </FormItem>
-                                    )}
-                                />
-                                <FormField
-                                    control={appointmentForm.control}
-                                    name="description"
-                                    render={({ field }) => (
-                                    <FormItem>
-                                        <FormLabel>Describe el servicio que necesitas</FormLabel>
-                                        <FormControl>
-                                        <Textarea placeholder="Ej: El auto hace un ruido extraño al frenar, necesito una revisión de frenos." {...field} />
-                                        </FormControl>
-                                        <FormMessage />
-                                    </FormItem>
-                                    )}
-                                />
-                                <Button type="submit" disabled={isSubmitting} className="w-full">
-                                    {isSubmitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <WhatsappIcon />}
-                                    Contactar por WhatsApp para Agendar
-                                </Button>
-                            </form>
-                        </Form>
+                            (!vehicles || vehicles.length === 0) ? (
+                                <div className="flex flex-col items-center justify-center text-center space-y-4 p-8 border-2 border-dashed rounded-lg">
+                                    <p className="text-muted-foreground">Debes tener al menos un vehículo registrado para agendar una cita.</p>
+                                    <Button asChild>
+                                        <Link href="/dashboard/my-vehicles">Registrar mi Vehículo</Link>
+                                    </Button>
+                                </div>
+                            ) : (
+                                <Form {...appointmentForm}>
+                                    <form onSubmit={appointmentForm.handleSubmit(onAppointmentSubmit)} className="space-y-6">
+                                        <FormField
+                                            control={appointmentForm.control}
+                                            name="vehicleId"
+                                            render={({ field }) => (
+                                                <FormItem>
+                                                <FormLabel>Selecciona tu Vehículo</FormLabel>
+                                                <Select onValueChange={field.onChange} defaultValue={field.value}>
+                                                    <FormControl>
+                                                    <SelectTrigger>
+                                                        <SelectValue placeholder="Elige tu vehículo" />
+                                                    </SelectTrigger>
+                                                    </FormControl>
+                                                    <SelectContent>
+                                                    {vehicles.map(vehicle => (
+                                                        <SelectItem key={vehicle.id} value={vehicle.id}>
+                                                        {vehicle.brand} {vehicle.model} ({vehicle.year})
+                                                        </SelectItem>
+                                                    ))}
+                                                    </SelectContent>
+                                                </Select>
+                                                <FormMessage />
+                                                </FormItem>
+                                            )}
+                                        />
+                                        <FormField
+                                            control={appointmentForm.control}
+                                            name="appointmentDateTime"
+                                            render={({ field }) => (
+                                                <FormItem className="flex flex-col">
+                                                <FormLabel>Fecha de la Cita</FormLabel>
+                                                <Popover>
+                                                    <PopoverTrigger asChild>
+                                                    <FormControl>
+                                                        <Button
+                                                        variant={"outline"}
+                                                        className={cn(
+                                                            "w-full pl-3 text-left font-normal",
+                                                            !field.value && "text-muted-foreground"
+                                                        )}
+                                                        >
+                                                        {field.value ? (
+                                                            format(field.value, "PPP", { locale: es })
+                                                        ) : (
+                                                            <span>Elige una fecha</span>
+                                                        )}
+                                                        <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
+                                                        </Button>
+                                                    </FormControl>
+                                                    </PopoverTrigger>
+                                                    <PopoverContent className="w-auto p-0" align="start">
+                                                    <Calendar
+                                                        mode="single"
+                                                        selected={field.value}
+                                                        onSelect={field.onChange}
+                                                        disabled={(date) =>
+                                                            date < new Date(new Date().toDateString())
+                                                        }
+                                                        initialFocus
+                                                    />
+                                                    </PopoverContent>
+                                                </Popover>
+                                                <FormMessage />
+                                                </FormItem>
+                                            )}
+                                        />
+                                        <FormField
+                                            control={appointmentForm.control}
+                                            name="description"
+                                            render={({ field }) => (
+                                            <FormItem>
+                                                <FormLabel>Describe el servicio que necesitas</FormLabel>
+                                                <FormControl>
+                                                <Textarea placeholder="Ej: El auto hace un ruido extraño al frenar, necesito una revisión de frenos." {...field} />
+                                                </FormControl>
+                                                <FormMessage />
+                                            </FormItem>
+                                            )}
+                                        />
+                                        <Button type="submit" disabled={isSubmitting} className="w-full">
+                                            {isSubmitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <WhatsappIcon />}
+                                            Contactar por WhatsApp para Agendar
+                                        </Button>
+                                    </form>
+                                </Form>
+                            )
                         ) : (
                             <div className="flex flex-col items-center justify-center text-center space-y-4 p-8 border-2 border-dashed rounded-lg">
                                 <p className="text-muted-foreground">Debes iniciar sesión para poder agendar una cita.</p>
-
                                 <Button onClick={handleLogin}>Iniciar Sesión</Button>
                             </div>
                         )}
