@@ -1,8 +1,8 @@
 'use client';
 
-import { useUser, useFirestore, useMemoFirebase, useDoc, useCollection } from '@/firebase';
-import { collection, query, where, doc, orderBy, limit, getDocs, writeBatch } from 'firebase/firestore';
-import type { Workshop, Appointment, OilChange, Vehicle } from '@/lib/types';
+import { useUser, useFirestore, useMemoFirebase, useCollection } from '@/firebase';
+import { collection, query, where, doc, getDocs, writeBatch } from 'firebase/firestore';
+import type { Workshop } from '@/lib/types';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Loader2, Calendar, Wrench, Trash2, Settings, Pencil, LogOut, User as UserIcon, Lock, Building, ArrowRight, Droplets, Car, Gauge, ScanLine, Heart } from 'lucide-react';
@@ -25,9 +25,7 @@ import * as z from 'zod';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import React, { useEffect } from 'react';
-import { Progress } from '@/components/ui/progress';
-import { cn } from '@/lib/utils';
+import React, 'use client';
 import { initiateEmailSignIn } from '@/firebase/non-blocking-login';
 import { signOut } from 'firebase/auth';
 
@@ -37,46 +35,6 @@ const loginSchema = z.object({
   password: z.string().min(1, 'La contraseña es obligatoria.'),
 });
 
-const VehicleSummaryCard = ({ vehicle, oilChange }: { vehicle: Vehicle, oilChange: OilChange }) => {
-    const mileageProgress = oilChange.nextChangeMileage > 0 
-        ? (vehicle.currentMileage / oilChange.nextChangeMileage) * 100 
-        : 0;
-
-    return (
-        <Card className="bg-gradient-to-br from-primary/10 to-card">
-            <CardHeader>
-                <CardTitle className="flex items-center gap-2 text-xl font-bold text-primary">
-                    <Car />
-                    {vehicle.brand} {vehicle.model} ({vehicle.year})
-                </CardTitle>
-                <CardDescription>Resumen de tu vehículo principal</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-                <div className="flex items-center justify-between p-3 rounded-lg bg-card">
-                    <div className='flex items-center gap-2'>
-                        <Gauge className="text-primary"/>
-                        <span className="font-semibold">Kilometraje Actual</span>
-                    </div>
-                    <span className="font-bold text-lg">{vehicle.currentMileage?.toLocaleString() ?? 'N/A'} km</span>
-                </div>
-                <div className="space-y-2">
-                    <div className="flex justify-between items-baseline">
-                         <div className='flex items-center gap-2'>
-                            <Droplets className="text-primary"/>
-                            <span className="text-sm font-medium">Próximo Cambio de Aceite</span>
-                        </div>
-                        <span className="text-sm font-semibold">{oilChange.nextChangeMileage.toLocaleString()} km</span>
-                    </div>
-                    <Progress value={mileageProgress} />
-                    <p className="text-xs text-muted-foreground text-right">
-                       Faltan {(oilChange.nextChangeMileage - vehicle.currentMileage).toLocaleString()} km
-                    </p>
-                </div>
-            </CardContent>
-        </Card>
-    );
-};
-
 export default function DashboardPage() {
   const { user, isUserLoading } = useUser();
   const firestore = useFirestore();
@@ -84,7 +42,7 @@ export default function DashboardPage() {
   const [isLoggingIn, setIsLoggingIn] = React.useState(false);
   const [authInstance, setAuthInstance] = React.useState<any>(null);
 
-  useEffect(() => {
+  React.useEffect(() => {
     import('firebase/auth').then(authModule => {
       const auth = authModule.getAuth();
       setAuthInstance(auth);
@@ -99,19 +57,6 @@ export default function DashboardPage() {
 
   const { data: workshops, isLoading: isWorkshopsLoading } = useCollection<Workshop>(userWorkshopsQuery);
     
-  const oilChangesQuery = useMemoFirebase(() => {
-    if (!firestore || !user) return null;
-    return query(collection(firestore, `users/${user.uid}/oilChanges`), orderBy('nextChangeMileage', 'asc'), limit(1));
-  }, [firestore, user]);
-  const { data: nextOilChanges, isLoading: isOilChangesLoading } = useCollection<OilChange>(oilChangesQuery);
-  const nextOilChange = nextOilChanges?.[0];
-
-  const vehicleQuery = useMemoFirebase(() => {
-    if (!firestore || !user || !nextOilChange) return null;
-    return doc(firestore, `users/${user.uid}/vehicles`, nextOilChange.vehicleId);
-  }, [firestore, user, nextOilChange]);
-  const { data: mainVehicle, isLoading: isVehicleLoading } = useDoc<Vehicle>(vehicleQuery);
-  
   // --- Event Handlers ---
   const handleLogout = () => {
     if (authInstance) {
@@ -189,8 +134,7 @@ export default function DashboardPage() {
   }
 
   // --- Loading and Auth States ---
-  const isLoading = isUserLoading || isWorkshopsLoading || isOilChangesLoading || isVehicleLoading;
-  if (isUserLoading) {
+  if (isUserLoading || isWorkshopsLoading) {
     return (
       <div className="flex min-h-screen items-center justify-center">
         <Loader2 className="h-12 w-12 animate-spin text-primary" />
@@ -300,21 +244,17 @@ export default function DashboardPage() {
       
       <div className="grid gap-6 lg:grid-cols-3">
         <div className="lg:col-span-3">
-          {mainVehicle && nextOilChange ? (
-              <VehicleSummaryCard vehicle={mainVehicle as Vehicle} oilChange={nextOilChange} />
-          ) : (
-             <Card className="flex flex-col items-center justify-center p-8 text-center">
+            <Card className="flex flex-col items-center justify-center p-8 text-center bg-gradient-to-br from-primary/10 to-card">
                 <CardHeader>
                     <CardTitle>Comienza a registrar tu actividad</CardTitle>
-                    <CardDescription>Añade tu primer cambio de aceite para ver un resumen aquí.</CardDescription>
+                    <CardDescription>Añade tus vehículos y lleva un control de su mantenimiento, como los cambios de aceite.</CardDescription>
                 </CardHeader>
                 <CardContent>
                      <Button asChild>
-                        <Link href="/dashboard/oil-changes">Registro de cambio aceite</Link>
+                        <Link href="/dashboard/my-vehicles">Añadir mis Vehículos</Link>
                     </Button>
                 </CardContent>
             </Card>
-          )}
         </div>
 
         {/* Citas Section */}
@@ -420,3 +360,5 @@ export default function DashboardPage() {
     </div>
   );
 }
+
+    
