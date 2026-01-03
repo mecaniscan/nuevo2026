@@ -133,6 +133,7 @@ export default function MyVehiclesPage() {
       const existingVehicle = editingVehicleId ? vehicles?.find(v => v.id === editingVehicleId) : undefined;
       let finalImageUrls = existingVehicle?.imageUrls || [];
   
+      // Only upload new images if they are provided
       if (values.images && values.images.length > 0) {
         finalImageUrls = await uploadImages(values.images);
       }
