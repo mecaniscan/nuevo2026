@@ -133,7 +133,7 @@ export default function MyVehiclesPage() {
       const existingVehicle = editingVehicleId ? vehicles?.find(v => v.id === editingVehicleId) : undefined;
       let finalImageUrls = existingVehicle?.imageUrls || [];
   
-      // Only upload new images if they are provided
+      // Only upload new images if they are provided, replacing old ones.
       if (values.images && values.images.length > 0) {
         finalImageUrls = await uploadImages(values.images);
       }
@@ -141,8 +141,7 @@ export default function MyVehiclesPage() {
       const vehicleId = editingVehicleId || doc(vehiclesCollectionRef).id;
       const { images, ...formValues } = values;
   
-      const vehiclePayload: Omit<Vehicle, 'certificateNumber' | 'certificatePdfUrl'> = {
-        ...existingVehicle,
+      const vehiclePayload: Vehicle = {
         id: vehicleId,
         userId: user.uid,
         ...formValues,
