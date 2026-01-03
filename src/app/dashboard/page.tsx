@@ -1,6 +1,6 @@
 'use client';
 
-import { useUser, useFirestore, useMemoFirebase, useCollection } from '@/firebase';
+import { useUser, useFirestore, useMemoFirebase, useCollection, useAuth } from '@/firebase';
 import { collection, query, where, doc, getDocs, writeBatch } from 'firebase/firestore';
 import type { Workshop } from '@/lib/types';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -25,9 +25,10 @@ import * as z from 'zod';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import React, 'use client';
+import React, { useState } from 'react';
 import { initiateEmailSignIn } from '@/firebase/non-blocking-login';
 import { signOut } from 'firebase/auth';
+import { cn } from '@/lib/utils';
 
 
 const loginSchema = z.object({
@@ -39,8 +40,8 @@ export default function DashboardPage() {
   const { user, isUserLoading } = useUser();
   const firestore = useFirestore();
   const { toast } = useToast();
-  const [isLoggingIn, setIsLoggingIn] = React.useState(false);
-  const [authInstance, setAuthInstance] = React.useState<any>(null);
+  const [isLoggingIn, setIsLoggingIn] = useState(false);
+  const [authInstance, setAuthInstance] = useState<any>(null);
 
   React.useEffect(() => {
     import('firebase/auth').then(authModule => {
@@ -51,7 +52,7 @@ export default function DashboardPage() {
 
   // --- Data Fetching ---
   const userWorkshopsQuery = useMemoFirebase(() => {
-    if (!firestore || !user) return null;
+    if (!firestore || !user?.uid) return null;
     return query(collection(firestore, 'workshops'), where('ownerId', '==', user.uid));
   }, [firestore, user]);
 
@@ -360,5 +361,3 @@ export default function DashboardPage() {
     </div>
   );
 }
-
-    
