@@ -1,24 +1,10 @@
+
 rules_version = '2';
 
 service firebase.storage {
   match /b/{bucket}/o {
-
-    // Helper Functions
-    function isSignedIn() {
-      return request.auth != null;
-    }
-
-    function isOwner(userId) {
-      return isSignedIn() && request.auth.uid == userId;
-    }
-
-    // Allow public read for all files.
-    // Restrict writes to the owner of the folder.
-    // This allows users to upload their vehicle and workshop images,
-    // while allowing anyone to view them.
-    match /{folder}/{userId}/{allPaths=**} {
-      allow read: if true;
-      allow write: if folder in ['vehicles', 'workshops', 'certificates'] && isOwner(userId);
+    match /{allPaths=**} {
+      allow read, write: if true;
     }
   }
 }
