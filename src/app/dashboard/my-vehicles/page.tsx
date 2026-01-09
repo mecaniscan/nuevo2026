@@ -95,6 +95,7 @@ export default function MyVehiclesPage() {
 
   const form = useForm<z.infer<typeof vehicleSchema>>({
     resolver: zodResolver(vehicleSchema),
+    mode: 'onChange', // Validate on change to enable/disable button
     defaultValues: {
       type: '',
       brand: '',
@@ -173,6 +174,8 @@ export default function MyVehiclesPage() {
   
       if (values.images && values.images.length > 0) {
         finalImageUrls = await uploadImages(values.images);
+      } else if (!editingVehicleId) {
+        finalImageUrls = []; // Ensure it's an empty array for new vehicles without images
       }
   
       const vehicleId = editingVehicleId || doc(vehiclesCollectionRef).id;
@@ -497,7 +500,7 @@ export default function MyVehiclesPage() {
                 )}
 
                 <div className="flex gap-4">
-                  <Button type="submit" disabled={isSubmitting}>
+                  <Button type="submit" disabled={isSubmitting || !form.formState.isValid}>
                     {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                     {editingVehicleId ? <>Guardar Cambios</> : <><PlusCircle className="mr-2" /> Guardar Vehículo</>}
                   </Button>
