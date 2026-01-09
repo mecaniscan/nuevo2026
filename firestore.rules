@@ -1,9 +1,76 @@
-
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-    match /{document=**} {
-      allow read, write: if true;
+    
+    // Helper functions
+    function isOwner(userId) {
+      return request.auth != null && request.auth.uid == userId;
+    }
+
+    function isAuth() {
+      return request.auth != null;
+    }
+    
+    // User Profiles: Only the user can read/write their own profile.
+    match /users/{userId} {
+      allow read, write: if isOwner(userId);
+      
+      // Sub-collections for user-specific data
+      match /favorites/{workshopId} {
+        allow read, write: if isOwner(userId);
+      }
+      match /oilChanges/{changeId} {
+        allow read, write: if isOwner(userId);
+      }
+      match /vehicles/{vehicleId} {
+        allow read, write: if isOwner(userId);
+      }
+    }
+    
+    // Workshops: Publicly readable, but writes are restricted.
+    match /workshops/{workshopId} {
+      allow read: if true;
+      allow create: if isAuth() && request.resource.data.ownerId == request.auth.uid;
+      allow update: if isAuth() && get(/databases/$(database)/documents/workshops/$(workshopId)).data.ownerId == request.auth.uid;
+      allow delete: if isAuth() && get(/databases/$(database)/documents/workshops/$(workshopId)).data.ownerId == request.auth.uid;
+      
+      // Workshop Services: Readable by all, writable only by workshop owner.
+      match /services/{serviceId} {
+        allow read: if true;
+        allow write: if isAuth() && get(/databases/$(database)/documents/workshops/$(workshopId)).data.ownerId == request.auth.uid;
+      }
+      
+      // Workshop Reviews: Readable by all, but create/update/delete is restricted.
+      match /reviews/{reviewId} {
+        allow read: if true;
+        allow create: if isAuth() 
+                       && request.resource.data.userId == request.auth.uid
+                       // Prevent user from submitting multiple reviews for the same workshop
+                       && !exists(/databases/$(database)/documents/workshops/$(workshopId)/reviews/$(reviewId));
+        allow update, delete: if isAuth() && get(/databases/$(database)/documents/workshops/$(workshopId)/reviews/$(reviewId)).data.userId == request.auth.uid;
+      }
+    }
+    
+    // Appointments: Only accessible by the user who booked it or the workshop owner.
+    match /appointments/{appointmentId} {
+      allow read, update: if isAuth() 
+                          && (resource.data.userId == request.auth.uid 
+                              || get(/databases/$(database)/documents/workshops/$(resource.data.workshopId)).data.ownerId == request.auth.uid);
+      allow create: if isAuth() && request.resource.data.userId == request.auth.uid;
+      allow delete: if isAuth() && resource.data.userId == request.auth.uid;
+    }
+    
+    // OBD Codes: Publicly readable data.
+    match /obd_codes/{obdCodeId} {
+      allow read: if true;
+      allow write: if false; // This data should be read-only
+    }
+    
+    // Marketplace: Publicly readable, writeable only by the vehicle's owner.
+    match /marketplace/{vehicleId} {
+      allow read: if true;
+      allow create, update: if isAuth() && request.resource.data.userId == request.auth.uid;
+      allow delete: if isAuth() && get(/databases/$(database)/documents/marketplace/$(vehicleId)).data.userId == request.auth.uid;
     }
   }
 }

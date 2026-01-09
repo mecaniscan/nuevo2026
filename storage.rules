@@ -1,10 +1,31 @@
-
 rules_version = '2';
 
 service firebase.storage {
   match /b/{bucket}/o {
-    match /{allPaths=**} {
-      allow read, write: if true;
+
+    function isAuth() {
+      return request.auth != null;
+    }
+
+    // Only allow authenticated users to upload images
+    // Max size of 5MB
+    // Only allow image content types
+    function canUploadImage(userId) {
+      return isAuth() && request.auth.uid == userId 
+        && request.resource.size < 5 * 1024 * 1024
+        && request.resource.contentType.matches('image/.*');
+    }
+    
+    // Workshop images can be read by anyone, but only uploaded by the owner.
+    match /workshops/{userId}/{imageId} {
+      allow read: if true;
+      allow write: if canUploadImage(userId);
+    }
+
+    // Vehicle images can be read by anyone, but only uploaded by the owner.
+    match /vehicles/{userId}/{imageId} {
+       allow read: if true;
+       allow write: if canUploadImage(userId);
     }
   }
 }
