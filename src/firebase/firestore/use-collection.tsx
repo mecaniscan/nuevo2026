@@ -59,24 +59,24 @@ export function useCollection<T = any>(
   type StateDataType = ResultItemType[] | null;
 
   const [data, setData] = useState<StateDataType>(null);
-  const [isLoading, setIsLoading] = useState<boolean>(true); // Start as true
+  const [isLoading, setIsLoading] = useState<boolean>(true);
   const [error, setError] = useState<FirestoreError | Error | null>(null);
-  const unsubscribeRef = useRef<Unsubscribe | null>(null);
-  const cleanupPendingRef = useRef<boolean>(false);
+  
+  // Ref to store the query being actively listened to.
+  const activeQueryRef = useRef<((CollectionReference<DocumentData> | Query<DocumentData>) & {__memo?: boolean})  | null | undefined>(null);
 
   useEffect(() => {
-    // If a cleanup from the previous effect is pending, do not proceed.
-    // This effect will be re-run once the cleanup is complete.
-    if (cleanupPendingRef.current) {
-      return;
-    }
-
     // If the query is null or undefined, do nothing but ensure state is reset.
     if (!memoizedTargetRefOrQuery) {
       if (data !== null) setData(null);
       if (isLoading) setIsLoading(false); // Not loading because there's nothing to fetch.
       if (error !== null) setError(null);
       return;
+    }
+    
+    // Check if the query has actually changed.
+    if(activeQueryRef.current === memoizedTargetRefOrQuery) {
+        return; // The query is the same, no need to re-subscribe.
     }
 
     // A new query is provided, start loading.
@@ -115,24 +115,15 @@ export function useCollection<T = any>(
         errorEmitter.emit('permission-error', contextualError);
       }
     );
-
-    // Store the unsubscribe function.
-    unsubscribeRef.current = unsubscribe;
+    
+    activeQueryRef.current = memoizedTargetRefOrQuery;
 
     // Cleanup function to run when the component unmounts or the query changes.
     return () => {
-      cleanupPendingRef.current = true;
-      if (unsubscribeRef.current) {
-        unsubscribeRef.current();
-        unsubscribeRef.current = null;
-      }
-      // Reset state and mark cleanup as complete
-      setData(null);
-      setIsLoading(true); // Set to loading for the next query
-      setError(null);
-      cleanupPendingRef.current = false;
+      unsubscribe();
+      activeQueryRef.current = null;
     };
-  }, [memoizedTargetRefOrQuery]); // Re-run if the target query/reference changes.
+  }, [memoizedTargetRefOrQuery, data, isLoading, error]); 
 
   if(memoizedTargetRefOrQuery && !memoizedTargetRefOrQuery.__memo) {
     throw new Error('Query was not properly memoized using useMemoFirebase');
