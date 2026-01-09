@@ -44,7 +44,7 @@ const vehicleSchema = z.object({
   vin: z.string().optional(),
   licensePlate: z.string().optional(),
   price: z.preprocess(
-    (a) => a ? parseFloat(z.string().parse(a)) : 0,
+    (a) => a ? parseFloat(z.string().parse(a)) : undefined,
     z.number().optional()
   ),
   currentMileage: z.preprocess(
@@ -53,8 +53,23 @@ const vehicleSchema = z.object({
   ),
   country: z.string().optional(),
   isForSale: z.boolean().default(false),
-  images: z.instanceof(FileList).nullable().optional()
-    .refine((files) => !files || files.length <= 3, "Puedes subir un máximo de 3 imágenes."),
+  images: z.instanceof(FileList).nullable().optional(),
+}).refine(data => {
+    if (data.isForSale) {
+        return data.images && data.images.length > 0 && data.images.length <= 3;
+    }
+    return true;
+}, {
+    message: "Debes subir entre 1 y 3 imágenes para publicar en el marketplace.",
+    path: ["images"],
+}).refine(data => {
+    if (data.isForSale) {
+        return data.price && data.price > 0;
+    }
+    return true;
+}, {
+    message: "El precio es obligatorio para poner el vehículo a la venta.",
+    path: ["price"],
 });
 
 
@@ -96,7 +111,7 @@ export default function MyVehiclesPage() {
       year: new Date().getFullYear(),
       vin: '',
       licensePlate: '',
-      price: 0,
+      price: undefined,
       currentMileage: 0,
       country: '',
       isForSale: false,
@@ -104,32 +119,31 @@ export default function MyVehiclesPage() {
     },
   });
   
-  const { formState: { errors } } = form;
+  const { formState: { errors }, watch } = form;
+  const isForSale = watch("isForSale");
 
-  const imageFieldValue = form.watch('images');
+  const imageFieldValue = watch('images');
 
   useEffect(() => {
     let objectUrls: string[] = [];
-
+    const editingVehicle = editingVehicleId ? vehicles?.find(v => v.id === editingVehicleId) : null;
+    
     // If new files are selected, create object URLs for them.
     if (imageFieldValue && imageFieldValue.length > 0) {
         objectUrls = Array.from(imageFieldValue).map(file => URL.createObjectURL(file));
         setImagePreviews(objectUrls);
-    } else {
+    } else if (editingVehicle?.imageUrls && editingVehicle.imageUrls.length > 0) {
         // If not, and we are editing, show existing images from the vehicle data.
-        const editingVehicle = editingVehicleId ? vehicles?.find(v => v.id === editingVehicleId) : null;
-        if (editingVehicle?.imageUrls) {
-            setImagePreviews(editingVehicle.imageUrls);
-        } else {
-            setImagePreviews([]); // Clear previews if no files and no existing images.
-        }
+        setImagePreviews(editingVehicle.imageUrls);
+    } else {
+        setImagePreviews([]); // Clear previews if no files and no existing images.
     }
 
     // Cleanup function to revoke created object URLs to prevent memory leaks.
     return () => {
         objectUrls.forEach(url => URL.revokeObjectURL(url));
     };
-}, [imageFieldValue, editingVehicleId, vehicles]);
+  }, [imageFieldValue, editingVehicleId, vehicles]);
 
   const uploadImages = async (files: FileList): Promise<string[]> => {
     if (!storage || !user) {
@@ -154,8 +168,10 @@ export default function MyVehiclesPage() {
       const existingVehicle = editingVehicleId ? vehicles?.find(v => v.id === editingVehicleId) : undefined;
       let finalImageUrls: string[] = existingVehicle?.imageUrls || [];
   
-      if (values.images && values.images.length > 0) {
+      if (values.isForSale && values.images && values.images.length > 0) {
         finalImageUrls = await uploadImages(values.images);
+      } else if (!values.isForSale) {
+        finalImageUrls = []; // Clear images if not for sale
       }
   
       const vehicleId = editingVehicleId || doc(vehiclesCollectionRef).id;
@@ -170,7 +186,7 @@ export default function MyVehiclesPage() {
         year: formValues.year || new Date().getFullYear(),
         vin: formValues.vin || '',
         licensePlate: formValues.licensePlate || '',
-        price: formValues.price || 0,
+        price: formValues.price,
         currentMileage: formValues.currentMileage || 0,
         isForSale: formValues.isForSale || false,
         country: formValues.country || '',
@@ -246,6 +262,7 @@ export default function MyVehiclesPage() {
     setEditingVehicleId(vehicle.id);
     form.reset({
         ...vehicle,
+        price: vehicle.price ?? undefined,
         images: undefined,
     });
     window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
@@ -260,7 +277,7 @@ export default function MyVehiclesPage() {
       year: new Date().getFullYear(),
       vin: '',
       licensePlate: '',
-      price: 0,
+      price: undefined,
       currentMileage: 0,
       country: '',
       isForSale: false,
@@ -353,7 +370,7 @@ export default function MyVehiclesPage() {
                                           )}
                                         </TableCell>
                                         <TableCell>{vehicle.currentMileage?.toLocaleString()} km</TableCell>
-                                        <TableCell>${vehicle.price?.toLocaleString()}</TableCell>
+                                        <TableCell>{vehicle.price ? `$${vehicle.price.toLocaleString()}`: 'N/A'}</TableCell>
                                         <TableCell className="text-right">
                                             <Button variant="ghost" size="icon" className="text-primary hover:bg-primary/10" onClick={() => handleEditVehicle(vehicle)}>
                                                 <Pencil className="h-4 w-4" />
@@ -406,51 +423,7 @@ export default function MyVehiclesPage() {
           <CardContent>
             <Form {...form}>
               <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                  <FormField control={form.control} name="type" render={({ field }) => (<FormItem><FormLabel>Tipo</FormLabel><FormControl><Input placeholder="Ej: Sedan, SUV" {...field} /></FormControl><FormMessage /></FormItem>)} />
-                  <FormField control={form.control} name="brand" render={({ field }) => (<FormItem><FormLabel>Marca</FormLabel><FormControl><Input placeholder="Ej: Toyota" {...field} /></FormControl><FormMessage /></FormItem>)} />
-                  <FormField control={form.control} name="model" render={({ field }) => (<FormItem><FormLabel>Modelo</FormLabel><FormControl><Input placeholder="Ej: Corolla" {...field} /></FormControl><FormMessage /></FormItem>)} />
-                  <FormField control={form.control} name="year" render={({ field }) => (<FormItem><FormLabel>Año</FormLabel><FormControl><Input type="number" placeholder="2022" {...field} /></FormControl><FormMessage /></FormItem>)} />
-                  <FormField control={form.control} name="price" render={({ field }) => (<FormItem><FormLabel>Precio ($)</FormLabel><FormControl><Input type="number" step="0.01" placeholder="25000.00" {...field} /></FormControl><FormMessage /></FormItem>)} />
-                  <FormField control={form.control} name="currentMileage" render={({ field }) => (<FormItem><FormLabel>Kilometraje Actual</FormLabel><FormControl><Input type="number" placeholder="50000" {...field} /></FormControl><FormMessage /></FormItem>)} />
-                  <FormField control={form.control} name="licensePlate" render={({ field }) => (<FormItem><FormLabel>Placa</FormLabel><FormControl><Input placeholder="ABC-123" {...field} /></FormControl><FormMessage /></FormItem>)} />
-                  <FormField control={form.control} name="country" render={({ field }) => (<FormItem><FormLabel>País</FormLabel><FormControl><Input placeholder="Ej: Argentina" {...field} /></FormControl><FormMessage /></FormItem>)} />
-                  <div className="lg:col-span-3">
-                    <FormField control={form.control} name="vin" render={({ field }) => (<FormItem><FormLabel>Código VIN</FormLabel><FormControl><Input placeholder="17 caracteres" {...field} /></FormControl><FormMessage /></FormItem>)} />
-                  </div>
-                  <div className="lg:col-span-3">
-                     <FormField
-                        control={form.control}
-                        name="images"
-                        render={({ field: { onChange, value, ...rest } }) => (
-                          <FormItem>
-                            <FormLabel>Imágenes del Vehículo (hasta 3)</FormLabel>
-                            <FormControl>
-                                <Input type="file" accept="image/*" multiple onChange={(e) => onChange(e.target.files)} />
-                            </FormControl>
-                            <FormDescription>
-                              Sube hasta 3 imágenes. Si estás editando, las nuevas imágenes reemplazarán a las anteriores.
-                            </FormDescription>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                      {imagePreviews.length > 0 && (
-                        <div className="mt-4">
-                            <FormLabel>Vista Previa de Imágenes</FormLabel>
-                            <div className="mt-2 grid grid-cols-2 sm:grid-cols-3 gap-4">
-                                {imagePreviews.map((src, index) => (
-                                    <div key={index} className="relative aspect-video w-full overflow-hidden rounded-md border">
-                                        <Image src={src} alt={`Vista previa ${index + 1}`} fill className="object-cover"/>
-                                    </div>
-                                ))}
-                            </div>
-                        </div>
-                      )}
-                  </div>
-                </div>
-
-                 <div className="space-y-4 pt-4 border-t">
+                 <div className="space-y-4 pt-4">
                     <FormField
                       control={form.control}
                       name="isForSale"
@@ -461,7 +434,7 @@ export default function MyVehiclesPage() {
                               <Briefcase /> Poner a la Venta
                             </FormLabel>
                             <FormDescription>
-                              Marca esta casilla para listar este vehículo en el Marketplace.
+                              Marca esta casilla para listar este vehículo en el Marketplace. Se requerirá un precio y hasta 3 imágenes.
                             </FormDescription>
                           </div>
                           <FormControl>
@@ -475,7 +448,66 @@ export default function MyVehiclesPage() {
                     />
                 </div>
 
-                <div className="flex flex-col gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                  <FormField control={form.control} name="type" render={({ field }) => (<FormItem><FormLabel>Tipo</FormLabel><FormControl><Input placeholder="Ej: Sedan, SUV" {...field} /></FormControl><FormMessage /></FormItem>)} />
+                  <FormField control={form.control} name="brand" render={({ field }) => (<FormItem><FormLabel>Marca</FormLabel><FormControl><Input placeholder="Ej: Toyota" {...field} /></FormControl><FormMessage /></FormItem>)} />
+                  <FormField control={form.control} name="model" render={({ field }) => (<FormItem><FormLabel>Modelo</FormLabel><FormControl><Input placeholder="Ej: Corolla" {...field} /></FormControl><FormMessage /></FormItem>)} />
+                  <FormField control={form.control} name="year" render={({ field }) => (<FormItem><FormLabel>Año</FormLabel><FormControl><Input type="number" placeholder="2022" {...field} /></FormControl><FormMessage /></FormItem>)} />
+                  {isForSale && (
+                     <FormField control={form.control} name="price" render={({ field }) => (<FormItem><FormLabel>Precio ($)</FormLabel><FormControl><Input type="number" step="0.01" placeholder="25000.00" {...field} /></FormControl><FormMessage /></FormItem>)} />
+                  )}
+                  <FormField control={form.control} name="currentMileage" render={({ field }) => (<FormItem><FormLabel>Kilometraje Actual</FormLabel><FormControl><Input type="number" placeholder="50000" {...field} /></FormControl><FormMessage /></FormItem>)} />
+                  <FormField control={form.control} name="licensePlate" render={({ field }) => (<FormItem><FormLabel>Placa</FormLabel><FormControl><Input placeholder="ABC-123" {...field} /></FormControl><FormMessage /></FormItem>)} />
+                  <FormField control={form.control} name="country" render={({ field }) => (<FormItem><FormLabel>País</FormLabel><FormControl><Input placeholder="Ej: Argentina" {...field} /></FormControl><FormMessage /></FormItem>)} />
+                  <div className="lg:col-span-3">
+                    <FormField control={form.control} name="vin" render={({ field }) => (<FormItem><FormLabel>Código VIN</FormLabel><FormControl><Input placeholder="17 caracteres" {...field} /></FormControl><FormMessage /></FormItem>)} />
+                  </div>
+                 
+                  {isForSale && (
+                    <div className="lg:col-span-3">
+                      <FormField
+                          control={form.control}
+                          name="images"
+                          render={({ field: { onChange, value, ...rest } }) => (
+                            <FormItem>
+                              <FormLabel>Imágenes del Vehículo (hasta 3)</FormLabel>
+                              <FormControl>
+                                  <Input type="file" accept="image/*" multiple onChange={(e) => onChange(e.target.files)} />
+                              </FormControl>
+                              <FormDescription>
+                                Sube hasta 3 imágenes para el marketplace. Si editas, las nuevas reemplazarán a las anteriores.
+                              </FormDescription>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                        {imagePreviews.length > 0 && (
+                          <div className="mt-4">
+                              <FormLabel>Vista Previa de Imágenes</FormLabel>
+                              <Carousel className="w-full max-w-xs mx-auto mt-2">
+                                <CarouselContent>
+                                  {imagePreviews.map((src, index) => (
+                                    <CarouselItem key={index}>
+                                      <div className="p-1">
+                                        <Card>
+                                          <CardContent className="flex aspect-video items-center justify-center p-0 relative overflow-hidden rounded-md">
+                                             <Image src={src} alt={`Vista previa ${index + 1}`} fill className="object-cover"/>
+                                          </CardContent>
+                                        </Card>
+                                      </div>
+                                    </CarouselItem>
+                                  ))}
+                                </CarouselContent>
+                                <CarouselPrevious />
+                                <CarouselNext />
+                              </Carousel>
+                          </div>
+                        )}
+                    </div>
+                  )}
+                </div>
+
+                <div className="flex flex-col gap-4 pt-6 border-t">
                   <Button type="submit" disabled={isSubmitting}>
                     {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                     {editingVehicleId ? <>Guardar Cambios</> : <><PlusCircle className="mr-2" /> Guardar Vehículo</>}
