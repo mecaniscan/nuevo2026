@@ -109,35 +109,27 @@ export default function MyVehiclesPage() {
   const imageFieldValue = form.watch('images');
 
   useEffect(() => {
-    let newObjectUrls: string[] = [];
+    let objectUrls: string[] = [];
+
+    // If new files are selected, create object URLs for them.
     if (imageFieldValue && imageFieldValue.length > 0) {
-        newObjectUrls = Array.from(imageFieldValue).map(file => URL.createObjectURL(file));
-        setImagePreviews(newObjectUrls);
+        objectUrls = Array.from(imageFieldValue).map(file => URL.createObjectURL(file));
+        setImagePreviews(objectUrls);
     } else {
-      const editingVehicle = editingVehicleId ? vehicles?.find(v => v.id === editingVehicleId) : null;
-      if (editingVehicle?.imageUrls) {
-        setImagePreviews(editingVehicle.imageUrls);
-      } else {
-        setImagePreviews([]);
-      }
+        // If not, and we are editing, show existing images from the vehicle data.
+        const editingVehicle = editingVehicleId ? vehicles?.find(v => v.id === editingVehicleId) : null;
+        if (editingVehicle?.imageUrls) {
+            setImagePreviews(editingVehicle.imageUrls);
+        } else {
+            setImagePreviews([]); // Clear previews if no files and no existing images.
+        }
     }
 
+    // Cleanup function to revoke created object URLs to prevent memory leaks.
     return () => {
-        newObjectUrls.forEach(url => URL.revokeObjectURL(url));
+        objectUrls.forEach(url => URL.revokeObjectURL(url));
     };
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [imageFieldValue]);
-
-   useEffect(() => {
-    if (editingVehicleId && vehicles) {
-      const editingVehicle = vehicles.find(v => v.id === editingVehicleId);
-      if (editingVehicle?.imageUrls) {
-        setImagePreviews(editingVehicle.imageUrls);
-      } else {
-        setImagePreviews([]);
-      }
-    }
-  }, [editingVehicleId, vehicles]);
+}, [imageFieldValue, editingVehicleId, vehicles]);
 
   const uploadImages = async (files: FileList): Promise<string[]> => {
     if (!storage || !user) {
@@ -185,6 +177,7 @@ export default function MyVehiclesPage() {
         imageUrls: finalImageUrls,
         sellerName: `${userData.firstName} ${userData.lastName}`,
         sellerWhatsapp: userData.whatsappNumber || '',
+        certificateNumber: existingVehicle?.certificateNumber || uuidv4(),
       };
   
       const batch = writeBatch(firestore);

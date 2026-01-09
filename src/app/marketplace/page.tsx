@@ -6,7 +6,7 @@ import type { Vehicle } from '@/lib/types';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Loader2, MapPin, Car, Search, Info } from 'lucide-react';
+import { Loader2, MapPin, Car, Search, Info, FileText } from 'lucide-react';
 import { Header } from '@/components/layout/header';
 import { Footer } from '@/components/layout/footer';
 import {
@@ -18,6 +18,7 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import Image from 'next/image';
+import Link from 'next/link';
 import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from '@/components/ui/carousel';
 
 const WhatsappIcon = () => (
@@ -33,6 +34,23 @@ function VehicleCard({ vehicle }: { vehicle: Vehicle }) {
       const whatsappUrl = `https://wa.me/${vehicle.sellerWhatsapp.replace(/\D/g, '')}?text=${encodeURIComponent(message)}`;
       window.open(whatsappUrl, '_blank');
     }
+  };
+
+  const handleGenerateCertificate = () => {
+    const certificateData = {
+        title: "Certificado de Venta de Vehículo",
+        vehicle: `${vehicle.brand} ${vehicle.model} (${vehicle.year})`,
+        price: `$${vehicle.price.toLocaleString('es-AR')}`,
+        vin: vehicle.vin,
+        seller: vehicle.sellerName,
+        date: new Date().toLocaleDateString('es-ES'),
+        certificateNumber: vehicle.certificateNumber,
+    };
+    const imageUrl = `https://api.qrserver.com/v1/create-qr-code/?size=800x800&data=${encodeURIComponent(
+      `${window.location.origin}/validate-certificate/${vehicle.certificateNumber}`
+    )}`;
+    
+    router.push(`/certificate-preview?image=${encodeURIComponent(imageUrl)}`);
   };
 
   return (
@@ -78,60 +96,12 @@ function VehicleCard({ vehicle }: { vehicle: Vehicle }) {
                 <p className="text-sm font-medium text-foreground">Vendedor:</p>
                 <p className="text-sm text-muted-foreground">{vehicle.sellerName || 'No disponible'}</p>
             </div>
-            <div className="w-full flex flex-col sm:flex-row gap-2">
-                 <Dialog>
-                    <DialogTrigger asChild>
-                      <Button variant="outline" className="flex-1">
-                        <Info className="mr-2 h-4 w-4" /> Ver Detalles
-                      </Button>
-                    </DialogTrigger>
-                    <DialogContent className="sm:max-w-[425px]">
-                      <DialogHeader>
-                        <DialogTitle>{vehicle.brand} {vehicle.model} ({vehicle.year})</DialogTitle>
-                        <DialogDescription>
-                          Información detallada del vehículo.
-                        </DialogDescription>
-                      </DialogHeader>
-                      <div className="grid gap-4 py-4 text-sm">
-                        <div className="grid grid-cols-2 items-center gap-4">
-                          <span className="text-muted-foreground">Tipo:</span>
-                          <span className="font-semibold">{vehicle.type}</span>
-                        </div>
-                        <div className="grid grid-cols-2 items-center gap-4">
-                          <span className="text-muted-foreground">Marca:</span>
-                          <span className="font-semibold">{vehicle.brand}</span>
-                        </div>
-                         <div className="grid grid-cols-2 items-center gap-4">
-                          <span className="text-muted-foreground">Modelo:</span>
-                          <span className="font-semibold">{vehicle.model}</span>
-                        </div>
-                         <div className="grid grid-cols-2 items-center gap-4">
-                          <span className="text-muted-foreground">Año:</span>
-                          <span className="font-semibold">{vehicle.year}</span>
-                        </div>
-                        <div className="grid grid-cols-2 items-center gap-4">
-                          <span className="text-muted-foreground">Placa:</span>
-                          <span className="font-semibold">{vehicle.licensePlate}</span>
-                        </div>
-                        <div className="grid grid-cols-2 items-center gap-4">
-                          <span className="text-muted-foreground">VIN:</span>
-                          <span className="font-semibold">{vehicle.vin}</span>
-                        </div>
-                        <div className="grid grid-cols-2 items-center gap-4">
-                          <span className="text-muted-foreground">Kilometraje:</span>
-                          <span className="font-semibold">{vehicle.currentMileage.toLocaleString()} km</span>
-                        </div>
-                        <div className="grid grid-cols-2 items-center gap-4">
-                          <span className="text-muted-foreground">País:</span>
-                          <span className="font-semibold">{vehicle.country}</span>
-                        </div>
-                         <div className="grid grid-cols-2 items-center gap-4">
-                          <span className="text-muted-foreground">Precio:</span>
-                          <span className="font-bold text-primary">${vehicle.price.toLocaleString('es-AR')}</span>
-                        </div>
-                      </div>
-                    </DialogContent>
-                  </Dialog>
+             <div className="w-full flex flex-col sm:flex-row gap-2">
+                 <Button variant="outline" className="flex-1" asChild>
+                    <Link href={`/validate-certificate/${vehicle.certificateNumber}`} target="_blank">
+                        <FileText className="mr-2 h-4 w-4" /> Certificado
+                    </Link>
+                </Button>
                 {vehicle.sellerWhatsapp ? (
                     <Button className="flex-1" onClick={handleContact}>
                         <WhatsappIcon /> Contactar

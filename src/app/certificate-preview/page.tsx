@@ -5,7 +5,7 @@ import { useSearchParams } from 'next/navigation';
 import Image from 'next/image';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Loader2, Download } from 'lucide-react';
+import { Loader2, Download, ArrowLeft } from 'lucide-react';
 import Link from 'next/link';
 
 function CertificateDisplay() {
@@ -14,13 +14,15 @@ function CertificateDisplay() {
 
   if (!imageData) {
     return (
-      <Card className="w-full max-w-4xl text-center">
+      <Card className="w-full max-w-2xl text-center shadow-2xl">
         <CardHeader>
-          <CardTitle>Error</CardTitle>
-          <CardDescription>No se ha proporcionado una imagen de certificado válida.</CardDescription>
+          <CardTitle className="text-destructive">Error de Generación</CardTitle>
+          <CardDescription>No se ha proporcionado una imagen de certificado válida para la vista previa.</CardDescription>
         </CardHeader>
         <CardContent>
-            <Button asChild variant="outline"><Link href="/">Volver al Inicio</Link></Button>
+            <Button asChild variant="outline">
+              <Link href="/marketplace"><ArrowLeft className="mr-2 h-4 w-4"/>Volver al Marketplace</Link>
+            </Button>
         </CardContent>
       </Card>
     );
@@ -29,21 +31,26 @@ function CertificateDisplay() {
   const decodedImage = decodeURIComponent(imageData);
 
   return (
-    <Card className="w-full max-w-4xl">
+    <Card className="w-full max-w-2xl shadow-2xl">
       <CardHeader>
-        <CardTitle>Vista Previa del Certificado</CardTitle>
-        <CardDescription>Este es el certificado de venta generado. Puedes descargarlo como imagen.</CardDescription>
+        <CardTitle>Vista Previa del Certificado QR</CardTitle>
+        <CardDescription>Este es el código QR para el certificado de venta. Escanéalo con tu teléfono o descárgalo como imagen para compartirlo.</CardDescription>
       </CardHeader>
-      <CardContent className="flex flex-col items-center gap-4">
-        <div className="w-full border rounded-lg overflow-hidden">
-            <Image src={decodedImage} alt="Certificado de Venta" width={800} height={1120} style={{width: '100%', height: 'auto'}} />
+      <CardContent className="flex flex-col items-center gap-6">
+        <div className="w-full max-w-sm border-4 border-primary p-2 rounded-lg overflow-hidden bg-white">
+            <Image src={decodedImage} alt="Certificado de Venta en QR" width={500} height={500} style={{width: '100%', height: 'auto'}} />
         </div>
-        <a href={decodedImage} download="certificado-de-venta.png">
-            <Button>
-                <Download className="mr-2 h-4 w-4" />
-                Descargar Imagen
+        <div className="flex flex-col sm:flex-row gap-4 w-full max-w-sm">
+            <a href={decodedImage} download="certificado-qr-venta.png" className="flex-1">
+                <Button className="w-full">
+                    <Download className="mr-2 h-4 w-4" />
+                    Descargar QR
+                </Button>
+            </a>
+            <Button asChild variant="outline" className="flex-1">
+              <Link href="/marketplace"><ArrowLeft className="mr-2 h-4 w-4"/>Volver</Link>
             </Button>
-        </a>
+        </div>
       </CardContent>
     </Card>
   );

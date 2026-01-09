@@ -76,7 +76,7 @@ export type Vehicle = {
     country: string;
     sellerName: string;
     sellerWhatsapp: string;
-    certificateNumber?: string;
+    certificateNumber: string;
 };
 
 export type FavoriteWorkshop = {
