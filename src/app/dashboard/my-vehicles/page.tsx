@@ -11,7 +11,7 @@ import { useUser, useFirestore, useMemoFirebase, FirestorePermissionError, error
 import { collection, query, orderBy, doc, writeBatch } from 'firebase/firestore';
 import { ref as storageRef, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2, PlusCircle, Car, Trash2, Pencil, Briefcase, BadgePercent } from 'lucide-react';
+import { Loader2, PlusCircle, Car, Trash2, Pencil, Briefcase, BadgePercent, AlertCircle } from 'lucide-react';
 import Link from 'next/link';
 import type { Vehicle, User } from '@/lib/types';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -30,6 +30,7 @@ import { Switch } from '@/components/ui/switch';
 import { Badge } from '@/components/ui/badge';
 import { v4 as uuidv4 } from 'uuid';
 import Image from 'next/image';
+import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
 
 const MAX_IMAGES = 3;
 const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
@@ -110,6 +111,20 @@ export default function MyVehiclesPage() {
   });
 
   const imagesFieldValue = form.watch('images');
+  const formErrors = form.formState.errors;
+
+  const fieldNameMap: Record<string, string> = {
+    type: 'Tipo',
+    brand: 'Marca',
+    model: 'Modelo',
+    year: 'Año',
+    vin: 'Código VIN',
+    licensePlate: 'Placa',
+    price: 'Precio',
+    currentMileage: 'Kilometraje',
+    country: 'País',
+    images: 'Imágenes',
+  };
 
   useEffect(() => {
     let urls: string[] = [];
@@ -467,6 +482,19 @@ export default function MyVehiclesPage() {
                     />
                 </div>
 
+                {Object.keys(formErrors).length > 0 && (
+                  <Alert variant="destructive">
+                    <AlertCircle className="h-4 w-4" />
+                    <AlertTitle>Faltan datos por completar</AlertTitle>
+                    <AlertDescription>
+                      <ul className="list-disc pl-5 mt-2">
+                        {Object.entries(formErrors).map(([field, error]) => (
+                          <li key={field}>{fieldNameMap[field] || field}: {error.message}</li>
+                        ))}
+                      </ul>
+                    </AlertDescription>
+                  </Alert>
+                )}
 
                 <div className="flex gap-4">
                   <Button type="submit" disabled={isSubmitting}>
