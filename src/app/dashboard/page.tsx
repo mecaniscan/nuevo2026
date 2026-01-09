@@ -1,6 +1,6 @@
 'use client';
 
-import { useUser, useFirestore, useMemoFirebase, useCollection, useAuth } from '@/firebase';
+import { useUser, useFirestore, useMemoFirebase, useCollection } from '@/firebase';
 import { collection, query, where, doc, getDocs, writeBatch } from 'firebase/firestore';
 import type { Workshop } from '@/lib/types';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -65,40 +65,78 @@ export default function DashboardPage() {
     }
   };
 
+  const deleteCollection = async (colPath: string) => {
+    if (!firestore) return;
+    const colRef = collection(firestore, colPath);
+    const snapshot = await getDocs(colRef);
+    if (snapshot.empty) return;
+    const batch = writeBatch(firestore);
+    snapshot.docs.forEach(doc => {
+        batch.delete(doc.ref);
+    });
+    await batch.commit();
+  };
+
+
   const handleDeleteAccount = async () => {
     if (!user || !firestore) {
-      toast({ variant: 'destructive', title: 'Error', description: 'No se pudo eliminar la cuenta.' });
-      return;
+        toast({ variant: 'destructive', title: 'Error', description: 'No se pudo eliminar la cuenta. No hay usuario autenticado.' });
+        return;
     }
+    
     try {
-      const batch = writeBatch(firestore);
+        const userId = user.uid;
+        const batch = writeBatch(firestore);
 
-      // Delete workshop if it exists
-      if (workshops && workshops.length > 0) {
-        const workshopRef = doc(firestore, 'workshops', workshops[0].id);
-        batch.delete(workshopRef);
-      }
-      
-      // Delete user's appointments from the root collection
-      if (user?.uid) {
-        const appointmentsColRef = collection(firestore, 'appointments');
-        const userAppointmentsQuery = query(appointmentsColRef, where('userId', '==', user.uid));
-        const appointmentsSnapshot = await getDocs(userAppointmentsQuery);
+        // Delete workshop and its subcollections (if any)
+        if (workshops && workshops.length > 0) {
+            const workshop = workshops[0];
+            await deleteCollection(`workshops/${workshop.id}/services`);
+            await deleteCollection(`workshops/${workshop.id}/reviews`);
+            batch.delete(doc(firestore, 'workshops', workshop.id));
+        }
+        
+        // Delete all vehicles from the marketplace belonging to the user
+        const marketplaceQuery = query(collection(firestore, 'marketplace'), where('userId', '==', userId));
+        const marketplaceSnapshot = await getDocs(marketplaceQuery);
+        marketplaceSnapshot.forEach(doc => batch.delete(doc.ref));
+        
+        // Delete root collections associated with user
+        await deleteCollection(`users/${userId}/vehicles`);
+        await deleteCollection(`users/${userId}/oilChanges`);
+        await deleteCollection(`users/${userId}/favorites`);
+
+        // Delete user's appointments from the root collection
+        const appointmentsQuery = query(collection(firestore, 'appointments'), where('userId', '==', userId));
+        const appointmentsSnapshot = await getDocs(appointmentsQuery);
         appointmentsSnapshot.forEach(doc => batch.delete(doc.ref));
-      }
 
-      // Delete user document
-      const userDocRef = doc(firestore, 'users', user.uid);
-      batch.delete(userDocRef);
+        // Delete user document
+        const userDocRef = doc(firestore, 'users', userId);
+        batch.delete(userDocRef);
 
-      await batch.commit();
-      await user.delete();
-
-      toast({ title: 'Cuenta Eliminada', description: 'Tu cuenta y todos tus datos han sido eliminados.' });
+        await batch.commit();
+        
+        // Finally, delete the user from Firebase Auth
+        try {
+            await user.delete();
+            toast({ title: 'Cuenta Eliminada', description: 'Tu cuenta y todos tus datos han sido eliminados permanentemente.' });
+        } catch (authError: any) {
+             if (authError.code === 'auth/requires-recent-login') {
+                toast({
+                    variant: 'destructive',
+                    title: 'Se requiere re-autenticación',
+                    description: 'Por seguridad, debes volver a iniciar sesión para poder eliminar tu cuenta.',
+                    duration: 9000,
+                });
+             } else {
+                 throw authError; // Rethrow other auth errors
+             }
+        }
 
     } catch (error) {
-      console.error("Error deleting account:", error);
-      toast({ variant: 'destructive', title: 'Error', description: 'Ocurrió un error al eliminar tu cuenta. Vuelve a iniciar sesión e inténtalo de nuevo.' });
+        console.error("Error deleting account data:", error);
+        toast({ variant: 'destructive', title: 'Error de Borrado de Datos', description: 'Ocurrió un error al eliminar los datos de tu cuenta. Por favor, intenta de nuevo.' });
     }
   };
 
