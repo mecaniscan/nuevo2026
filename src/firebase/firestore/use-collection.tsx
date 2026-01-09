@@ -8,7 +8,6 @@ import {
   FirestoreError,
   QuerySnapshot,
   CollectionReference,
-  Unsubscribe,
 } from 'firebase/firestore';
 import { errorEmitter } from '@/firebase/error-emitter';
 import { FirestorePermissionError } from '@/firebase/errors';
@@ -64,13 +63,21 @@ export function useCollection<T = any>(
   
   // Ref to store the query being actively listened to.
   const activeQueryRef = useRef<((CollectionReference<DocumentData> | Query<DocumentData>) & {__memo?: boolean})  | null | undefined>(null);
+  const cleanupRef = useRef<(() => void) | null>(null);
+
 
   useEffect(() => {
-    // If the query is null or undefined, do nothing but ensure state is reset.
+    // If a cleanup function from a previous query exists, run it first.
+    if (cleanupRef.current) {
+        cleanupRef.current();
+        cleanupRef.current = null;
+    }
+
     if (!memoizedTargetRefOrQuery) {
       if (data !== null) setData(null);
-      if (isLoading) setIsLoading(false); // Not loading because there's nothing to fetch.
+      if (isLoading) setIsLoading(false);
       if (error !== null) setError(null);
+      activeQueryRef.current = null;
       return;
     }
     
@@ -117,13 +124,15 @@ export function useCollection<T = any>(
     );
     
     activeQueryRef.current = memoizedTargetRefOrQuery;
+    cleanupRef.current = unsubscribe;
 
-    // Cleanup function to run when the component unmounts or the query changes.
+    // Standard cleanup function for when the component unmounts.
     return () => {
-      unsubscribe();
-      activeQueryRef.current = null;
+        unsubscribe();
+        cleanupRef.current = null;
+        activeQueryRef.current = null;
     };
-  }, [memoizedTargetRefOrQuery, data, isLoading, error]); 
+  }, [memoizedTargetRefOrQuery]); 
 
   if(memoizedTargetRefOrQuery && !memoizedTargetRefOrQuery.__memo) {
     throw new Error('Query was not properly memoized using useMemoFirebase');
