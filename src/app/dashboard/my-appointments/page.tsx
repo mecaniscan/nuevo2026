@@ -33,7 +33,7 @@ export default function MyAppointmentsPage() {
   const appointmentsQuery = useMemoFirebase(() => {
     if (!firestore || !user?.uid) return null; // Ensure user and user.uid are available
     return query(collection(firestore, 'appointments'), where('userId', '==', user.uid));
-  }, [firestore, user]);
+  }, [firestore, user?.uid]);
 
   const { data: appointments, isLoading: areAppointmentsLoading } = useCollection<Appointment>(appointmentsQuery);
 
