@@ -12,21 +12,13 @@ service firebase.storage {
       return isSignedIn() && request.auth.uid == userId;
     }
 
-    // Allow users to write to their own folders for vehicles, workshops and certificates.
     // Allow public read for all files.
-    match /vehicles/{userId}/{allPaths=**} {
+    // Restrict writes to the owner of the folder.
+    // This allows users to upload their vehicle and workshop images,
+    // while allowing anyone to view them.
+    match /{folder}/{userId}/{allPaths=**} {
       allow read: if true;
-      allow write: if isOwner(userId);
-    }
-
-    match /workshops/{userId}/{allPaths=**} {
-      allow read: if true;
-      allow write: if isOwner(userId);
-    }
-    
-    match /certificates/{userId}/{allPaths=**} {
-        allow read: if true;
-        allow write: if isOwner(userId);
+      allow write: if folder in ['vehicles', 'workshops', 'certificates'] && isOwner(userId);
     }
   }
 }

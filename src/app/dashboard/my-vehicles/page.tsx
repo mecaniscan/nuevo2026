@@ -30,7 +30,6 @@ import { Switch } from '@/components/ui/switch';
 import { Badge } from '@/components/ui/badge';
 import { v4 as uuidv4 } from 'uuid';
 import Image from 'next/image';
-import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from '@/components/ui/carousel';
 
 const MAX_IMAGES = 3;
 const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
@@ -58,8 +57,8 @@ const vehicleSchema = z.object({
   isForSale: z.boolean().default(false),
   images: z.any()
     .refine((files) => !files || files.length === 0 || files.length <= MAX_IMAGES, `No puedes subir más de ${MAX_IMAGES} imágenes.`)
-    .refine((files) => !files || Array.from(files).every((file: any) => file.size <= MAX_FILE_SIZE), `Cada imagen no debe superar los 5MB.`)
-    .refine((files) => !files || Array.from(files).every((file: any) => ACCEPTED_IMAGE_TYPES.includes(file.type)), "Solo se aceptan formatos .jpg, .jpeg, .png y .webp.")
+    .refine((files) => !files || files.length === 0 || Array.from(files).every((file: any) => file.size <= MAX_FILE_SIZE), `Cada imagen no debe superar los 5MB.`)
+    .refine((files) => !files || files.length === 0 || Array.from(files).every((file: any) => ACCEPTED_IMAGE_TYPES.includes(file.type)), "Solo se aceptan formatos .jpg, .jpeg, .png y .webp.")
     .nullable()
     .optional(),
 });
@@ -106,6 +105,7 @@ export default function MyVehiclesPage() {
       currentMileage: 0,
       country: '',
       isForSale: false,
+      images: undefined,
     },
   });
 
@@ -156,7 +156,6 @@ export default function MyVehiclesPage() {
       const existingVehicle = editingVehicleId ? vehicles?.find(v => v.id === editingVehicleId) : undefined;
       let finalImageUrls: string[] = existingVehicle?.imageUrls || [];
   
-      // If new images are uploaded, process them. Otherwise, keep the existing ones.
       if (values.images && values.images.length > 0) {
         finalImageUrls = await uploadImages(values.images);
       }
@@ -175,14 +174,21 @@ export default function MyVehiclesPage() {
   
       const batch = writeBatch(firestore);
       const userVehicleRef = doc(vehiclesCollectionRef, vehicleId);
-      
       batch.set(userVehicleRef, vehiclePayload, { merge: true });
+
+      const marketplaceRef = doc(firestore, 'marketplace', vehicleId);
+
+      if (vehiclePayload.isForSale) {
+        batch.set(marketplaceRef, vehiclePayload, { merge: true });
+      } else {
+        batch.delete(marketplaceRef);
+      }
       
       await batch.commit();
   
       toast({
         title: editingVehicleId ? '¡Vehículo Actualizado!' : '¡Vehículo Añadido!',
-        description: `Tu vehículo ha sido ${editingVehicleId ? 'actualizado' : 'guardado'}. Si está a la venta, aparecerá en el marketplace en breve.`,
+        description: `Tu vehículo ha sido ${editingVehicleId ? 'actualizado' : 'guardado'}. ${vehiclePayload.isForSale ? 'Aparecerá en el marketplace en breve.' : ''}`,
       });
       cancelEdit();
     } catch (error: any) {
@@ -208,14 +214,16 @@ export default function MyVehiclesPage() {
     
     const batch = writeBatch(firestore);
     const userVehicleRef = doc(vehiclesCollectionRef, vehicleId);
+    const marketplaceRef = doc(firestore, 'marketplace', vehicleId);
     
     batch.delete(userVehicleRef);
+    batch.delete(marketplaceRef); // Also delete from marketplace
     
     try {
         await batch.commit();
         toast({
             title: 'Vehículo Eliminado',
-            description: 'El vehículo ha sido eliminado de tus registros.',
+            description: 'El vehículo ha sido eliminado de tus registros y del marketplace.',
         });
     } catch (error: any) {
         console.error("Error deleting vehicle:", error);
@@ -248,6 +256,7 @@ export default function MyVehiclesPage() {
       currentMileage: 0,
       country: '',
       isForSale: false,
+      images: undefined,
     });
     setImagePreviews([]);
   }
@@ -263,7 +272,7 @@ export default function MyVehiclesPage() {
     );
   }
 
-  if (!user) {
+  if (!user && !isUserLoading) {
     return (
       <div className="container mx-auto py-12 flex items-center justify-center">
         <Card className="w-full max-w-lg text-center">
@@ -352,7 +361,7 @@ export default function MyVehiclesPage() {
                                                         <AlertDialogTitle>¿Estás seguro?</AlertDialogTitle>
                                                         <AlertDialogDescription>
                                                             Esta acción no se puede deshacer. Esto eliminará permanentemente
-                                                            el vehículo de tus registros.
+                                                            el vehículo de tus registros y del marketplace.
                                                         </AlertDialogDescription>
                                                     </AlertDialogHeader>
                                                     <AlertDialogFooter>
@@ -409,7 +418,7 @@ export default function MyVehiclesPage() {
                           <FormItem>
                             <FormLabel>Imágenes del Vehículo (hasta {MAX_IMAGES})</FormLabel>
                             <FormControl>
-                                <Input type="file" multiple accept="image/*" onChange={(e) => onChange(e.target.files)} {...rest} />
+                                <Input type="file" multiple accept="image/*" onChange={(e) => onChange(e.target.files)} />
                             </FormControl>
                             <FormDescription>
                               Sube hasta {MAX_IMAGES} imágenes. Si estás editando, las nuevas imágenes reemplazarán a las anteriores.

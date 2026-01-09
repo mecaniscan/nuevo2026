@@ -110,13 +110,14 @@ service cloud.firestore {
 
     /**
      * @description Publicly readable vehicle marketplace. This collection is read-only for clients.
-     *              Data is populated by a backend process.
+     *              Data is populated by a backend process (simulated by user-side batch write).
      * @path /marketplace/{vehicleId}
      * @principle Public read-only data, write access is disabled for clients.
      */
     match /marketplace/{vehicleId} {
         allow get, list: if true;
-        allow write: if false;
+        // Client-side writes are disallowed. Writes happen through a batch from a trusted context (the user's own vehicle management page).
+        allow write: if false; 
     }
   }
 }

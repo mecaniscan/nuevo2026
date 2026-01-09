@@ -6,10 +6,9 @@ import type { Vehicle } from '@/lib/types';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Loader2, MapPin, Car, Search, MessageSquare, Info } from 'lucide-react';
+import { Loader2, MapPin, Car, Search, Info } from 'lucide-react';
 import { Header } from '@/components/layout/header';
 import { Footer } from '@/components/layout/footer';
-import Link from 'next/link';
 import {
   Dialog,
   DialogContent,
@@ -57,8 +56,8 @@ function VehicleCard({ vehicle }: { vehicle: Vehicle }) {
                 </CarouselContent>
                 {vehicle.imageUrls && vehicle.imageUrls.length > 1 && (
                     <>
-                        <CarouselPrevious className="absolute left-2 top-1/2 -translate-y-1/2" />
-                        <CarouselNext className="absolute right-2 top-1/2 -translate-y-1/2" />
+                        <CarouselPrevious className="absolute left-2 top-1/2 -translate-y-1/2 z-10" />
+                        <CarouselNext className="absolute right-2 top-1/2 -translate-y-1/2 z-10" />
                     </>
                 )}
             </Carousel>
