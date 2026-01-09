@@ -30,7 +30,8 @@ import { Switch } from '@/components/ui/switch';
 import { Badge } from '@/components/ui/badge';
 import { v4 as uuidv4 } from 'uuid';
 import Image from 'next/image';
-import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
+import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from '@/components/ui/carousel';
+
 
 const vehicleSchema = z.object({
   type: z.string().optional(),
@@ -52,7 +53,8 @@ const vehicleSchema = z.object({
   ),
   country: z.string().optional(),
   isForSale: z.boolean().default(false),
-  image: z.instanceof(FileList).nullable().optional()
+  images: z.instanceof(FileList).nullable().optional()
+    .refine((files) => !files || files.length <= 3, "Puedes subir un máximo de 3 imágenes."),
 });
 
 
@@ -63,7 +65,7 @@ export default function MyVehiclesPage() {
   const { toast } = useToast();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [editingVehicleId, setEditingVehicleId] = useState<string | null>(null);
-  const [imagePreview, setImagePreview] = useState<string | null>(null);
+  const [imagePreviews, setImagePreviews] = useState<string[]>([]);
 
   const vehiclesCollectionRef = useMemoFirebase(() => {
     if (!firestore || !user) return null;
@@ -98,43 +100,42 @@ export default function MyVehiclesPage() {
       currentMileage: 0,
       country: '',
       isForSale: false,
-      image: undefined,
+      images: undefined,
     },
   });
   
   const { formState: { errors } } = form;
 
-  const imageFieldValue = form.watch('image');
+  const imageFieldValue = form.watch('images');
 
   useEffect(() => {
-    let url: string | null = null;
+    let urls: string[] = [];
     if (imageFieldValue && imageFieldValue.length > 0) {
-      url = URL.createObjectURL(imageFieldValue[0]);
-      setImagePreview(url);
+      urls = Array.from(imageFieldValue).map(file => URL.createObjectURL(file));
+      setImagePreviews(urls);
     } else {
       const editingVehicle = editingVehicleId ? vehicles?.find(v => v.id === editingVehicleId) : null;
-      if (editingVehicle?.imageUrl) {
-        setImagePreview(editingVehicle.imageUrl);
+      if (editingVehicle?.imageUrls) {
+        setImagePreviews(editingVehicle.imageUrls);
       } else {
-        setImagePreview(null);
+        setImagePreviews([]);
       }
     }
 
     return () => {
-      if (url) {
-        URL.revokeObjectURL(url);
-      }
+      urls.forEach(url => URL.revokeObjectURL(url));
     };
   }, [imageFieldValue, editingVehicleId, vehicles]);
 
-  const uploadImage = async (file: File): Promise<string> => {
+  const uploadImages = async (files: FileList): Promise<string[]> => {
     if (!storage || !user) {
         throw new Error("Storage service not available.");
     }
-    const imageRef = storageRef(storage, `vehicles/${user.uid}/${uuidv4()}`);
-    const snapshot = await uploadBytes(imageRef, file);
-    const downloadURL = await getDownloadURL(snapshot.ref);
-    return downloadURL;
+    const uploadPromises = Array.from(files).map(file => {
+        const imageRef = storageRef(storage, `vehicles/${user.uid}/${uuidv4()}`);
+        return uploadBytes(imageRef, file).then(snapshot => getDownloadURL(snapshot.ref));
+    });
+    return Promise.all(uploadPromises);
   };
 
   async function onSubmit(values: z.infer<typeof vehicleSchema>) {
@@ -147,14 +148,14 @@ export default function MyVehiclesPage() {
   
     try {
       const existingVehicle = editingVehicleId ? vehicles?.find(v => v.id === editingVehicleId) : undefined;
-      let finalImageUrl: string | undefined = existingVehicle?.imageUrl;
+      let finalImageUrls: string[] = existingVehicle?.imageUrls || [];
   
-      if (values.image && values.image.length > 0) {
-        finalImageUrl = await uploadImage(values.image[0]);
+      if (values.images && values.images.length > 0) {
+        finalImageUrls = await uploadImages(values.images);
       }
   
       const vehicleId = editingVehicleId || doc(vehiclesCollectionRef).id;
-      const { image, ...formValues } = values;
+      const { images, ...formValues } = values;
   
       const vehiclePayload: Vehicle = {
         id: vehicleId,
@@ -169,7 +170,7 @@ export default function MyVehiclesPage() {
         currentMileage: formValues.currentMileage || 0,
         isForSale: formValues.isForSale || false,
         country: formValues.country || '',
-        imageUrl: finalImageUrl,
+        imageUrls: finalImageUrls,
         sellerName: `${userData.firstName} ${userData.lastName}`,
         sellerWhatsapp: userData.whatsappNumber || '',
       };
@@ -195,7 +196,7 @@ export default function MyVehiclesPage() {
       cancelEdit();
     } catch (error: any) {
       console.error("Error submitting vehicle:", error);
-      const { image, ...formValues } = values;
+      const { images, ...formValues } = values;
 
       errorEmitter.emit('permission-error', new FirestorePermissionError({
           path: editingVehicleId ? `users/${user.uid}/vehicles/${editingVehicleId}` : `users/${user.uid}/vehicles`,
@@ -240,7 +241,7 @@ export default function MyVehiclesPage() {
     setEditingVehicleId(vehicle.id);
     form.reset({
         ...vehicle,
-        image: undefined,
+        images: undefined,
     });
     window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
   }
@@ -258,9 +259,9 @@ export default function MyVehiclesPage() {
       currentMileage: 0,
       country: '',
       isForSale: false,
-      image: undefined,
+      images: undefined,
     });
-    setImagePreview(null);
+    setImagePreviews([]);
   }
 
 
@@ -331,8 +332,8 @@ export default function MyVehiclesPage() {
                                     <TableRow key={vehicle.id}>
                                         <TableCell className="font-medium flex items-center gap-3">
                                             <div className="w-16 h-10 rounded-md bg-muted flex items-center justify-center text-muted-foreground relative overflow-hidden">
-                                                {vehicle.imageUrl ? (
-                                                    <Image src={vehicle.imageUrl} alt={`${vehicle.brand} ${vehicle.model}`} fill className="object-cover" />
+                                                {vehicle.imageUrls && vehicle.imageUrls.length > 0 ? (
+                                                    <Image src={vehicle.imageUrls[0]} alt={`${vehicle.brand} ${vehicle.model}`} fill className="object-cover" />
                                                 ) : <Car/>}
                                             </div>
                                             {vehicle.brand} {vehicle.model}
@@ -415,25 +416,29 @@ export default function MyVehiclesPage() {
                   <div className="lg:col-span-3">
                      <FormField
                         control={form.control}
-                        name="image"
+                        name="images"
                         render={({ field: { onChange, value, ...rest } }) => (
                           <FormItem>
-                            <FormLabel>Imagen del Vehículo</FormLabel>
+                            <FormLabel>Imágenes del Vehículo (hasta 3)</FormLabel>
                             <FormControl>
-                                <Input type="file" accept="image/*" onChange={(e) => onChange(e.target.files)} />
+                                <Input type="file" accept="image/*" multiple onChange={(e) => onChange(e.target.files)} />
                             </FormControl>
                             <FormDescription>
-                              Sube una imagen. Si estás editando, la nueva imagen reemplazará a la anterior.
+                              Sube hasta 3 imágenes. Si estás editando, las nuevas imágenes reemplazarán a las anteriores.
                             </FormDescription>
                             <FormMessage />
                           </FormItem>
                         )}
                       />
-                      {imagePreview && (
+                      {imagePreviews.length > 0 && (
                         <div className="mt-4">
-                            <FormLabel>Vista Previa de Imagen</FormLabel>
-                            <div className="mt-2 relative aspect-video w-full max-w-sm overflow-hidden rounded-md border">
-                                <Image src={imagePreview} alt="Vista previa de imagen" fill className="object-cover"/>
+                            <FormLabel>Vista Previa de Imágenes</FormLabel>
+                            <div className="mt-2 grid grid-cols-2 sm:grid-cols-3 gap-4">
+                                {imagePreviews.map((src, index) => (
+                                    <div key={index} className="relative aspect-video w-full overflow-hidden rounded-md border">
+                                        <Image src={src} alt={`Vista previa ${index + 1}`} fill className="object-cover"/>
+                                    </div>
+                                ))}
                             </div>
                         </div>
                       )}
@@ -482,5 +487,3 @@ export default function MyVehiclesPage() {
     </div>
   );
 }
-
-    

@@ -71,11 +71,12 @@ export type Vehicle = {
     licensePlate: string;
     price: number;
     currentMileage: number;
-    imageUrl?: string;
+    imageUrls: string[];
     isForSale: boolean;
     country: string;
     sellerName: string;
     sellerWhatsapp: string;
+    certificateNumber?: string;
 };
 
 export type FavoriteWorkshop = {
