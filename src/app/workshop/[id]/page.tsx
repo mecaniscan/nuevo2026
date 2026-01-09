@@ -122,7 +122,7 @@ export default function WorkshopDetailPage() {
     }, [workshopData, workshopServices]);
 
     const handleLogin = () => {
-        router.push('/dashboard');
+        router.push('/login');
     };
 
     const toggleFavorite = async () => {

@@ -19,29 +19,18 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog"
-import { useForm } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
-import * as z from 'zod';
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
-import { Input } from '@/components/ui/input';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import React, { useState } from 'react';
-import { initiateEmailSignIn } from '@/firebase/non-blocking-login';
+import React, { useEffect } from 'react';
 import { signOut } from 'firebase/auth';
 import { cn } from '@/lib/utils';
+import { useRouter } from 'next/navigation';
 
-
-const loginSchema = z.object({
-  email: z.string().email('El correo electrónico no es válido.'),
-  password: z.string().min(1, 'La contraseña es obligatoria.'),
-});
 
 export default function DashboardPage() {
   const { user, isUserLoading } = useUser();
   const firestore = useFirestore();
   const { toast } = useToast();
-  const [isLoggingIn, setIsLoggingIn] = useState(false);
-  const [authInstance, setAuthInstance] = useState<any>(null);
+  const [authInstance, setAuthInstance] = React.useState<any>(null);
+  const router = useRouter();
 
   React.useEffect(() => {
     import('firebase/auth').then(authModule => {
@@ -146,40 +135,16 @@ export default function DashboardPage() {
     }
   };
 
-  const loginForm = useForm<z.infer<typeof loginSchema>>({
-    resolver: zodResolver(loginSchema),
-    defaultValues: {
-      email: '',
-      password: '',
-    },
-  });
-
-  async function onLoginSubmit(values: z.infer<typeof loginSchema>) {
-    if (!authInstance) return;
-    setIsLoggingIn(true);
-    try {
-      await initiateEmailSignIn(authInstance, values.email, values.password);
-    } catch (error: any) {
-      if (error.code === 'auth/invalid-credential' || error.code === 'auth/wrong-password' || error.code === 'auth/user-not-found') {
-        toast({
-          variant: 'destructive',
-          title: 'Error de Inicio de Sesión',
-          description: 'El correo electrónico o la contraseña son incorrectos.',
-        });
-      } else {
-        toast({
-          variant: 'destructive',
-          title: 'Error Inesperado',
-          description: 'Ocurrió un error al intentar iniciar sesión. Por favor, intenta de nuevo.',
-        });
-      }
-    } finally {
-      setIsLoggingIn(false);
-    }
-  }
 
   // --- Loading and Auth States ---
-  if (isUserLoading || isWorkshopsLoading) {
+  useEffect(() => {
+    if (!isUserLoading && !user) {
+      router.push('/login');
+    }
+  }, [isUserLoading, user, router]);
+
+
+  if (isUserLoading || isWorkshopsLoading || !user) {
     return (
       <div className="flex min-h-screen items-center justify-center">
         <Loader2 className="h-12 w-12 animate-spin text-primary" />
@@ -187,72 +152,6 @@ export default function DashboardPage() {
     );
   }
 
-  if (!user) {
-    return (
-        <div className="flex min-h-screen items-center justify-center bg-muted/40">
-            <Card className="w-full max-w-md shadow-lg">
-                <CardHeader className="text-center">
-                    <CardTitle className="text-2xl font-headline">Bienvenido de Nuevo</CardTitle>
-                    <CardDescription>Inicia sesión para acceder a tu panel.</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <Tabs defaultValue="email">
-                    <TabsList className="grid w-full grid-cols-1">
-                      <TabsTrigger value="email">Correo</TabsTrigger>
-                    </TabsList>
-                    <TabsContent value="email" className="pt-4">
-                        <Form {...loginForm}>
-                          <form onSubmit={loginForm.handleSubmit(onLoginSubmit)} className="space-y-4">
-                            <FormField
-                              control={loginForm.control}
-                              name="email"
-                              render={({ field }) => (
-                                <FormItem>
-                                  <FormLabel>Correo Electrónico</FormLabel>
-                                  <FormControl>
-                                    <Input type="email" placeholder="tu@correo.com" {...field} />
-                                  </FormControl>
-                                  <FormMessage />
-                                </FormItem>
-                              )}
-                            />
-                            <FormField
-                              control={loginForm.control}
-                              name="password"
-                              render={({ field }) => (
-                                <FormItem>
-                                  <FormLabel>Contraseña</FormLabel>
-                                  <FormControl>
-                                    <Input type="password" placeholder="••••••••" {...field} />
-                                  </FormControl>
-                                  <FormMessage />
-                                </FormItem>
-                              )}
-                            />
-                            <Button type="submit" className="w-full" disabled={isLoggingIn}>
-                               {isLoggingIn ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Lock className="mr-2 h-4 w-4" />}
-                               {isLoggingIn ? 'Iniciando Sesión...' : 'Iniciar Sesión'}
-                            </Button>
-                          </form>
-                        </Form>
-                    </TabsContent>
-                  </Tabs>
-                </CardContent>
-                <CardContent className="flex flex-col gap-2 text-center">
-                     <p className="text-sm text-muted-foreground">
-                        ¿No tienes una cuenta?{' '}
-                        <Button variant="link" className="p-0 h-auto" asChild>
-                            <Link href="/register">Regístrate aquí</Link>
-                        </Button>
-                    </p>
-                    <Button variant="link" asChild>
-                      <Link href="/">Volver a la página principal</Link>
-                    </Button>
-                </CardContent>
-            </Card>
-        </div>
-    );
-  }
 
   // --- Render ---
   const hasWorkshop = workshops && workshops.length > 0;
@@ -388,7 +287,7 @@ export default function DashboardPage() {
                             <AlertDialogTitle>¿Estás absolutamente seguro?</AlertDialogTitle>
                             <AlertDialogDescription>
                                 Esta acción no se puede deshacer. Esto eliminará permanentemente tu cuenta,
-                                tu taller registrado (si existe) y todas tus citas de nuestros servidores.
+                                tu taller registrado (si existe) y todas las citas y vehículos asociados.
                             </AlertDialogDescription>
                             </AlertDialogHeader>
                             <AlertDialogFooter>

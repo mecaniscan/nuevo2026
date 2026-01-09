@@ -161,7 +161,7 @@ export default function RegisterPage() {
             <p className="text-sm text-muted-foreground">
                 ¿Ya tienes una cuenta?{' '}
                 <Button variant="link" className="p-0 h-auto" asChild>
-                    <Link href="/dashboard">Inicia Sesión</Link>
+                    <Link href="/login">Inicia Sesión</Link>
                 </Button>
             </p>
         </div>

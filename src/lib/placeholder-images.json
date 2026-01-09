@@ -7,6 +7,12 @@
       "imageHint": "car engine"
     },
     {
+      "id": "login-background",
+      "description": "A red Ferrari sports car parked on the street.",
+      "imageUrl": "https://images.unsplash.com/photo-1583121274602-3e2820c69888?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwxfHxmZXJyYXJpfGVufDB8fHx8MTc2NjM4MzQ3N3ww&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "red car"
+    },
+    {
       "id": "workshop-1",
       "description": "Interior of a clean and modern auto repair shop",
       "imageUrl": "https://images.unsplash.com/photo-1702146713858-8e7d1cc29fe8?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwxMHx8YXV0byUyMHJlcGFpcnxlbnwwfHx8fDE3NjYzOTE1Mjl8MA&ixlib=rb-4.1.0&q=80&w=1080",
@@ -39,7 +45,7 @@
     {
       "id": "workshop-6",
       "description": "An electric vehicle being serviced",
-      "imageUrl": "https://images.unsplash.com/photo-1593941707874-ef25b8b4a92b?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwyfHxlbGVjdHJpYyUyMHZlaGljbGV8ZW58MHx8fHwxNzY2NDUzMjIzfDA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageUrl": "https://images.unsplash.com/photo-1593941707874-ef25b8b4a92b?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwyfHxlbGVjdHJpYyUyMHZlaGljbGV8ZW58MHx8fHwxNzY2NDUzMjIzfDA&ixlibrb-4.1.0&q=80&w=1080",
       "imageHint": "electric vehicle"
     }
   ]

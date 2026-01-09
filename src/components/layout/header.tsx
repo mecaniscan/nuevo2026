@@ -110,7 +110,7 @@ export function Header() {
           {!user && !isUserLoading && (
             <>
                <Button variant="ghost" asChild>
-                <Link href="/dashboard">Iniciar Sesión</Link>
+                <Link href="/login">Iniciar Sesión</Link>
               </Button>
                <Button asChild>
                 <Link href="/register">Crear Cuenta</Link>
