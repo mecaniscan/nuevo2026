@@ -7,7 +7,7 @@ import * as z from 'zod';
 import { useParams, useRouter } from 'next/navigation';
 import Image from 'next/image';
 import { useDoc, useUser, useFirestore, useMemoFirebase, useCollection, FirestorePermissionError, errorEmitter, setDocumentNonBlocking } from '@/firebase';
-import { doc, collection, query, serverTimestamp, Timestamp, writeBatch, deleteDoc, setDoc, addDoc } from 'firebase/firestore';
+import { doc, collection, query, serverTimestamp, Timestamp, writeBatch, deleteDoc, setDoc, addDoc, runTransaction } from 'firebase/firestore';
 import type { Workshop, Appointment, Service, Review, FavoriteWorkshop, Vehicle } from '@/lib/types';
 import { Loader2, MapPin, ScanLine, Star, Calendar as CalendarIcon, Wrench, MessageSquare, Send, Heart, Phone, Car } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
@@ -221,43 +221,65 @@ export default function WorkshopDetailPage() {
     }
     
     async function onReviewSubmit(values: z.infer<typeof reviewSchema>) {
-      if (!user || !firestore || !workshopId) {
-        toast({ variant: "destructive", title: "Error", description: "Debes iniciar sesión para dejar una reseña." });
-        return;
-      }
-      if (userHasReviewed) {
-        toast({ variant: "destructive", title: "Acción no permitida", description: "Ya has dejado una reseña para este taller." });
-        return;
-      }
-      setIsSubmittingReview(true);
+        if (!user || !firestore || !workshopId || !workshopRef) {
+            toast({ variant: "destructive", title: "Error", description: "Debes iniciar sesión para dejar una reseña." });
+            return;
+        }
+        if (userHasReviewed) {
+            toast({ variant: "destructive", title: "Acción no permitida", description: "Ya has dejado una reseña para este taller." });
+            return;
+        }
+        setIsSubmittingReview(true);
       
-      const reviewCollectionRef = collection(firestore, `workshops/${workshopId}/reviews`);
-      const reviewRef = doc(reviewCollectionRef);
+        const reviewCollectionRef = collection(firestore, `workshops/${workshopId}/reviews`);
+        const reviewRef = doc(reviewCollectionRef);
 
-      const reviewData = {
-        ...values,
-        id: reviewRef.id,
-        workshopId,
-        userId: user.uid,
-        authorName: user.displayName || user.email,
-        createdAt: serverTimestamp(),
-      };
+        try {
+            await runTransaction(firestore, async (transaction) => {
+                const workshopDoc = await transaction.get(workshopRef);
+                if (!workshopDoc.exists()) {
+                    throw "El taller no existe.";
+                }
 
-      setDoc(reviewRef, reviewData).then(() => {
-        toast({
-          title: "¡Reseña Enviada!",
-          description: "Gracias por compartir tu opinión.",
-        });
-        reviewForm.reset({rating: 0, comment: ""});
-      }).catch(error => {
-          errorEmitter.emit('permission-error', new FirestorePermissionError({
-            path: reviewRef.path,
-            operation: 'create',
-            requestResourceData: reviewData
-        }));
-      }).finally(() => {
-        setIsSubmittingReview(false);
-      });
+                const currentData = workshopDoc.data();
+                const currentReviewCount = currentData.reviewCount || 0;
+                const currentAverageRating = currentData.averageRating || 0;
+
+                const newReviewCount = currentReviewCount + 1;
+                const newAverageRating = (currentAverageRating * currentReviewCount + values.rating) / newReviewCount;
+
+                transaction.update(workshopRef, {
+                    reviewCount: newReviewCount,
+                    averageRating: newAverageRating
+                });
+
+                const reviewData = {
+                    ...values,
+                    id: reviewRef.id,
+                    workshopId,
+                    userId: user.uid,
+                    authorName: user.displayName || user.email,
+                    createdAt: serverTimestamp(),
+                };
+                transaction.set(reviewRef, reviewData);
+            });
+
+            toast({
+                title: "¡Reseña Enviada!",
+                description: "Gracias por compartir tu opinión.",
+            });
+            reviewForm.reset({rating: 0, comment: ""});
+
+        } catch (error) {
+            console.error("Error submitting review: ", error);
+            toast({
+                variant: 'destructive',
+                title: 'Error al enviar reseña',
+                description: 'No se pudo guardar tu reseña. Por favor, intenta de nuevo.'
+            });
+        } finally {
+            setIsSubmittingReview(false);
+        }
     }
 
     const formatDate = (dateValue: string | Timestamp | undefined) => {
