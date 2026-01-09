@@ -446,9 +446,9 @@ export default function MyVehiclesPage() {
                       {imagePreviews.length > 0 && (
                         <div className="mt-4">
                             <FormLabel>Vista Previa de Imágenes</FormLabel>
-                            <div className="mt-2 grid grid-cols-2 sm:grid-cols-3 gap-4">
+                            <div className="mt-2 grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
                                 {imagePreviews.map((preview, index) => (
-                                    <div key={index} className="relative aspect-video w-full overflow-hidden rounded-md">
+                                    <div key={index} className="relative aspect-video w-full overflow-hidden rounded-md border">
                                         <Image src={preview} alt={`Vista previa de imagen ${index + 1}`} fill className="object-cover"/>
                                     </div>
                                 ))}
