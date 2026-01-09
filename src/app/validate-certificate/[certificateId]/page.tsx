@@ -9,6 +9,7 @@ import { Loader2, CheckCircle, XCircle, FileText, ArrowLeft } from 'lucide-react
 import Link from 'next/link';
 import Image from 'next/image';
 import { Separator } from '@/components/ui/separator';
+import { useParams } from 'next/navigation';
 
 const CertificateItem = ({ label, value }: { label: string; value: string | number | undefined }) => (
     <div className="flex justify-between py-2 border-b">
@@ -17,8 +18,9 @@ const CertificateItem = ({ label, value }: { label: string; value: string | numb
     </div>
 );
 
-export default function ValidateCertificatePage({ params }: { params: { certificateId: string } }) {
-  const { certificateId } = params;
+export default function ValidateCertificatePage() {
+  const params = useParams();
+  const certificateId = params.certificateId as string;
   const firestore = useFirestore();
 
   const vehiclesCollection = useMemoFirebase(() => {
