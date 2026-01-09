@@ -56,12 +56,10 @@ const vehicleSchema = z.object({
   ),
   country: z.string().min(2, 'El país es requerido.'),
   isForSale: z.boolean().default(false),
-  images: z.any()
+  images: z.instanceof(FileList).nullable().optional()
     .refine((files) => !files || files.length === 0 || files.length <= MAX_IMAGES, `No puedes subir más de ${MAX_IMAGES} imágenes.`)
     .refine((files) => !files || files.length === 0 || Array.from(files).every((file: any) => file.size <= MAX_FILE_SIZE), `Cada imagen no debe superar los 5MB.`)
     .refine((files) => !files || files.length === 0 || Array.from(files).every((file: any) => ACCEPTED_IMAGE_TYPES.includes(file.type)), "Solo se aceptan formatos .jpg, .jpeg, .png y .webp.")
-    .nullable()
-    .optional(),
 });
 
 
