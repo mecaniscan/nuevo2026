@@ -56,9 +56,6 @@ const vehicleSchema = z.object({
   country: z.string().optional(),
   isForSale: z.boolean().default(false),
   image: z.instanceof(FileList).nullable().optional()
-    .refine((files) => !files || files.length === 0 || files.length <= 1, `Solo puedes subir 1 imagen.`)
-    .refine((files) => !files || files.length === 0 || files?.[0]?.size <= MAX_FILE_SIZE, `La imagen no debe superar los 5MB.`)
-    .refine((files) => !files || files.length === 0 || ACCEPTED_IMAGE_TYPES.includes(files?.[0]?.type), "Solo se aceptan formatos .jpg, .jpeg, .png y .webp.")
 });
 
 
@@ -107,6 +104,8 @@ export default function MyVehiclesPage() {
       image: undefined,
     },
   });
+  
+  const { formState: { errors } } = form;
 
   const imageFieldValue = form.watch('image');
 
@@ -407,16 +406,16 @@ export default function MyVehiclesPage() {
             <Form {...form}>
               <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                  <FormField control={form.control} name="type" render={({ field }) => (<FormItem><FormLabel>Tipo</FormLabel><FormControl><Input placeholder="Ej: Sedan, SUV" {...field} /></FormControl><FormMessage /></FormItem>)} />
-                  <FormField control={form.control} name="brand" render={({ field }) => (<FormItem><FormLabel>Marca</FormLabel><FormControl><Input placeholder="Ej: Toyota" {...field} /></FormControl><FormMessage /></FormItem>)} />
-                  <FormField control={form.control} name="model" render={({ field }) => (<FormItem><FormLabel>Modelo</FormLabel><FormControl><Input placeholder="Ej: Corolla" {...field} /></FormControl><FormMessage /></FormItem>)} />
-                  <FormField control={form.control} name="year" render={({ field }) => (<FormItem><FormLabel>Año</FormLabel><FormControl><Input type="number" placeholder="2022" {...field} /></FormControl><FormMessage /></FormItem>)} />
-                  <FormField control={form.control} name="price" render={({ field }) => (<FormItem><FormLabel>Precio ($)</FormLabel><FormControl><Input type="number" step="0.01" placeholder="25000.00" {...field} /></FormControl><FormMessage /></FormItem>)} />
-                  <FormField control={form.control} name="currentMileage" render={({ field }) => (<FormItem><FormLabel>Kilometraje Actual</FormLabel><FormControl><Input type="number" placeholder="50000" {...field} /></FormControl><FormMessage /></FormItem>)} />
-                  <FormField control={form.control} name="licensePlate" render={({ field }) => (<FormItem><FormLabel>Placa</FormLabel><FormControl><Input placeholder="ABC-123" {...field} /></FormControl><FormMessage /></FormItem>)} />
-                  <FormField control={form.control} name="country" render={({ field }) => (<FormItem><FormLabel>País</FormLabel><FormControl><Input placeholder="Ej: Argentina" {...field} /></FormControl><FormMessage /></FormItem>)} />
+                  <FormField control={form.control} name="type" render={({ field }) => (<FormItem><FormLabel>Tipo</FormLabel><FormControl><Input placeholder="Ej: Sedan, SUV" {...field} className={errors.type ? 'border-destructive' : ''} /></FormControl><FormMessage /></FormItem>)} />
+                  <FormField control={form.control} name="brand" render={({ field }) => (<FormItem><FormLabel>Marca</FormLabel><FormControl><Input placeholder="Ej: Toyota" {...field} className={errors.brand ? 'border-destructive' : ''} /></FormControl><FormMessage /></FormItem>)} />
+                  <FormField control={form.control} name="model" render={({ field }) => (<FormItem><FormLabel>Modelo</FormLabel><FormControl><Input placeholder="Ej: Corolla" {...field} className={errors.model ? 'border-destructive' : ''} /></FormControl><FormMessage /></FormItem>)} />
+                  <FormField control={form.control} name="year" render={({ field }) => (<FormItem><FormLabel>Año</FormLabel><FormControl><Input type="number" placeholder="2022" {...field} className={errors.year ? 'border-destructive' : ''} /></FormControl><FormMessage /></FormItem>)} />
+                  <FormField control={form.control} name="price" render={({ field }) => (<FormItem><FormLabel>Precio ($)</FormLabel><FormControl><Input type="number" step="0.01" placeholder="25000.00" {...field} className={errors.price ? 'border-destructive' : ''} /></FormControl><FormMessage /></FormItem>)} />
+                  <FormField control={form.control} name="currentMileage" render={({ field }) => (<FormItem><FormLabel>Kilometraje Actual</FormLabel><FormControl><Input type="number" placeholder="50000" {...field} className={errors.currentMileage ? 'border-destructive' : ''} /></FormControl><FormMessage /></FormItem>)} />
+                  <FormField control={form.control} name="licensePlate" render={({ field }) => (<FormItem><FormLabel>Placa</FormLabel><FormControl><Input placeholder="ABC-123" {...field} className={errors.licensePlate ? 'border-destructive' : ''} /></FormControl><FormMessage /></FormItem>)} />
+                  <FormField control={form.control} name="country" render={({ field }) => (<FormItem><FormLabel>País</FormLabel><FormControl><Input placeholder="Ej: Argentina" {...field} className={errors.country ? 'border-destructive' : ''} /></FormControl><FormMessage /></FormItem>)} />
                   <div className="lg:col-span-3">
-                    <FormField control={form.control} name="vin" render={({ field }) => (<FormItem><FormLabel>Código VIN</FormLabel><FormControl><Input placeholder="17 caracteres" {...field} /></FormControl><FormMessage /></FormItem>)} />
+                    <FormField control={form.control} name="vin" render={({ field }) => (<FormItem><FormLabel>Código VIN</FormLabel><FormControl><Input placeholder="17 caracteres" {...field} className={errors.vin ? 'border-destructive' : ''} /></FormControl><FormMessage /></FormItem>)} />
                   </div>
                   <div className="lg:col-span-3">
                      <FormField
@@ -471,7 +470,7 @@ export default function MyVehiclesPage() {
                     />
                 </div>
 
-                <div className="flex gap-4">
+                <div className="flex flex-col gap-4">
                   <Button type="submit" disabled={isSubmitting}>
                     {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                     {editingVehicleId ? <>Guardar Cambios</> : <><PlusCircle className="mr-2" /> Guardar Vehículo</>}
@@ -488,3 +487,5 @@ export default function MyVehiclesPage() {
     </div>
   );
 }
+
+    
