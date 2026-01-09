@@ -69,7 +69,7 @@ export default function ValidateCertificatePage() {
                     <CertificateItem label="Año" value={vehicle.year} />
                     <CertificateItem label="Código VIN" value={vehicle.vin} />
                     <CertificateItem label="Placa" value={vehicle.licensePlate} />
-                    <CertificateItem label="Precio de Venta" value={`$${vehicle.price.toLocaleString()}`} />
+                    <CertificateItem label="Precio de Venta" value={`$${vehicle.price?.toLocaleString()}`} />
                     <CertificateItem label="Vendedor" value={vehicle.sellerName} />
                 </dl>
                  <Separator />
@@ -87,7 +87,7 @@ export default function ValidateCertificatePage() {
           )}
         </CardContent>
         <CardContent className='flex justify-center gap-4'>
-            <Button asChild variant="outline"><Link href="/"><ArrowLeft className="mr-2 h-4 w-4"/>Volver a la Página Principal</Link></Button>
+            <Button asChild variant="outline" className="text-orange-500 border-orange-500 hover:bg-orange-500 hover:text-white"><Link href="/"><ArrowLeft className="mr-2 h-4 w-4"/>Volver a la Página Principal</Link></Button>
             <Button asChild><Link href="/marketplace">Ir al Marketplace</Link></Button>
         </CardContent>
       </Card>

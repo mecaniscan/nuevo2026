@@ -65,6 +65,9 @@ export default {
           border: 'hsl(var(--sidebar-border))',
           ring: 'hsl(var(--sidebar-ring))',
         },
+        orange: {
+          '500': 'hsl(var(--orange))',
+        }
       },
       borderRadius: {
         lg: 'var(--radius)',

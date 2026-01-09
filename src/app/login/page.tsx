@@ -143,8 +143,8 @@ export default function LoginPage() {
                 <Link href="/register">Regístrate aquí</Link>
             </Button>
             </p>
-            <Button variant="link" className="text-white/80" asChild>
-            <Link href="/">Volver a la página principal</Link>
+            <Button variant="link" className="text-orange-500" asChild>
+                <Link href="/">Volver a la página principal</Link>
             </Button>
         </CardContent>
       </Card>
