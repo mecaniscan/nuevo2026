@@ -32,9 +32,6 @@ import { v4 as uuidv4 } from 'uuid';
 import Image from 'next/image';
 import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
 
-const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
-const ACCEPTED_IMAGE_TYPES = ["image/jpeg", "image/jpg", "image/png", "image/webp"];
-
 const vehicleSchema = z.object({
   type: z.string().optional(),
   brand: z.string().optional(),
@@ -154,8 +151,6 @@ export default function MyVehiclesPage() {
   
       if (values.image && values.image.length > 0) {
         finalImageUrl = await uploadImage(values.image[0]);
-      } else if (!editingVehicleId) {
-        finalImageUrl = undefined;
       }
   
       const vehicleId = editingVehicleId || doc(vehiclesCollectionRef).id;
