@@ -92,7 +92,8 @@ service cloud.firestore {
      */
     match /appointments/{appointmentId} {
       allow get: if isSignedIn() && isAppointmentParticipant(resource.data);
-      allow list: if false; // Prevent listing all appointments. Queries must be used.
+      // Allow a user to list their own appointments, but not all appointments.
+      allow list: if isSignedIn() && request.query.where.path == "userId" && request.query.where.value == request.auth.uid;
       allow create: if isSignedIn() && isOwner(request.resource.data.userId);
       allow update: if isSignedIn() && isAppointmentParticipant(resource.data);
       allow delete: if isSignedIn() && isAppointmentParticipant(resource.data);
