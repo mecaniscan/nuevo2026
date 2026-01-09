@@ -61,10 +61,7 @@ export function useCollection<T = any>(
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [error, setError] = useState<FirestoreError | Error | null>(null);
   
-  // Ref to store the query being actively listened to.
-  const activeQueryRef = useRef<((CollectionReference<DocumentData> | Query<DocumentData>) & {__memo?: boolean})  | null | undefined>(null);
   const cleanupRef = useRef<(() => void) | null>(null);
-
 
   useEffect(() => {
     // If a cleanup function from a previous query exists, run it first.
@@ -72,21 +69,16 @@ export function useCollection<T = any>(
         cleanupRef.current();
         cleanupRef.current = null;
     }
-
+    
+    // If the query is null/undefined, it means we are not ready to fetch.
+    // Reset state to initial and wait.
     if (!memoizedTargetRefOrQuery) {
-      if (data !== null) setData(null);
-      if (isLoading) setIsLoading(false);
-      if (error !== null) setError(null);
-      activeQueryRef.current = null;
-      return;
+        setData(null);
+        setIsLoading(true); // We are "loading" because we are waiting for a valid query
+        setError(null);
+        return;
     }
     
-    // Check if the query has actually changed.
-    if(activeQueryRef.current === memoizedTargetRefOrQuery) {
-        return; // The query is the same, no need to re-subscribe.
-    }
-
-    // A new query is provided, start loading.
     setIsLoading(true);
     setError(null);
 
@@ -94,10 +86,7 @@ export function useCollection<T = any>(
     const unsubscribe = onSnapshot(
       memoizedTargetRefOrQuery,
       (snapshot: QuerySnapshot<DocumentData>) => {
-        const results: ResultItemType[] = [];
-        for (const doc of snapshot.docs) {
-          results.push({ ...(doc.data() as T), id: doc.id });
-        }
+        const results: ResultItemType[] = snapshot.docs.map(doc => ({ ...(doc.data() as T), id: doc.id }));
         setData(results);
         setError(null);
         setIsLoading(false);
@@ -123,14 +112,12 @@ export function useCollection<T = any>(
       }
     );
     
-    activeQueryRef.current = memoizedTargetRefOrQuery;
     cleanupRef.current = unsubscribe;
 
-    // Standard cleanup function for when the component unmounts.
+    // Standard cleanup function for when the component unmounts or query changes.
     return () => {
         unsubscribe();
         cleanupRef.current = null;
-        activeQueryRef.current = null;
     };
   }, [memoizedTargetRefOrQuery]); 
 
