@@ -180,12 +180,8 @@ export default function WorkshopDetailPage() {
             setIsSubmitting(false);
             return;
         }
-
-        const appointmentCollectionRef = collection(firestore, `appointments`);
-        const appointmentRef = doc(appointmentCollectionRef);
         
-        const appointmentData: Appointment = {
-          id: appointmentRef.id,
+        const appointmentData: Omit<Appointment, 'id'> = {
           workshopId: workshop.id,
           workshopName: workshop.name,
           userId: user.uid,
@@ -197,7 +193,7 @@ export default function WorkshopDetailPage() {
         };
         
         try {
-            setDocumentNonBlocking(appointmentRef, appointmentData, { merge: false });
+            await addDoc(collection(firestore, 'appointments'), appointmentData);
             
             const date = format(values.appointmentDateTime, "eeee, dd 'de' MMMM 'de' yyyy", { locale: es });
             const message = `Hola ${workshop.name}, me gustaría agendar una cita para mi ${selectedVehicle.brand} ${selectedVehicle.model} el día ${date}. El motivo es: "${values.description}". ¿Tienen disponibilidad?`;
@@ -213,12 +209,12 @@ export default function WorkshopDetailPage() {
             router.push('/dashboard/my-appointments');
 
         } catch (error) {
-             console.error('Error creating appointment record:', error);
-             toast({
-                variant: 'destructive',
-                title: 'Error al Registrar',
-                description: 'No se pudo guardar el registro de la cita. Por favor, intenta de nuevo.',
-            });
+            console.error('Error creating appointment record:', error);
+            errorEmitter.emit('permission-error', new FirestorePermissionError({
+                path: 'appointments',
+                operation: 'create',
+                requestResourceData: appointmentData,
+            }));
         } finally {
              setIsSubmitting(false);
         }
