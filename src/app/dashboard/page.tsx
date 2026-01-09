@@ -93,6 +93,12 @@ export default function DashboardPage() {
             const workshop = workshops[0];
             await deleteCollection(`workshops/${workshop.id}/services`);
             await deleteCollection(`workshops/${workshop.id}/reviews`);
+            
+            // Also delete all appointments for this workshop
+            const workshopAppointmentsQuery = query(collection(firestore, 'appointments'), where('workshopId', '==', workshop.id));
+            const workshopAppointmentsSnapshot = await getDocs(workshopAppointmentsQuery);
+            workshopAppointmentsSnapshot.forEach(doc => batch.delete(doc.ref));
+
             batch.delete(doc(firestore, 'workshops', workshop.id));
         }
         
