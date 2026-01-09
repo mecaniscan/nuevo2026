@@ -62,17 +62,20 @@ export function useCollection<T = any>(
   const [isLoading, setIsLoading] = useState<boolean>(true); // Start as true
   const [error, setError] = useState<FirestoreError | Error | null>(null);
   const unsubscribeRef = useRef<Unsubscribe | null>(null);
+  const cleanupPendingRef = useRef<boolean>(false);
 
   useEffect(() => {
-    // If the query is null or undefined, clean up and reset state.
+    // If a cleanup from the previous effect is pending, do not proceed.
+    // This effect will be re-run once the cleanup is complete.
+    if (cleanupPendingRef.current) {
+      return;
+    }
+
+    // If the query is null or undefined, do nothing but ensure state is reset.
     if (!memoizedTargetRefOrQuery) {
-      if (unsubscribeRef.current) {
-        unsubscribeRef.current();
-        unsubscribeRef.current = null;
-      }
-      setData(null);
-      setIsLoading(false); // Not loading because there's nothing to fetch.
-      setError(null);
+      if (data !== null) setData(null);
+      if (isLoading) setIsLoading(false); // Not loading because there's nothing to fetch.
+      if (error !== null) setError(null);
       return;
     }
 
@@ -118,10 +121,16 @@ export function useCollection<T = any>(
 
     // Cleanup function to run when the component unmounts or the query changes.
     return () => {
+      cleanupPendingRef.current = true;
       if (unsubscribeRef.current) {
         unsubscribeRef.current();
         unsubscribeRef.current = null;
       }
+      // Reset state and mark cleanup as complete
+      setData(null);
+      setIsLoading(true); // Set to loading for the next query
+      setError(null);
+      cleanupPendingRef.current = false;
     };
   }, [memoizedTargetRefOrQuery]); // Re-run if the target query/reference changes.
 
