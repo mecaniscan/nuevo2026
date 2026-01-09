@@ -5,7 +5,7 @@ import { collection, query, where } from 'firebase/firestore';
 import type { Vehicle } from '@/lib/types';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Loader2, CheckCircle, XCircle, FileText } from 'lucide-react';
+import { Loader2, CheckCircle, XCircle, FileText, ArrowLeft } from 'lucide-react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { Separator } from '@/components/ui/separator';
@@ -38,7 +38,7 @@ export default function ValidateCertificatePage({ params }: { params: { certific
     <div className="min-h-screen bg-muted flex items-center justify-center p-4">
       <Card className="w-full max-w-2xl shadow-2xl">
         <CardHeader>
-          <CardTitle className="flex items-center gap-2 text-2xl font-headline text-primary"><FileText /> Verificación de Certificado de Venta</CardTitle>
+          <CardTitle className="flex items-center gap-2 text-2xl font-headline text-primary"><FileText /> Certificado de Venta Digital</CardTitle>
           <CardDescription>Resultados para el número de certificado: {certificateId}</CardDescription>
         </CardHeader>
         <CardContent>
@@ -84,8 +84,9 @@ export default function ValidateCertificatePage({ params }: { params: { certific
             </div>
           )}
         </CardContent>
-        <CardContent className='flex justify-center'>
-            <Button asChild variant="outline"><Link href="/">Volver a la Página Principal</Link></Button>
+        <CardContent className='flex justify-center gap-4'>
+            <Button asChild variant="outline"><Link href="/"><ArrowLeft className="mr-2 h-4 w-4"/>Volver a la Página Principal</Link></Button>
+            <Button asChild><Link href="/marketplace">Ir al Marketplace</Link></Button>
         </CardContent>
       </Card>
     </div>

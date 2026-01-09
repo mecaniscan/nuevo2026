@@ -51,12 +51,8 @@ function VehicleCard({ vehicle }: { vehicle: Vehicle }) {
     }
   };
 
-  const handleGenerateCertificate = () => {
-    const imageUrl = `https://api.qrserver.com/v1/create-qr-code/?size=800x800&data=${encodeURIComponent(
-      `${window.location.origin}/validate-certificate/${vehicle.certificateNumber}`
-    )}`;
-    
-    router.push(`/certificate-preview?image=${encodeURIComponent(imageUrl)}`);
+  const handleViewCertificate = () => {
+    router.push(`/validate-certificate/${vehicle.certificateNumber}`);
   };
 
   return (
@@ -103,8 +99,8 @@ function VehicleCard({ vehicle }: { vehicle: Vehicle }) {
                 <p className="text-sm text-muted-foreground">{vehicle.sellerName || 'No disponible'}</p>
             </div>
              <div className="w-full flex flex-col sm:flex-row gap-2">
-                 <Button variant="outline" className="flex-1" onClick={handleGenerateCertificate}>
-                    <FileText className="mr-2 h-4 w-4" /> Certificado QR
+                 <Button variant="outline" className="flex-1" onClick={handleViewCertificate}>
+                    <FileText className="mr-2 h-4 w-4" /> Ver Certificado
                  </Button>
                 {vehicle.sellerWhatsapp ? (
                     <Button className="flex-1" onClick={handleContact}>
