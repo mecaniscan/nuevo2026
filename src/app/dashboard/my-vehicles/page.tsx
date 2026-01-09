@@ -37,24 +37,24 @@ const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
 const ACCEPTED_IMAGE_TYPES = ["image/jpeg", "image/jpg", "image/png", "image/webp"];
 
 const vehicleSchema = z.object({
-  type: z.string().min(3, 'El tipo es muy corto.'),
-  brand: z.string().min(2, 'La marca es requerida.'),
-  model: z.string().min(1, 'El modelo es muy corto.'),
+  type: z.string().optional(),
+  brand: z.string().optional(),
+  model: z.string().optional(),
   year: z.preprocess(
-    (a) => parseInt(z.string().parse(a), 10),
-    z.number().min(1900, 'Año inválido.').max(new Date().getFullYear() + 1, 'Año inválido.')
+    (a) => a ? parseInt(z.string().parse(a), 10) : new Date().getFullYear(),
+    z.number().optional()
   ),
-  vin: z.string().length(17, 'El VIN debe tener 17 caracteres.'),
-  licensePlate: z.string().min(3, 'La placa es muy corta.'),
+  vin: z.string().optional(),
+  licensePlate: z.string().optional(),
   price: z.preprocess(
-    (a) => parseFloat(z.string().parse(a)),
-    z.number().positive('El precio debe ser un número positivo.')
+    (a) => a ? parseFloat(z.string().parse(a)) : 0,
+    z.number().optional()
   ),
   currentMileage: z.preprocess(
-    (a) => parseInt(z.string().parse(a), 10),
-    z.number().min(0, 'El kilometraje no puede ser negativo.')
+    (a) => a ? parseInt(z.string().parse(a), 10) : 0,
+    z.number().optional()
   ),
-  country: z.string().min(2, 'El país es requerido.'),
+  country: z.string().optional(),
   isForSale: z.boolean().default(false),
   images: z.instanceof(FileList).nullable().optional()
     .refine((files) => !files || files.length === 0 || files.length <= MAX_IMAGES, `No puedes subir más de ${MAX_IMAGES} imágenes.`)
@@ -182,7 +182,16 @@ export default function MyVehiclesPage() {
       const vehiclePayload: Vehicle = {
         id: vehicleId,
         userId: user.uid,
-        ...formValues,
+        type: formValues.type || '',
+        brand: formValues.brand || '',
+        model: formValues.model || '',
+        year: formValues.year || new Date().getFullYear(),
+        vin: formValues.vin || '',
+        licensePlate: formValues.licensePlate || '',
+        price: formValues.price || 0,
+        currentMileage: formValues.currentMileage || 0,
+        isForSale: formValues.isForSale || false,
+        country: formValues.country || '',
         imageUrls: finalImageUrls,
         sellerName: `${userData.firstName} ${userData.lastName}`,
         sellerWhatsapp: userData.whatsappNumber || '',
@@ -483,22 +492,8 @@ export default function MyVehiclesPage() {
                     />
                 </div>
 
-                {Object.keys(formErrors).length > 0 && (
-                  <Alert variant="destructive">
-                    <AlertCircle className="h-4 w-4" />
-                    <AlertTitle>Faltan datos por completar</AlertTitle>
-                    <AlertDescription>
-                      <ul className="list-disc pl-5 mt-2">
-                        {Object.entries(formErrors).map(([field, error]) => (
-                          <li key={field}>{fieldNameMap[field] || field}: {error.message}</li>
-                        ))}
-                      </ul>
-                    </AlertDescription>
-                  </Alert>
-                )}
-
                 <div className="flex gap-4">
-                  <Button type="submit" disabled={isSubmitting || !form.formState.isValid}>
+                  <Button type="submit" disabled={isSubmitting}>
                     {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                     {editingVehicleId ? <>Guardar Cambios</> : <><PlusCircle className="mr-2" /> Guardar Vehículo</>}
                   </Button>
@@ -514,3 +509,5 @@ export default function MyVehiclesPage() {
     </div>
   );
 }
+
+    
