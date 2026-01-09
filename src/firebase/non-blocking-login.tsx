@@ -32,8 +32,8 @@ export function initiateEmailSignUp(authInstance: Auth, email: string, password:
 export function initiateEmailSignIn(authInstance: Auth, email: string, password: string): Promise<void> {
   // CRITICAL: Call signInWithEmailAndPassword directly. Do NOT use 'await signInWithEmailAndPassword(...)'.
   return signInWithEmailAndPassword(authInstance, email, password).then(() => {}).catch(error => {
-    console.error("Email sign-in failed:", error);
-    throw error; // Re-throw to be caught by the calling function's catch block
+    // Re-throw to be caught by the calling function's catch block
+    throw error;
   });
   // Code continues immediately. Auth state change is handled by onAuthStateChanged listener.
 }
