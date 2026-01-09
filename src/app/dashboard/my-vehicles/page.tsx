@@ -109,10 +109,10 @@ export default function MyVehiclesPage() {
   const imageFieldValue = form.watch('images');
 
   useEffect(() => {
-    let urls: string[] = [];
+    let newObjectUrls: string[] = [];
     if (imageFieldValue && imageFieldValue.length > 0) {
-      urls = Array.from(imageFieldValue).map(file => URL.createObjectURL(file));
-      setImagePreviews(urls);
+        newObjectUrls = Array.from(imageFieldValue).map(file => URL.createObjectURL(file));
+        setImagePreviews(newObjectUrls);
     } else {
       const editingVehicle = editingVehicleId ? vehicles?.find(v => v.id === editingVehicleId) : null;
       if (editingVehicle?.imageUrls) {
@@ -123,9 +123,21 @@ export default function MyVehiclesPage() {
     }
 
     return () => {
-      urls.forEach(url => URL.revokeObjectURL(url));
+        newObjectUrls.forEach(url => URL.revokeObjectURL(url));
     };
-  }, [imageFieldValue, editingVehicleId, vehicles]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [imageFieldValue]);
+
+   useEffect(() => {
+    if (editingVehicleId && vehicles) {
+      const editingVehicle = vehicles.find(v => v.id === editingVehicleId);
+      if (editingVehicle?.imageUrls) {
+        setImagePreviews(editingVehicle.imageUrls);
+      } else {
+        setImagePreviews([]);
+      }
+    }
+  }, [editingVehicleId, vehicles]);
 
   const uploadImages = async (files: FileList): Promise<string[]> => {
     if (!storage || !user) {
@@ -402,16 +414,16 @@ export default function MyVehiclesPage() {
             <Form {...form}>
               <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                  <FormField control={form.control} name="type" render={({ field }) => (<FormItem><FormLabel>Tipo</FormLabel><FormControl><Input placeholder="Ej: Sedan, SUV" {...field} className={errors.type ? 'border-destructive' : ''} /></FormControl><FormMessage /></FormItem>)} />
-                  <FormField control={form.control} name="brand" render={({ field }) => (<FormItem><FormLabel>Marca</FormLabel><FormControl><Input placeholder="Ej: Toyota" {...field} className={errors.brand ? 'border-destructive' : ''} /></FormControl><FormMessage /></FormItem>)} />
-                  <FormField control={form.control} name="model" render={({ field }) => (<FormItem><FormLabel>Modelo</FormLabel><FormControl><Input placeholder="Ej: Corolla" {...field} className={errors.model ? 'border-destructive' : ''} /></FormControl><FormMessage /></FormItem>)} />
-                  <FormField control={form.control} name="year" render={({ field }) => (<FormItem><FormLabel>Año</FormLabel><FormControl><Input type="number" placeholder="2022" {...field} className={errors.year ? 'border-destructive' : ''} /></FormControl><FormMessage /></FormItem>)} />
-                  <FormField control={form.control} name="price" render={({ field }) => (<FormItem><FormLabel>Precio ($)</FormLabel><FormControl><Input type="number" step="0.01" placeholder="25000.00" {...field} className={errors.price ? 'border-destructive' : ''} /></FormControl><FormMessage /></FormItem>)} />
-                  <FormField control={form.control} name="currentMileage" render={({ field }) => (<FormItem><FormLabel>Kilometraje Actual</FormLabel><FormControl><Input type="number" placeholder="50000" {...field} className={errors.currentMileage ? 'border-destructive' : ''} /></FormControl><FormMessage /></FormItem>)} />
-                  <FormField control={form.control} name="licensePlate" render={({ field }) => (<FormItem><FormLabel>Placa</FormLabel><FormControl><Input placeholder="ABC-123" {...field} className={errors.licensePlate ? 'border-destructive' : ''} /></FormControl><FormMessage /></FormItem>)} />
-                  <FormField control={form.control} name="country" render={({ field }) => (<FormItem><FormLabel>País</FormLabel><FormControl><Input placeholder="Ej: Argentina" {...field} className={errors.country ? 'border-destructive' : ''} /></FormControl><FormMessage /></FormItem>)} />
+                  <FormField control={form.control} name="type" render={({ field }) => (<FormItem><FormLabel>Tipo</FormLabel><FormControl><Input placeholder="Ej: Sedan, SUV" {...field} /></FormControl><FormMessage /></FormItem>)} />
+                  <FormField control={form.control} name="brand" render={({ field }) => (<FormItem><FormLabel>Marca</FormLabel><FormControl><Input placeholder="Ej: Toyota" {...field} /></FormControl><FormMessage /></FormItem>)} />
+                  <FormField control={form.control} name="model" render={({ field }) => (<FormItem><FormLabel>Modelo</FormLabel><FormControl><Input placeholder="Ej: Corolla" {...field} /></FormControl><FormMessage /></FormItem>)} />
+                  <FormField control={form.control} name="year" render={({ field }) => (<FormItem><FormLabel>Año</FormLabel><FormControl><Input type="number" placeholder="2022" {...field} /></FormControl><FormMessage /></FormItem>)} />
+                  <FormField control={form.control} name="price" render={({ field }) => (<FormItem><FormLabel>Precio ($)</FormLabel><FormControl><Input type="number" step="0.01" placeholder="25000.00" {...field} /></FormControl><FormMessage /></FormItem>)} />
+                  <FormField control={form.control} name="currentMileage" render={({ field }) => (<FormItem><FormLabel>Kilometraje Actual</FormLabel><FormControl><Input type="number" placeholder="50000" {...field} /></FormControl><FormMessage /></FormItem>)} />
+                  <FormField control={form.control} name="licensePlate" render={({ field }) => (<FormItem><FormLabel>Placa</FormLabel><FormControl><Input placeholder="ABC-123" {...field} /></FormControl><FormMessage /></FormItem>)} />
+                  <FormField control={form.control} name="country" render={({ field }) => (<FormItem><FormLabel>País</FormLabel><FormControl><Input placeholder="Ej: Argentina" {...field} /></FormControl><FormMessage /></FormItem>)} />
                   <div className="lg:col-span-3">
-                    <FormField control={form.control} name="vin" render={({ field }) => (<FormItem><FormLabel>Código VIN</FormLabel><FormControl><Input placeholder="17 caracteres" {...field} className={errors.vin ? 'border-destructive' : ''} /></FormControl><FormMessage /></FormItem>)} />
+                    <FormField control={form.control} name="vin" render={({ field }) => (<FormItem><FormLabel>Código VIN</FormLabel><FormControl><Input placeholder="17 caracteres" {...field} /></FormControl><FormMessage /></FormItem>)} />
                   </div>
                   <div className="lg:col-span-3">
                      <FormField
