@@ -1,7 +1,7 @@
 'use client';
 import React from 'react';
-import { useUser, useFirestore, useMemoFirebase, deleteDocumentNonBlocking, useCollection } from '@/firebase';
-import { collection, query, orderBy, doc } from 'firebase/firestore';
+import { useUser, useFirestore, useMemoFirebase, useCollection, FirestorePermissionError, errorEmitter } from '@/firebase';
+import { collection, query, orderBy, doc, deleteDoc } from 'firebase/firestore';
 import type { FavoriteWorkshop } from '@/lib/types';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -33,17 +33,24 @@ export default function MyFavoritesPage() {
 
   const { data: favorites, isLoading: areFavoritesLoading } = useCollection<FavoriteWorkshop>(favoritesQuery);
 
-  const handleRemoveFavorite = (workshopId: string) => {
+  const handleRemoveFavorite = async (workshopId: string) => {
     if (!user || !firestore) {
       toast({ variant: 'destructive', title: 'Error', description: 'No autenticado.' });
       return;
     }
     const docRef = doc(firestore, `users/${user.uid}/favorites`, workshopId);
-    deleteDocumentNonBlocking(docRef);
-    toast({
-      title: 'Taller Eliminado',
-      description: 'El taller ha sido eliminado de tus favoritos.',
-    });
+    try {
+        await deleteDoc(docRef);
+        toast({
+          title: 'Taller Eliminado',
+          description: 'El taller ha sido eliminado de tus favoritos.',
+        });
+    } catch (error) {
+        errorEmitter.emit('permission-error', new FirestorePermissionError({
+            path: docRef.path,
+            operation: 'delete'
+        }));
+    }
   };
 
   const isLoading = isUserLoading || areFavoritesLoading;

@@ -7,9 +7,8 @@ import { Button } from '@/components/ui/button';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
-import { useUser, useFirestore, useMemoFirebase, deleteDocumentNonBlocking, useCollection } from '@/firebase';
-import { collection, query, orderBy, serverTimestamp, Timestamp, doc } from 'firebase/firestore';
-import { addDocumentNonBlocking } from '@/firebase/non-blocking-updates';
+import { useUser, useFirestore, useMemoFirebase, useCollection, FirestorePermissionError, errorEmitter } from '@/firebase';
+import { collection, query, orderBy, serverTimestamp, Timestamp, doc, addDoc, deleteDoc } from 'firebase/firestore';
 import { useToast } from '@/hooks/use-toast';
 import { Loader2, PlusCircle, Droplets, Trash2 } from 'lucide-react';
 import Link from 'next/link';
@@ -103,16 +102,17 @@ export default function OilChangesPage() {
         setIsSubmitting(false);
         return;
     }
-
-    try {
-      const oilChangeData = {
+    
+    const oilChangeData = {
         ...values,
         userId: user.uid,
         vehicleName: `${selectedVehicle.brand} ${selectedVehicle.model}`, // Denormalized name
         date: serverTimestamp(),
       };
-      
-      addDocumentNonBlocking(collection(firestore, `users/${user.uid}/oilChanges`), oilChangeData);
+
+    try {
+      const oilChangesColRef = collection(firestore, `users/${user.uid}/oilChanges`);
+      await addDoc(oilChangesColRef, oilChangeData);
       
       toast({
         title: '¡Registro Añadido!',
@@ -120,28 +120,34 @@ export default function OilChangesPage() {
       });
       form.reset();
     } catch (error) {
-      console.error('Error adding oil change:', error);
-      toast({
-        variant: 'destructive',
-        title: 'Error Inesperado',
-        description: 'No se pudo guardar el registro.',
-      });
+        errorEmitter.emit('permission-error', new FirestorePermissionError({
+            path: `users/${user.uid}/oilChanges`,
+            operation: 'create',
+            requestResourceData: oilChangeData
+        }));
     } finally {
       setIsSubmitting(false);
     }
   }
 
-  function handleDeleteOilChange(oilChangeId: string) {
+  async function handleDeleteOilChange(oilChangeId: string) {
     if (!user || !firestore) {
       toast({ variant: 'destructive', title: 'Error', description: 'No autenticado.' });
       return;
     }
     const docRef = doc(firestore, `users/${user.uid}/oilChanges`, oilChangeId);
-    deleteDocumentNonBlocking(docRef);
-    toast({
-        title: 'Registro Eliminado',
-        description: 'El registro de cambio de aceite ha sido eliminado.',
-    })
+    try {
+        await deleteDoc(docRef);
+        toast({
+            title: 'Registro Eliminado',
+            description: 'El registro de cambio de aceite ha sido eliminado.',
+        })
+    } catch (error) {
+        errorEmitter.emit('permission-error', new FirestorePermissionError({
+            path: docRef.path,
+            operation: 'delete'
+        }));
+    }
   }
 
   const isLoading = isUserLoading || areOilChangesLoading || areVehiclesLoading;

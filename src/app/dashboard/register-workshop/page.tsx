@@ -8,8 +8,8 @@ import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, For
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { useUser, useFirestore, useMemoFirebase, useStorage, setDocumentNonBlocking, FirestorePermissionError, errorEmitter, useCollection } from '@/firebase';
-import { collection, query, where, doc } from 'firebase/firestore';
+import { useUser, useFirestore, useMemoFirebase, useStorage, FirestorePermissionError, errorEmitter, useCollection } from '@/firebase';
+import { collection, query, where, doc, setDoc } from 'firebase/firestore';
 import { useToast } from '@/hooks/use-toast';
 import { useRouter } from 'next/navigation';
 import { Loader2, Car, Wrench } from 'lucide-react';
@@ -129,7 +129,7 @@ export default function RegisterWorkshopPage() {
         reviewCount: 0,
       };
       
-      setDocumentNonBlocking(workshopRef, workshopData, { merge: false });
+      await setDoc(workshopRef, workshopData);
 
       toast({
         title: '¡Taller Registrado!',
@@ -137,6 +137,7 @@ export default function RegisterWorkshopPage() {
       });
       router.push('/dashboard/edit-services');
     } catch (error: any) {
+        console.error("Error registering workshop:", error);
         const { image, ...dataToSave } = values;
         errorEmitter.emit('permission-error', new FirestorePermissionError({
             path: `/workshops`,

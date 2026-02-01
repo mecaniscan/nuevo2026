@@ -98,21 +98,22 @@ export default function EditServicesPage() {
       batch.set(docRef, { ...serviceData, id: docRef.id }, { merge: true });
     });
 
-    batch.commit().then(() => {
+    try {
+        await batch.commit();
         toast({
             title: '¡Servicios Actualizados!',
             description: 'Tu lista de servicios ha sido guardada.',
         });
         router.push('/dashboard');
-    }).catch((error) => {
+    } catch (error) {
         errorEmitter.emit('permission-error', new FirestorePermissionError({
             path: `workshops/${workshop.id}/services`,
             operation: 'write',
             requestResourceData: values.services
         }));
-    }).finally(() => {
+    } finally {
         setIsSubmitting(false);
-    });
+    }
   }
 
   const isLoading = isUserLoading || isWorkshopsLoading || isServicesLoading;

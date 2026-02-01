@@ -6,7 +6,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { useParams, useRouter } from 'next/navigation';
 import Image from 'next/image';
-import { useDoc, useUser, useFirestore, useMemoFirebase, useCollection, FirestorePermissionError, errorEmitter, setDocumentNonBlocking } from '@/firebase';
+import { useDoc, useUser, useFirestore, useMemoFirebase, useCollection, FirestorePermissionError, errorEmitter } from '@/firebase';
 import { doc, collection, query, serverTimestamp, Timestamp, writeBatch, deleteDoc, setDoc, addDoc, runTransaction } from 'firebase/firestore';
 import type { Workshop, Appointment, Service, Review, FavoriteWorkshop, Vehicle } from '@/lib/types';
 import { Loader2, MapPin, ScanLine, Star, Calendar as CalendarIcon, Wrench, MessageSquare, Send, Heart, Phone, Car } from 'lucide-react';
@@ -133,17 +133,16 @@ export default function WorkshopDetailPage() {
         const favRef = doc(firestore, `users/${user.uid}/favorites`, workshopId);
 
         if (isFavorite) {
-            // Remove from favorites
-            deleteDoc(favRef).then(() => {
-                 toast({ title: 'Eliminado de Favoritos', description: `${workshop.name} ha sido eliminado de tu lista.` });
-            }).catch(error => {
+            try {
+                await deleteDoc(favRef);
+                toast({ title: 'Eliminado de Favoritos', description: `${workshop.name} ha sido eliminado de tu lista.` });
+            } catch (error) {
                 errorEmitter.emit('permission-error', new FirestorePermissionError({
                     path: favRef.path,
                     operation: 'delete'
                 }));
-            });
+            }
         } else {
-            // Add to favorites
             const favoriteData: FavoriteWorkshop = {
                 workshopId,
                 name: workshop.name,
@@ -152,15 +151,16 @@ export default function WorkshopDetailPage() {
                 averageRating: workshop.averageRating || 0,
                 addedAt: serverTimestamp() as Timestamp,
             };
-            setDoc(favRef, favoriteData).then(() => {
+            try {
+                await setDoc(favRef, favoriteData);
                 toast({ title: '¡Guardado en Favoritos!', description: `${workshop.name} ha sido añadido a tu lista.` });
-            }).catch(error => {
+            } catch (error) {
                 errorEmitter.emit('permission-error', new FirestorePermissionError({
                     path: favRef.path,
                     operation: 'create',
                     requestResourceData: favoriteData
                 }));
-            });
+            }
         }
     };
 

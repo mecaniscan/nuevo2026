@@ -134,22 +134,22 @@ export default function EditWorkshopPage() {
     
     const finalData = { ...dataToUpdate, imageUrl };
     
-    updateDoc(workshopRef, finalData).then(() => {
+    try {
+        await updateDoc(workshopRef, finalData);
         toast({
             title: '¡Taller Actualizado!',
             description: 'La información de tu taller ha sido guardada.',
         });
         router.push('/dashboard');
-    }).catch((error) => {
-        const { image, ...dataToUpdate } = values;
+    } catch (error) {
         errorEmitter.emit('permission-error', new FirestorePermissionError({
-            path: `/workshops/${workshop.id}`,
+            path: workshopRef.path,
             operation: 'update',
-            requestResourceData: { ...dataToUpdate, imageUrl: workshop.imageUrl }
+            requestResourceData: finalData
         }));
-    }).finally(() => {
+    } finally {
         setIsSubmitting(false);
-    });
+    }
   }
   
   const isLoading = isUserLoading || isWorkshopsLoading;

@@ -90,12 +90,12 @@ export default function ProfilePage() {
 
     setIsSubmitting(true);
     
-    // Update Firestore document
     const userRef = doc(firestore, 'users', user.uid);
-    const { email, ...dataToUpdate } = values; // Email is not updated here, id is not needed
+    const { email, ...dataToUpdate } = values;
     
-    updateDoc(userRef, dataToUpdate).then(async () => {
-        // Update Firebase Auth profile displayName
+    try {
+        await updateDoc(userRef, dataToUpdate);
+        
         const newDisplayName = `${values.firstName} ${values.lastName}`;
         if (user.displayName !== newDisplayName) {
             await updateProfile(user, { displayName: newDisplayName });
@@ -106,15 +106,15 @@ export default function ProfilePage() {
             description: 'Tu información ha sido guardada correctamente.',
         });
         router.push('/dashboard');
-    }).catch((error) => {
+    } catch (error) {
         errorEmitter.emit('permission-error', new FirestorePermissionError({
-            path: `/users/${user.uid}`,
+            path: userRef.path,
             operation: 'update',
-            requestResourceData: values
+            requestResourceData: dataToUpdate
         }));
-    }).finally(() => {
+    } finally {
         setIsSubmitting(false);
-    });
+    }
   }
   
   const isLoading = isUserLoading || isUserDataLoading;

@@ -1,8 +1,7 @@
 'use client';
 import React from 'react';
 import { useUser, useFirestore, useMemoFirebase, useCollection, FirestorePermissionError, errorEmitter } from '@/firebase';
-import { deleteDocumentNonBlocking } from '@/firebase/non-blocking-updates';
-import { collection, query, where, Timestamp, doc } from 'firebase/firestore';
+import { collection, query, where, Timestamp, doc, deleteDoc } from 'firebase/firestore';
 import type { Appointment } from '@/lib/types';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -37,18 +36,25 @@ export default function MyAppointmentsPage() {
 
   const { data: appointments, isLoading: areAppointmentsLoading } = useCollection<Appointment>(appointmentsQuery);
 
-  const handleDeleteAppointment = (appointmentId: string) => {
+  const handleDeleteAppointment = async (appointmentId: string) => {
     if (!user || !firestore) {
       toast({ variant: 'destructive', title: 'Error', description: 'No autenticado.' });
       return;
     }
     const docRef = doc(firestore, `appointments`, appointmentId);
     
-    deleteDocumentNonBlocking(docRef);
-    toast({
-      title: 'Cita Cancelada',
-      description: 'La cita ha sido eliminada de tu agenda.',
-    });
+    try {
+        await deleteDoc(docRef);
+        toast({
+          title: 'Cita Cancelada',
+          description: 'La cita ha sido eliminada de tu agenda.',
+        });
+    } catch (error) {
+        errorEmitter.emit('permission-error', new FirestorePermissionError({
+            path: docRef.path,
+            operation: 'delete'
+        }));
+    }
   };
 
   const formatDate = (dateString: string) => {
