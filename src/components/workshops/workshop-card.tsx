@@ -36,7 +36,7 @@ export function WorkshopCard({ workshop }: WorkshopCardProps) {
       <div className="p-6 flex-grow flex flex-col">
         <h3 className="text-xl font-semibold leading-none tracking-tight mb-2">{workshop.name}</h3>
         <div className="flex items-center gap-2 text-sm text-muted-foreground mb-4">
-            <MapPin className="h-4 w-4 shrink-0" /> <span>{workshop.address}, {workshop.city}</span>
+            <MapPin className="h-4 w-4 shrink-0" /> <span>{workshop.address}</span>
         </div>
         <div className="flex items-center gap-1.5 mb-4">
             <Star className="h-5 w-5 fill-amber-400 text-amber-400" />

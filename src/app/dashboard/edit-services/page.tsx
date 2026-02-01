@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { useUser, useFirestore, useMemoFirebase, useCollection } from '@/firebase';
+import { useUser, useFirestore, useMemoFirebase, useCollection, FirestorePermissionError, errorEmitter } from '@/firebase';
 import { collection, query, where, doc, writeBatch } from 'firebase/firestore';
 import { useToast } from '@/hooks/use-toast';
 import { useRouter } from 'next/navigation';
@@ -105,12 +105,11 @@ export default function EditServicesPage() {
         });
         router.push('/dashboard');
     }).catch((error) => {
-        console.error('Error updating services:', error);
-        toast({
-            variant: 'destructive',
-            title: 'Error Inesperado',
-            description: 'No se pudo guardar los servicios. ' + error.message,
-        });
+        errorEmitter.emit('permission-error', new FirestorePermissionError({
+            path: `workshops/${workshop.id}/services`,
+            operation: 'write',
+            requestResourceData: values.services
+        }));
     }).finally(() => {
         setIsSubmitting(false);
     });

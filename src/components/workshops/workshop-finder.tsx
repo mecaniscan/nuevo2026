@@ -66,15 +66,12 @@ export function WorkshopFinder() {
   const filteredWorkshops = useMemo(() => {
     if (!workshops) return [];
     
-    const enrichedWorkshops = workshops.map((workshop, index) => {
+    const enrichedWorkshops = workshops.map((workshop) => {
       const workshopServices = allServices.get(workshop.id) || [];
       return {
         ...workshop,
-        city: "Metropolis",
-        averageRating: workshop.averageRating || 4.5 + (index * 0.1),
-        reviewCount: workshop.reviewCount || 0,
         services: workshopServices,
-      }
+      };
     });
 
     return enrichedWorkshops.filter(ws => ws.name.toLowerCase().includes(searchTerm.toLowerCase()));

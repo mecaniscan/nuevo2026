@@ -114,8 +114,6 @@ export default function WorkshopDetailPage() {
         if (!workshopData) return null;
         return {
           ...workshopData,
-          city: "Metropolis",
-          rating: workshopData.averageRating || 4.5,
           reviewCount: workshopData.reviewCount || 0,
           services: workshopServices || [],
         };
@@ -271,12 +269,19 @@ export default function WorkshopDetailPage() {
             reviewForm.reset({rating: 0, comment: ""});
 
         } catch (error) {
-            console.error("Error submitting review: ", error);
-            toast({
-                variant: 'destructive',
-                title: 'Error al enviar reseña',
-                description: 'No se pudo guardar tu reseña. Por favor, intenta de nuevo.'
-            });
+            const reviewData = {
+                ...values,
+                id: reviewRef.id,
+                workshopId,
+                userId: user.uid,
+                authorName: user.displayName || user.email,
+                createdAt: serverTimestamp(),
+            };
+             errorEmitter.emit('permission-error', new FirestorePermissionError({
+                path: reviewRef.path,
+                operation: 'create',
+                requestResourceData: reviewData
+            }));
         } finally {
             setIsSubmittingReview(false);
         }
@@ -333,7 +338,7 @@ export default function WorkshopDetailPage() {
                             <h1 className="text-4xl font-headline font-bold text-white shadow-text">{workshop.name}</h1>
                             <div className="flex items-center gap-2 text-sm text-white/90 mt-2">
                                 <MapPin className="h-4 w-4 shrink-0" /> 
-                                <span>{workshop.address}, {workshop.city}</span>
+                                <span>{workshop.address}</span>
                             </div>
                         </div>
                         {user && !user.isAnonymous && (
@@ -342,7 +347,6 @@ export default function WorkshopDetailPage() {
                                 <span className="sr-only">Añadir a favoritos</span>
                             </Button>
                         )}
-                    </div>
                      {workshop.obdScannerService && (
                         <Badge variant="default" className="absolute top-4 right-4 bg-accent text-accent-foreground border-transparent shadow-md">
                             <ScanLine className="mr-1.5 h-4 w-4" /> Escáner OBD-II
@@ -360,7 +364,7 @@ export default function WorkshopDetailPage() {
                         <div className="flex items-center gap-6 flex-wrap">
                             <div className="flex items-center gap-1.5">
                                 <Star className="h-6 w-6 fill-amber-400 text-amber-400" />
-                                <span className="font-bold text-foreground text-lg">{workshop.rating.toFixed(1)}</span>
+                                <span className="font-bold text-foreground text-lg">{workshop.averageRating.toFixed(1)}</span>
                                 <span className="text-sm text-muted-foreground">({workshop.reviewCount} reseñas)</span>
                             </div>
                              <div className="flex items-center gap-2 text-sm text-muted-foreground">

@@ -16,7 +16,6 @@ export type Workshop = {
     averageRating: number;
     reviewCount: number;
     imageUrl?: string;
-    city: string; // Placeholder
 };
 
 export type Appointment = {
