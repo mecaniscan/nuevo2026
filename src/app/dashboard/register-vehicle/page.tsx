@@ -112,19 +112,20 @@ function RegisterVehicleForm() {
     },
   });
   
+  const { watch } = form;
+  const isForSale = watch("isForSale");
+  const imageFieldValue = watch('images');
+
   useEffect(() => {
     if (editingVehicle) {
         form.reset({
             ...editingVehicle,
             price: editingVehicle.price ?? undefined,
-            images: editingVehicle.imageUrls,
+            images: undefined,
         });
+        setImagePreviews(editingVehicle.imageUrls || []);
     }
   }, [editingVehicle, form]);
-
-  const { watch } = form;
-  const isForSale = watch("isForSale");
-  const imageFieldValue = watch('images');
 
   useEffect(() => {
     let objectUrls: string[] = [];
@@ -132,16 +133,13 @@ function RegisterVehicleForm() {
     if (imageFieldValue instanceof FileList && imageFieldValue.length > 0) {
         objectUrls = Array.from(imageFieldValue).map(file => URL.createObjectURL(file));
         setImagePreviews(objectUrls);
-    } else if (Array.isArray(imageFieldValue) && imageFieldValue.length > 0) {
-        setImagePreviews(imageFieldValue);
-    } else {
-        setImagePreviews([]);
     }
 
     return () => {
         objectUrls.forEach(url => URL.revokeObjectURL(url));
     };
   }, [imageFieldValue]);
+
 
   const uploadImages = async (files: FileList): Promise<string[]> => {
     if (!storage || !user) {
