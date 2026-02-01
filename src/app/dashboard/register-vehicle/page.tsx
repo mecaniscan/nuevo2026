@@ -83,7 +83,7 @@ function RegisterVehicleForm() {
   const { data: vehicles, isLoading: areVehiclesLoading } = useCollection<Vehicle>(vehiclesCollectionRef);
 
   const editingVehicle = useMemo(() => {
-    if (!editingVehicleId || !vehicles) return null;
+    if (!editingVehicleId || !Array.isArray(vehicles)) return null;
     return vehicles.find(v => v.id === editingVehicleId) || null;
   }, [editingVehicleId, vehicles]);
 
