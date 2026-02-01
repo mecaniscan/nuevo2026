@@ -115,6 +115,7 @@ export default function WorkshopDetailPage() {
         return {
           ...workshopData,
           reviewCount: workshopData.reviewCount || 0,
+          averageRating: workshopData.averageRating || 0,
           services: workshopServices || [],
         };
     }, [workshopData, workshopServices]);
@@ -364,8 +365,8 @@ export default function WorkshopDetailPage() {
                         <div className="flex items-center gap-6 flex-wrap">
                             <div className="flex items-center gap-1.5">
                                 <Star className="h-6 w-6 fill-amber-400 text-amber-400" />
-                                <span className="font-bold text-foreground text-lg">{workshop.averageRating.toFixed(1)}</span>
-                                <span className="text-sm text-muted-foreground">({workshop.reviewCount} reseñas)</span>
+                                <span className="font-bold text-foreground text-lg">{(workshop.averageRating || 0).toFixed(1)}</span>
+                                <span className="text-sm text-muted-foreground">({(workshop.reviewCount || 0)} reseñas)</span>
                             </div>
                              <div className="flex items-center gap-2 text-sm text-muted-foreground">
                                 <Phone className="h-4 w-4" /> {workshop.contactNumber}

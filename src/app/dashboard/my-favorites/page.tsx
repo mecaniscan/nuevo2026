@@ -127,7 +127,7 @@ export default function MyFavoritesPage() {
                                     </p>
                                     <div className="flex items-center gap-1.5 mt-2">
                                         <Star className="h-5 w-5 fill-amber-400 text-amber-400" />
-                                        <span className="font-bold text-foreground">{fav.averageRating.toFixed(1)}</span>
+                                        <span className="font-bold text-foreground">{(fav.averageRating || 0).toFixed(1)}</span>
                                     </div>
                                 </div>
                             </Link>
