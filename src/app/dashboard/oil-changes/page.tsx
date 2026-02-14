@@ -83,7 +83,7 @@ export default function OilChangesPage() {
     },
   });
 
-  async function onSubmit(values: z.infer<typeof oilChangeSchema>) {
+  function onSubmit(values: z.infer<typeof oilChangeSchema>) {
     if (!user || !firestore || !vehicles) {
       toast({ variant: 'destructive', title: 'Error', description: 'Debes iniciar sesión y tener vehículos registrados.' });
       return;
@@ -96,65 +96,62 @@ export default function OilChangesPage() {
 
     setIsSubmitting(true);
 
-    try {
-        const selectedVehicle = vehicles.find(v => v.id === values.vehicleId);
-        if (!selectedVehicle) {
-            toast({ variant: 'destructive', title: 'Error', description: 'Vehículo seleccionado no válido.' });
-            setIsSubmitting(false);
-            return;
-        }
-        
-        const oilChangeData = {
-            ...values,
-            userId: user.uid,
-            vehicleName: `${selectedVehicle.brand} ${selectedVehicle.model}`, // Denormalized name
-            date: serverTimestamp(),
-          };
-
-        const oilChangesColRef = collection(firestore, `users/${user.uid}/oilChanges`);
-        await addDoc(oilChangesColRef, oilChangeData);
-        
-        toast({
-            title: '¡Registro Añadido!',
-            description: 'El cambio de aceite ha sido guardado en tu historial.',
-        });
-        form.reset();
-    } catch (error) {
-        const selectedVehicle = vehicles.find(v => v.id === values.vehicleId);
-        const oilChangeData = {
-            ...values,
-            userId: user.uid,
-            vehicleName: selectedVehicle ? `${selectedVehicle.brand} ${selectedVehicle.model}` : 'Unknown Vehicle',
-            date: serverTimestamp(),
-          };
-        errorEmitter.emit('permission-error', new FirestorePermissionError({
-            path: `users/${user.uid}/oilChanges`,
-            operation: 'create',
-            requestResourceData: oilChangeData
-        }));
-    } finally {
-      setIsSubmitting(false);
+    const selectedVehicle = vehicles.find(v => v.id === values.vehicleId);
+    if (!selectedVehicle) {
+        toast({ variant: 'destructive', title: 'Error', description: 'Vehículo seleccionado no válido.' });
+        setIsSubmitting(false);
+        return;
     }
+    
+    const oilChangeData = {
+        ...values,
+        userId: user.uid,
+        vehicleName: `${selectedVehicle.brand} ${selectedVehicle.model}`, // Denormalized name
+        date: serverTimestamp(),
+      };
+
+    const oilChangesColRef = collection(firestore, `users/${user.uid}/oilChanges`);
+    
+    addDoc(oilChangesColRef, oilChangeData)
+        .then(() => {
+            toast({
+                title: '¡Registro Añadido!',
+                description: 'El cambio de aceite ha sido guardado en tu historial.',
+            });
+            form.reset();
+        })
+        .catch(() => {
+            errorEmitter.emit('permission-error', new FirestorePermissionError({
+                path: `users/${user.uid}/oilChanges`,
+                operation: 'create',
+                requestResourceData: oilChangeData
+            }));
+        })
+        .finally(() => {
+          setIsSubmitting(false);
+        });
   }
 
-  async function handleDeleteOilChange(oilChangeId: string) {
+  function handleDeleteOilChange(oilChangeId: string) {
     if (!user || !firestore) {
       toast({ variant: 'destructive', title: 'Error', description: 'No autenticado.' });
       return;
     }
     const docRef = doc(firestore, `users/${user.uid}/oilChanges`, oilChangeId);
-    try {
-        await deleteDoc(docRef);
-        toast({
-            title: 'Registro Eliminado',
-            description: 'El registro de cambio de aceite ha sido eliminado.',
+    
+    deleteDoc(docRef)
+        .then(() => {
+            toast({
+                title: 'Registro Eliminado',
+                description: 'El registro de cambio de aceite ha sido eliminado.',
+            });
         })
-    } catch (error) {
-        errorEmitter.emit('permission-error', new FirestorePermissionError({
-            path: docRef.path,
-            operation: 'delete'
-        }));
-    }
+        .catch(() => {
+            errorEmitter.emit('permission-error', new FirestorePermissionError({
+                path: docRef.path,
+                operation: 'delete'
+            }));
+        });
   }
 
   const isLoading = isUserLoading || areOilChangesLoading || areVehiclesLoading;

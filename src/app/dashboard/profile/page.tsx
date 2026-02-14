@@ -90,32 +90,34 @@ export default function ProfilePage() {
 
     setIsSubmitting(true);
     
-    try {
-        const userRef = doc(firestore, 'users', user.uid);
-        const { email, ...dataToUpdate } = values;
-        
-        await updateDoc(userRef, dataToUpdate);
-        
-        const newDisplayName = `${values.firstName} ${values.lastName}`;
-        if (user.displayName !== newDisplayName) {
-            await updateProfile(user, { displayName: newDisplayName });
-        }
+    // We create a combined promise for both Firestore and Auth updates.
+    const userRef = doc(firestore, 'users', user.uid);
+    const { email, ...dataToUpdate } = values;
+    const newDisplayName = `${values.firstName} ${values.lastName}`;
 
-        toast({
-            title: '¡Perfil Actualizado!',
-            description: 'Tu información ha sido guardada correctamente.',
-        });
-        router.push('/dashboard');
-    } catch (error) {
-        const { email, ...dataToUpdate } = values;
-        errorEmitter.emit('permission-error', new FirestorePermissionError({
-            path: `users/${user.uid}`,
-            operation: 'update',
-            requestResourceData: dataToUpdate
-        }));
-    } finally {
-        setIsSubmitting(false);
-    }
+    const firestorePromise = updateDoc(userRef, dataToUpdate);
+    const authProfilePromise = user.displayName !== newDisplayName 
+      ? updateProfile(user, { displayName: newDisplayName })
+      : Promise.resolve();
+
+    Promise.all([firestorePromise, authProfilePromise])
+      .then(() => {
+          toast({
+              title: '¡Perfil Actualizado!',
+              description: 'Tu información ha sido guardada correctamente.',
+          });
+          router.push('/dashboard');
+      })
+      .catch(() => {
+          errorEmitter.emit('permission-error', new FirestorePermissionError({
+              path: `users/${user.uid}`,
+              operation: 'update',
+              requestResourceData: dataToUpdate
+          }));
+      })
+      .finally(() => {
+          setIsSubmitting(false);
+      });
   }
   
   const isLoading = isUserLoading || isUserDataLoading;

@@ -72,7 +72,7 @@ export default function EditServicesPage() {
     }
   }, [currentServices, replace]);
 
-  async function onSubmit(values: z.infer<typeof formSchema>) {
+  function onSubmit(values: z.infer<typeof formSchema>) {
     if (!user || !firestore || !workshop) {
       toast({ variant: 'destructive', title: 'Error', description: 'No se pudo encontrar el taller.' });
       return;
@@ -80,40 +80,39 @@ export default function EditServicesPage() {
     
     setIsSubmitting(true);
     
-    try {
-        const batch = writeBatch(firestore);
-        const servicesColRef = collection(firestore, `workshops/${workshop.id}/services`);
-        
-        const formIds = new Set(values.services.map(s => s.id).filter(Boolean));
+    const batch = writeBatch(firestore);
+    const servicesColRef = collection(firestore, `workshops/${workshop.id}/services`);
+    
+    const formIds = new Set(values.services.map(s => s.id).filter(Boolean));
 
-        currentServices?.forEach(serviceInDb => {
-        if (!formIds.has(serviceInDb.id)) {
-            const docRef = doc(servicesColRef, serviceInDb.id);
-            batch.delete(docRef);
-        }
-        });
-        
-        values.services.forEach(service => {
-        const docRef = service.id ? doc(servicesColRef, service.id) : doc(servicesColRef);
-        const { id, ...serviceData } = service; 
-        batch.set(docRef, { ...serviceData, id: docRef.id }, { merge: true });
-        });
+    currentServices?.forEach(serviceInDb => {
+      if (!formIds.has(serviceInDb.id)) {
+          const docRef = doc(servicesColRef, serviceInDb.id);
+          batch.delete(docRef);
+      }
+    });
+    
+    values.services.forEach(service => {
+      const docRef = service.id ? doc(servicesColRef, service.id) : doc(servicesColRef);
+      const { id, ...serviceData } = service; 
+      batch.set(docRef, { ...serviceData, id: docRef.id }, { merge: true });
+    });
 
-        await batch.commit();
+    batch.commit().then(() => {
         toast({
             title: '¡Servicios Actualizados!',
             description: 'Tu lista de servicios ha sido guardada.',
         });
         router.push('/dashboard');
-    } catch (error) {
+    }).catch(() => {
         errorEmitter.emit('permission-error', new FirestorePermissionError({
             path: `workshops/${workshop.id}/services`,
             operation: 'write',
             requestResourceData: values.services
         }));
-    } finally {
+    }).finally(() => {
         setIsSubmitting(false);
-    }
+    });
   }
 
   const isLoading = isUserLoading || isWorkshopsLoading || isServicesLoading;

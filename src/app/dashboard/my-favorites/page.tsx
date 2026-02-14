@@ -33,24 +33,25 @@ export default function MyFavoritesPage() {
 
   const { data: favorites, isLoading: areFavoritesLoading } = useCollection<FavoriteWorkshop>(favoritesQuery);
 
-  const handleRemoveFavorite = async (workshopId: string) => {
+  const handleRemoveFavorite = (workshopId: string) => {
     if (!user || !firestore) {
       toast({ variant: 'destructive', title: 'Error', description: 'No autenticado.' });
       return;
     }
     const docRef = doc(firestore, `users/${user.uid}/favorites`, workshopId);
-    try {
-        await deleteDoc(docRef);
-        toast({
-          title: 'Taller Eliminado',
-          description: 'El taller ha sido eliminado de tus favoritos.',
+    deleteDoc(docRef)
+        .then(() => {
+            toast({
+              title: 'Taller Eliminado',
+              description: 'El taller ha sido eliminado de tus favoritos.',
+            });
+        })
+        .catch(() => {
+            errorEmitter.emit('permission-error', new FirestorePermissionError({
+                path: docRef.path,
+                operation: 'delete'
+            }));
         });
-    } catch (error) {
-        errorEmitter.emit('permission-error', new FirestorePermissionError({
-            path: docRef.path,
-            operation: 'delete'
-        }));
-    }
   };
 
   const isLoading = isUserLoading || areFavoritesLoading;
@@ -183,5 +184,3 @@ export default function MyFavoritesPage() {
     </div>
   );
 }
-
-    

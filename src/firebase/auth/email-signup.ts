@@ -3,6 +3,7 @@
 import { Auth, createUserWithEmailAndPassword, updateProfile } from "firebase/auth";
 import { doc, setDoc, Firestore } from "firebase/firestore";
 import type { User as AppUser } from "@/lib/types";
+import { FirestorePermissionError, errorEmitter } from "..";
 
 interface UserInfo {
     firstName: string;
@@ -40,6 +41,17 @@ export async function initiateEmailSignUpAndCreateUser(auth: Auth, firestore: Fi
         ...userDataToSave,
     };
 
-    // Use setDoc to create the document.
-    await setDoc(userDocRef, userData);
+    // Use setDoc and handle potential permission errors
+    return new Promise((resolve, reject) => {
+        setDoc(userDocRef, userData)
+            .then(() => resolve())
+            .catch((error) => {
+                errorEmitter.emit('permission-error', new FirestorePermissionError({
+                    path: userDocRef.path,
+                    operation: 'create',
+                    requestResourceData: userData
+                }));
+                reject(error);
+            });
+    });
 }

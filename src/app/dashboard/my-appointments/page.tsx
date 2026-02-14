@@ -36,25 +36,26 @@ export default function MyAppointmentsPage() {
 
   const { data: appointments, isLoading: areAppointmentsLoading } = useCollection<Appointment>(appointmentsQuery);
 
-  const handleDeleteAppointment = async (appointmentId: string) => {
+  const handleDeleteAppointment = (appointmentId: string) => {
     if (!user || !firestore) {
       toast({ variant: 'destructive', title: 'Error', description: 'No autenticado.' });
       return;
     }
     const docRef = doc(firestore, `appointments`, appointmentId);
     
-    try {
-        await deleteDoc(docRef);
-        toast({
-          title: 'Cita Cancelada',
-          description: 'La cita ha sido eliminada de tu agenda.',
+    deleteDoc(docRef)
+        .then(() => {
+            toast({
+                title: 'Cita Cancelada',
+                description: 'La cita ha sido eliminada de tu agenda.',
+            });
+        })
+        .catch(() => {
+            errorEmitter.emit('permission-error', new FirestorePermissionError({
+                path: docRef.path,
+                operation: 'delete'
+            }));
         });
-    } catch (error) {
-        errorEmitter.emit('permission-error', new FirestorePermissionError({
-            path: docRef.path,
-            operation: 'delete'
-        }));
-    }
   };
 
   const formatDate = (dateString: string) => {

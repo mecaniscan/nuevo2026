@@ -40,32 +40,32 @@ export default function MyVehiclesPage() {
 
   const { data: vehicles, isLoading: areVehiclesLoading } = useCollection<Vehicle>(vehiclesQuery);
 
-  async function handleDeleteVehicle(vehicleId: string) {
+  function handleDeleteVehicle(vehicleId: string) {
     if (!user || !firestore || !vehiclesCollectionRef) {
         toast({ variant: 'destructive', title: 'Error', description: 'No autenticado.' });
         return;
     }
     
-    try {
-        const batch = writeBatch(firestore);
-        const userVehicleRef = doc(vehiclesCollectionRef, vehicleId);
-        const marketplaceRef = doc(firestore, 'marketplace', vehicleId);
-        
-        batch.delete(userVehicleRef);
-        batch.delete(marketplaceRef);
-        
-        await batch.commit();
-        toast({
-            title: 'Vehículo Eliminado',
-            description: 'El vehículo ha sido eliminado de tus registros y del marketplace.',
+    const batch = writeBatch(firestore);
+    const userVehicleRef = doc(vehiclesCollectionRef, vehicleId);
+    const marketplaceRef = doc(firestore, 'marketplace', vehicleId);
+    
+    batch.delete(userVehicleRef);
+    batch.delete(marketplaceRef);
+    
+    batch.commit()
+        .then(() => {
+            toast({
+                title: 'Vehículo Eliminado',
+                description: 'El vehículo ha sido eliminado de tus registros y del marketplace.',
+            });
+        })
+        .catch(() => {
+             errorEmitter.emit('permission-error', new FirestorePermissionError({
+                 path: `users/${user.uid}/vehicles/${vehicleId}`,
+                 operation: 'delete',
+            }));
         });
-    } catch (error: any) {
-        console.error("Error deleting vehicle:", error);
-         errorEmitter.emit('permission-error', new FirestorePermissionError({
-             path: `users/${user.uid}/vehicles/${vehicleId}`,
-             operation: 'delete',
-        }));
-    }
 }
 
   const isLoading = isUserLoading || areVehiclesLoading;

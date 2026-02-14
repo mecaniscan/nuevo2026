@@ -117,41 +117,41 @@ export default function EditWorkshopPage() {
 
     setIsSubmitting(true);
     
-    try {
-      let imageUrl = workshop.imageUrl;
-      if (values.image && values.image.length > 0) {
-          const newImageUrl = await uploadImage(values.image[0]);
-          if (newImageUrl) {
-            imageUrl = newImageUrl;
-          } else {
-            // Halt submission if image upload fails
-            setIsSubmitting(false);
-            return;
-          }
-      }
-
-      const workshopRef = doc(firestore, 'workshops', workshop.id);
-      const { image, ...dataToUpdate } = values;
-      
-      const finalData = { ...dataToUpdate, imageUrl };
-      
-      await updateDoc(workshopRef, finalData);
-      toast({
-          title: '¡Taller Actualizado!',
-          description: 'La información de tu taller ha sido guardada.',
-      });
-      router.push('/dashboard');
-    } catch (error) {
-        const { image, ...dataToUpdate } = values;
-        const finalData = { ...dataToUpdate, imageUrl: workshop.imageUrl };
-        errorEmitter.emit('permission-error', new FirestorePermissionError({
-            path: workshopRef.path,
-            operation: 'update',
-            requestResourceData: finalData
-        }));
-    } finally {
-        setIsSubmitting(false);
+    let imageUrl = workshop.imageUrl;
+    if (values.image && values.image.length > 0) {
+        const newImageUrl = await uploadImage(values.image[0]);
+        if (newImageUrl) {
+          imageUrl = newImageUrl;
+        } else {
+          // Halt submission if image upload fails
+          setIsSubmitting(false);
+          return;
+        }
     }
+
+    const workshopRef = doc(firestore, 'workshops', workshop.id);
+    const { image, ...dataToUpdate } = values;
+    
+    const finalData = { ...dataToUpdate, imageUrl };
+    
+    updateDoc(workshopRef, finalData)
+        .then(() => {
+            toast({
+                title: '¡Taller Actualizado!',
+                description: 'La información de tu taller ha sido guardada.',
+            });
+            router.push('/dashboard');
+        })
+        .catch(() => {
+            errorEmitter.emit('permission-error', new FirestorePermissionError({
+                path: workshopRef.path,
+                operation: 'update',
+                requestResourceData: finalData
+            }));
+        })
+        .finally(() => {
+            setIsSubmitting(false);
+        });
   }
   
   const isLoading = isUserLoading || isWorkshopsLoading;

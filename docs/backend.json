@@ -34,29 +34,34 @@
           "type": "string",
           "description": "Phone number of the workshop."
         },
+        "whatsappNumber": {
+          "type": "string",
+          "description": "WhatsApp number of the workshop."
+        },
         "email": {
           "type": "string",
           "description": "Email address of the workshop.",
           "format": "email"
         },
-        "services": {
-          "type": "array",
-          "description": "List of services offered by the workshop.",
-          "items": {
-            "type": "string"
-          }
-        },
-        "obdIiScannerService": {
+        "obdScannerService": {
           "type": "boolean",
           "description": "Indicates whether the workshop offers OBDII scanner services."
-        },
-        "openingHours": {
-          "type": "string",
-          "description": "Workshop's opening hours."
         },
         "ownerId": {
           "type": "string",
           "description": "Reference to UserProfile representing the workshop owner. (Relationship: UserProfile 1:N Workshop)"
+        },
+        "imageUrl": {
+          "type": "string",
+          "description": "URL of the workshop's main image."
+        },
+        "averageRating": {
+            "type": "number",
+            "description": "The average rating of the workshop, from 0 to 5."
+        },
+        "reviewCount": {
+            "type": "number",
+            "description": "The total number of reviews for the workshop."
         }
       },
       "required": [
@@ -66,9 +71,7 @@
         "latitude",
         "longitude",
         "contactNumber",
-        "services",
-        "obdIiScannerService",
-        "openingHours",
+        "obdScannerService",
         "ownerId"
       ]
     },
@@ -95,13 +98,9 @@
           "description": "Email address of the user.",
           "format": "email"
         },
-        "phoneNumber": {
+        "whatsappNumber": {
           "type": "string",
-          "description": "Phone number of the user."
-        },
-        "address": {
-          "type": "string",
-          "description": "Address of the user."
+          "description": "WhatsApp number of the user."
         }
       },
       "required": [
@@ -129,22 +128,30 @@
           "type": "string",
           "description": "Reference to Workshop. (Relationship: Workshop 1:N Appointment)"
         },
+        "workshopName": {
+          "type": "string",
+          "description": "Denormalized name of the workshop."
+        },
+        "vehicleId": {
+            "type": "string",
+            "description": "Reference to the user's vehicle for the appointment."
+        },
+        "vehicleName": {
+            "type": "string",
+            "description": "Denormalized name of the user's vehicle."
+        },
         "appointmentDateTime": {
           "type": "string",
           "description": "Date and time of the appointment.",
           "format": "date-time"
         },
-        "serviceType": {
-          "type": "string",
-          "description": "Type of service requested for the appointment (e.g., general repair, OBDII scan)."
-        },
-        "notes": {
+        "description": {
           "type": "string",
           "description": "Additional notes or details for the appointment."
         },
         "status": {
           "type": "string",
-          "description": "Status of the appointment (e.g., booked, confirmed, completed, cancelled)."
+          "description": "Status of the appointment (e.g., scheduled, completed, cancelled)."
         }
       },
       "required": [
@@ -152,15 +159,16 @@
         "userId",
         "workshopId",
         "appointmentDateTime",
-        "serviceType",
-        "status"
+        "status",
+        "vehicleId",
+        "vehicleName"
       ]
     },
     "ObdCode": {
       "$schema": "http://json-schema.org/draft-07/schema#",
       "title": "ObdCode",
       "type": "object",
-      "description": "Represents an OBDII error code and its potential causes and solutions.",
+      "description": "Represents an OBDII error code and its potential causes and solutions. This feature has been removed.",
       "properties": {
         "id": {
           "type": "string",
@@ -173,33 +181,38 @@
         "description": {
           "type": "string",
           "description": "A description of what the error code means."
-        },
-        "possibleCauses": {
-          "type": "array",
-          "description": "A list of possible causes for the error code.",
-          "items": {
-            "type": "string"
-          }
-        },
-        "commonSolutions": {
-          "type": "array",
-          "description": "A list of common solutions to resolve the error code.",
-          "items": {
-            "type": "string"
-          }
-        },
-        "additionalNotes": {
-          "type": "string",
-          "description": "Additional notes or relevant information about the error code."
         }
       },
       "required": [
         "id",
         "code",
-        "description",
-        "possibleCauses",
-        "commonSolutions"
+        "description"
       ]
+    },
+    "Vehicle": {
+        "$schema": "http://json-schema.org/draft-07/schema#",
+        "title": "Vehicle",
+        "type": "object",
+        "description": "Represents a user's vehicle, which can be listed for sale.",
+        "properties": {
+            "id": {"type": "string", "description": "Unique identifier for the vehicle."},
+            "userId": {"type": "string", "description": "ID of the user who owns the vehicle."},
+            "type": {"type": "string", "description": "Type of vehicle (e.g., Sedan, SUV)."},
+            "brand": {"type": "string", "description": "Brand of the vehicle (e.g., Toyota)."},
+            "model": {"type": "string", "description": "Model of the vehicle (e.g., Corolla)."},
+            "year": {"type": "number", "description": "Manufacturing year."},
+            "vin": {"type": "string", "description": "Vehicle Identification Number."},
+            "licensePlate": {"type": "string", "description": "License plate number."},
+            "price": {"type": "number", "description": "Price if the vehicle is for sale."},
+            "currentMileage": {"type": "number", "description": "Current mileage of the vehicle."},
+            "imageUrls": {"type": "array", "items": {"type": "string"}, "description": "List of image URLs for the vehicle."},
+            "isForSale": {"type": "boolean", "description": "Indicates if the vehicle is listed in the marketplace."},
+            "country": {"type": "string", "description": "Country where the vehicle is located."},
+            "sellerName": {"type": "string", "description": "Denormalized seller's name for marketplace listing."},
+            "sellerWhatsapp": {"type": "string", "description": "Denormalized seller's WhatsApp for marketplace listing."},
+            "certificateNumber": {"type": "string", "description": "Unique certificate number for marketplace validation."}
+        },
+        "required": ["id", "userId", "brand", "model", "year", "isForSale", "country", "sellerName", "certificateNumber"]
     }
   },
   "auth": {
@@ -234,7 +247,9 @@
       "description": "Stores OBDII error codes and related information. Accessible by all users."
     },
     "/marketplace/{vehicleId}": {
-      "schema": "Vehicle",
+      "schema": {
+        "$ref": "#/entities/Vehicle"
+      },
       "description": "Publicly readable collection of vehicles for sale. This collection should be populated by a backend process that mirrors documents from the private `users/{userId}/vehicles` collection when `isForSale` is true."
     }
   }

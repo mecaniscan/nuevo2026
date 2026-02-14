@@ -129,22 +129,27 @@ export default function RegisterWorkshopPage() {
         reviewCount: 0,
       };
       
-      await setDoc(workshopRef, workshopData);
+      setDoc(workshopRef, workshopData)
+        .then(() => {
+            toast({
+                title: '¡Taller Registrado!',
+                description: 'Tu taller ha sido añadido a nuestra plataforma.',
+            });
+            router.push('/dashboard/edit-services');
+        })
+        .catch(() => {
+            errorEmitter.emit('permission-error', new FirestorePermissionError({
+                path: workshopRef.path,
+                operation: 'create',
+                requestResourceData: workshopData
+            }));
+        })
+        .finally(() => {
+            setIsSubmitting(false);
+        });
 
-      toast({
-        title: '¡Taller Registrado!',
-        description: 'Tu taller ha sido añadido a nuestra plataforma.',
-      });
-      router.push('/dashboard/edit-services');
     } catch (error: any) {
-        console.error("Error registering workshop:", error);
-        const { image, ...dataToSave } = values;
-        errorEmitter.emit('permission-error', new FirestorePermissionError({
-            path: `/workshops`,
-            operation: 'create',
-            requestResourceData: { ...dataToSave, ownerId: user.uid }
-        }));
-    } finally {
+        toast({ variant: 'destructive', title: 'Error de subida', description: 'No se pudo subir la imagen del taller.' });
         setIsSubmitting(false);
     }
   }

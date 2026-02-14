@@ -205,24 +205,32 @@ function RegisterVehicleForm() {
         }
       }
       
-      await batch.commit();
-  
-      toast({
-        title: editingVehicleId ? '¡Vehículo Actualizado!' : '¡Vehículo Añadido!',
-        description: `Tu vehículo ha sido ${editingVehicleId ? 'actualizado' : 'guardado'}.`,
-      });
-      router.push('/dashboard/my-vehicles');
+      batch.commit()
+        .then(() => {
+          toast({
+            title: editingVehicleId ? '¡Vehículo Actualizado!' : '¡Vehículo Añadido!',
+            description: `Tu vehículo ha sido ${editingVehicleId ? 'actualizado' : 'guardado'}.`,
+          });
+          router.push('/dashboard/my-vehicles');
+        })
+        .catch(() => {
+          errorEmitter.emit('permission-error', new FirestorePermissionError({
+              path: editingVehicleId ? `users/${user.uid}/vehicles/${editingVehicleId}` : `users/${user.uid}/vehicles`,
+              operation: editingVehicleId ? 'update' : 'create',
+              requestResourceData: vehiclePayload,
+          }));
+        })
+        .finally(() => {
+            setIsSubmitting(false);
+        });
 
     } catch (error: any) {
-      console.error("Error submitting vehicle:", error);
-      const { images, ...formValues } = values;
-
-      errorEmitter.emit('permission-error', new FirestorePermissionError({
-          path: editingVehicleId ? `users/${user.uid}/vehicles/${editingVehicleId}` : `users/${user.uid}/vehicles`,
-          operation: editingVehicleId ? 'update' : 'create',
-          requestResourceData: formValues,
-      }));
-    } finally {
+      console.error("Error during image upload or processing:", error);
+      toast({
+          variant: 'destructive',
+          title: 'Error de Envío',
+          description: 'No se pudo procesar la solicitud. Por favor, intente de nuevo.',
+      });
       setIsSubmitting(false);
     }
   }
