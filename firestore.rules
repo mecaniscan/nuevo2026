@@ -1,231 +1,80 @@
-/**
- * This ruleset enforces a security model for the MechConnect application,
- * balancing user privacy with public data discoverability.
- *
- * Core Philosophy:
- * The model is built on Authorization Independence. Key authorization fields (like
- * `ownerId` or `customerId`) are denormalized directly onto documents. This avoids
- * slow, costly, or impossible security checks (e.g., cross-collection `get()`
- * calls) and makes the rules fast, secure, and easier to reason about.
- *
- * Data Structure:
- * - /users/{userId}: Private user data, accessible only by the owner.
- * - /workshops/{workshopId}: Publicly readable workshop profiles. Writes are
- *   restricted to a designated owner.
- * - /services/{serviceId}: Publicly readable service definitions. Writes are
- *   restricted to administrators.
- * - /users/{userId}/appointments/{appointmentId}: User-specific appointment
- *   subcollections. Access is shared between the customer and the relevant
- *   workshop owner via denormalized IDs on the appointment document.
- * - /roles_admin/{userId}: A special collection where a document's existence
- *   grants a user administrative privileges across the application.
- *
- * Key Security Decisions:
- * - User Listing Disabled: Direct listing of the top-level `/users` collection
- *   is prohibited to protect user privacy and prevent enumeration attacks.
- * - Admin Role Management: The `/roles_admin` collection is used to manage
- *   administrators. Only existing admins can grant or revoke these privileges.
- * - Shared Access Model: Appointments use a shared access pattern. Both the
- *   customer (`customerId`) and the workshop owner (`workshopOwnerId`) are
- *   granted access by checking denormalized fields on the appointment document
- *   itself, which is a secure and performant pattern for collaboration.
- */
 rules_version = '2';
+
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    // Helper Functions for Reusability and Readability
-
-    /**
-     * Checks if the user is authenticated.
-     */
+    // Helper functions for readability
     function isSignedIn() {
       return request.auth != null;
     }
 
-    /**
-     * Checks if the authenticated user's UID matches the provided userId.
-     * This is the foundation of the ownership model.
-     */
     function isOwner(userId) {
       return isSignedIn() && request.auth.uid == userId;
     }
-
-    /**
-     * Checks for ownership and ensures the document already exists.
-     * CRITICAL for all update and delete operations to prevent unintended writes.
-     */
-    function isExistingOwner(userId) {
-      return isOwner(userId) && resource != null;
-    }
-
-    /**
-     * Checks if the user has administrative privileges by verifying the
-     * existence of a document in the roles_admin collection.
-     */
-    function isAdmin() {
-      return isSignedIn() && exists(/databases/$(database)/documents/roles_admin/$(request.auth.uid));
-    }
-
-    /**
-     * A stricter version of isAdmin for managing the roles collection itself,
-     * ensuring the target document for modification already exists.
-     */
-    function isExistingAdmin() {
-      return isAdmin() && resource != null;
-    }
-
-    /**
-     * Grants access if the user is either the customer or the workshop owner,
-     * based on denormalized fields on an appointment document.
-     */
-    function isCustomerOrWorkshopOwner() {
-      return isSignedIn() && (request.auth.uid == resource.data.customerId || request.auth.uid == resource.data.workshopOwnerId);
-    }
-
-    /**
-     * Combines the shared access check with an existence check for updates/deletes.
-     */
-    function isExistingCustomerOrWorkshopOwner() {
-      return isCustomerOrWorkshopOwner() && resource != null;
+    
+    function isWorkshopOwner(workshopId) {
+      return isSignedIn() && get(/databases/$(database)/documents/workshops/$(workshopId)).data.ownerId == request.auth.uid;
     }
     
-    /**
-     * Validates that a user creating an appointment is the owner of the subcollection
-     * and that the internal customerId field matches their own UID.
-     */
-    function isCreatingOwnAppointment(customerId) {
-      return isOwner(customerId) && request.resource.data.customerId == customerId;
-    }
-
-    /**
-     * Enforces that the customerId field on an appointment cannot be changed
-     * after the document has been created.
-     */
-    function isAppointmentCustomerImmutable() {
-      return request.resource.data.customerId == resource.data.customerId;
-    }
-
-    /**
-     * @description
-     *   Manages user profiles. A user can create, read, update, and delete their
-     *   own profile information. Access to other user profiles is denied.
-     * @path
-     *   /users/{userId}
-     * @allow
-     *   A signed-in user with UID 'user123' can (get) or (update) their own
-     *   document at `/users/user123`.
-     * @deny
-     *   User 'user456' cannot (get) the document for 'user123'. Listing all
-     *   users is also forbidden.
-     * @principle
-     *   Restricts access to a user's own data tree, enforcing strict ownership.
-     */
+    // USERS collection
     match /users/{userId} {
-      allow get: if isOwner(userId);
-      allow list: if false;
-      allow create: if isOwner(userId) && request.resource.data.id == userId;
-      allow update: if isExistingOwner(userId) && request.resource.data.id == resource.data.id;
-      allow delete: if isExistingOwner(userId);
+      // Any authenticated user can create their own document.
+      allow create: if isOwner(userId);
+      // Only the owner can read, update, or delete their own document.
+      allow read, update, delete: if isOwner(userId);
+      
+      // Subcollections of USER
+      match /vehicles/{vehicleId} {
+        allow read, list, create, update, delete: if isOwner(userId);
+      }
+      
+      match /oilChanges/{oilChangeId} {
+        allow read, list, create, update, delete: if isOwner(userId);
+      }
 
-      /**
-       * @description
-       *   Stores appointments for a specific customer. Access is shared between the
-       *   customer who booked it and the owner of the workshop where it is booked.
-       * @path
-       *   /users/{userId}/appointments/{appointmentId} (Note: {userId} here refers to the customer ID)
-       * @allow
-       *   User 'customer123' can (create) an appointment under their own path.
-       *   The owner of the associated workshop can (get) the appointment.
-       * @deny
-       *   A random user 'user789' cannot (get) an appointment for 'customer123'.
-       *   A customer cannot change the `customerId` on an existing appointment.
-       * @principle
-       *   Shared access via denormalized fields (`customerId`, `workshopOwnerId`).
-       *   This avoids slow `get()` calls and enables collection group queries.
-       */
-      match /appointments/{appointmentId} {
-        allow get: if isCustomerOrWorkshopOwner();
-        // FIX: The path variable is 'userId' from the parent match block.
-        allow list: if isOwner(userId); 
-        // FIX: The path variable is 'userId' from the parent match block.
-        allow create: if isCreatingOwnAppointment(userId);
-        allow update: if isExistingCustomerOrWorkshopOwner() && isAppointmentCustomerImmutable();
-        allow delete: if isExistingCustomerOrWorkshopOwner();
+      match /favorites/{workshopId} {
+          allow read, list, create, delete: if isOwner(userId);
       }
     }
 
-    /**
-     * @description
-     *   Stores workshop profiles. This data is public and can be read by anyone,
-     *   including unauthenticated users, to allow browsing. Writes are restricted
-     *   to the designated owner of the workshop.
-     * @path
-     *   /workshops/{workshopId}
-     * @allow
-     *   Any user, signed in or not, can (get) or (list) workshops. The owner
-     *   of the workshop can (update) it.
-     * @deny
-     *   A non-owner user cannot (update) or (delete) a workshop document.
-     * @principle
-     *   Public Read with Owner-Only Writes. Requires a denormalized `ownerId`
-     *   field on each workshop document for writes to be enabled.
-     */
+    // WORKSHOPS collection
     match /workshops/{workshopId} {
-      allow get: if true;
-      allow list: if true;
-      // CRITICAL: Cannot implement owner-only writes. The 'Workshop' entity is missing an 'ownerId' field.
-      // Assuming 'ownerId' will be added to the workshop document.
+      // Anyone can read workshop data.
+      allow get, list: if true;
+      // Only an authenticated user can create a workshop for themselves.
       allow create: if isSignedIn() && request.resource.data.ownerId == request.auth.uid;
-      allow update: if isExistingOwner(resource.data.ownerId);
-      allow delete: if isExistingOwner(resource.data.ownerId);
+      // Only the owner of the workshop can update or delete it.
+      allow update, delete: if isOwner(get(/databases/$(database)/documents/workshops/$(workshopId)).data.ownerId);
+
+       // Subcollections of WORKSHOP
+      match /services/{serviceId} {
+        allow list: if true;
+        allow get: if true;
+        // Only the workshop owner can manage services.
+        allow create, update, delete: if isWorkshopOwner(workshopId);
+      }
+      
+      match /reviews/{userId} {
+        allow list, get: if true;
+        // A user can only create/update/delete their own review document, identified by their UID.
+        allow create, update, delete: if isOwner(userId);
+      }
+    }
+    
+    // APPOINTMENTS collection
+    match /appointments/{appointmentId} {
+        // A user can create an appointment for themselves.
+        allow create: if isOwner(request.resource.data.userId);
+        // The user who created it or the workshop owner can read/update/delete it.
+        allow read, update, delete: if isOwner(resource.data.userId) || isWorkshopOwner(resource.data.workshopId);
     }
 
-    /**
-     * @description
-     *   Stores global definitions for mechanical services. This data is public
-     *   and read-only for all regular users. Only administrators can manage this list.
-     * @path
-     *   /services/{serviceId}
-     * @allow
-     *   Any user can (list) all available services. An admin user can (create)
-     *   a new service.
-     * @deny
-     *   A non-admin user cannot (create), (update), or (delete) a service.
-     * @principle
-     *   Public read access with role-based writes (admin-only).
-     */
-    match /services/{serviceId} {
-      allow get: if true;
-      allow list: if true;
-      allow create: if isAdmin();
-      allow update: if isAdmin() && resource != null;
-      allow delete: if isAdmin() && resource != null;
-    }
-
-    /**
-     * @description
-     *   Manages administrative roles. The existence of a document in this
-     *   collection grants a user admin privileges. Only existing admins can
-     *   add or remove other admins.
-     * @path
-     *   /roles_admin/{userId}
-     * @allow
-     *   An existing admin can (create) a document to grant another user admin
-     *   privileges.
-     * @deny
-     *   A non-admin user cannot (get) or (list) this collection, preventing
-     *   the enumeration of administrators.
-     * @principle
-     *   Role-Based Access Control (RBAC). Access to this collection is restricted
-     *   to users who already hold the role it grants.
-     */
-    match /roles_admin/{userId} {
-      allow get: if isAdmin();
-      allow list: if false;
-      allow create: if isAdmin();
-      allow update: if isExistingAdmin();
-      allow delete: if isExistingAdmin();
+    // MARKETPLACE collection
+    match /marketplace/{vehicleId} {
+      // Anyone can see vehicles for sale.
+      allow get, list: if true;
+      // Only the vehicle owner can add/update/remove it from the marketplace.
+      allow create, update, delete: if isOwner(request.resource.data.userId);
     }
   }
 }
