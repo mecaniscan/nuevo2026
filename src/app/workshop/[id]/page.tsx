@@ -208,7 +208,6 @@ export default function WorkshopDetailPage() {
             router.push('/dashboard/my-appointments');
 
         } catch (error) {
-            console.error('Error creating appointment record:', error);
             errorEmitter.emit('permission-error', new FirestorePermissionError({
                 path: 'appointments',
                 operation: 'create',
@@ -348,7 +347,9 @@ export default function WorkshopDetailPage() {
                                 <span className="sr-only">Añadir a favoritos</span>
                             </Button>
                         )}
-                     {workshop.obdScannerService && (
+                     
+                    </div>
+                    {workshop.obdScannerService && (
                         <Badge variant="default" className="absolute top-4 right-4 bg-accent text-accent-foreground border-transparent shadow-md">
                             <ScanLine className="mr-1.5 h-4 w-4" /> Escáner OBD-II
                         </Badge>
