@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { useUser, useFirestore, useMemoFirebase, FirestorePermissionError, errorEmitter, useDoc, useStorage, useCollection } from '@/firebase';
+import { useUser, useFirestore, useMemoFirebase, FirestorePermissionError, errorEmitter, useDoc, useStorage } from '@/firebase';
 import { collection, doc, writeBatch } from 'firebase/firestore';
 import { ref as storageRef, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { useToast } from '@/hooks/use-toast';
@@ -36,17 +36,18 @@ function RegisterVehicleForm() {
   const [imagePreviews, setImagePreviews] = useState<string[]>([]);
   const backgroundImage = getPlaceholderImage('vehicle-registration-background');
   
+  // Fetch the specific vehicle being edited
+  const vehicleDocRef = useMemoFirebase(() => {
+    if (!firestore || !user?.uid || !editingVehicleId) return null;
+    return doc(firestore, `users/${user.uid}/vehicles`, editingVehicleId);
+  }, [firestore, user?.uid, editingVehicleId]);
+  const { data: editingVehicle, isLoading: isEditingVehicleLoading } = useDoc<Vehicle>(vehicleDocRef);
+
+  // Still need the collection ref for creating new vehicles
   const vehiclesCollectionRef = useMemoFirebase(() => {
     if (!firestore || !user?.uid) return null;
     return collection(firestore, `users/${user.uid}/vehicles`);
   }, [firestore, user?.uid]);
-
-  const { data: vehicles, isLoading: areVehiclesLoading } = useCollection<Vehicle>(vehiclesCollectionRef);
-
-  const editingVehicle = useMemo(() => {
-    if (!editingVehicleId || !Array.isArray(vehicles)) return null;
-    return vehicles.find(v => v.id === editingVehicleId) || null;
-  }, [editingVehicleId, vehicles]);
 
   const vehicleSchema = useMemo(() => z.object({
     type: z.string().optional(),
@@ -239,7 +240,7 @@ function RegisterVehicleForm() {
     }
   }
 
-  const isLoading = isUserLoading || isUserDataLoading || (!!editingVehicleId && areVehiclesLoading);
+  const isLoading = isUserLoading || isUserDataLoading || (!!editingVehicleId && isEditingVehicleLoading);
   
   if (isLoading) {
     return (
