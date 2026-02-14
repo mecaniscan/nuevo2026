@@ -48,7 +48,7 @@ function RegisterVehicleForm() {
     return vehicles.find(v => v.id === editingVehicleId) || null;
   }, [editingVehicleId, vehicles]);
 
-  const vehicleSchema = z.object({
+  const vehicleSchema = useMemo(() => z.object({
     type: z.string().optional(),
     brand: z.string({ required_error: 'La marca es obligatoria.' }),
     model: z.string().min(1, 'El modelo es obligatorio.'),
@@ -90,7 +90,7 @@ function RegisterVehicleForm() {
   }, {
       message: "El precio es obligatorio para poner el vehículo a la venta.",
       path: ["price"],
-  });
+  }), [editingVehicle]);
 
   const userDocRef = useMemoFirebase(() => {
     if (!firestore || !user?.uid) return null;
