@@ -10,3 +10,5 @@ env:
     value: 'false'
   - variable: NEXT_PUBLIC_USE_FIREBASE_AUTH_EMULATOR
     value: 'false'
+  - variable: NEXT_PUBLIC_STORAGE_BUCKET
+    value: 'studio-3565960860-31363.appspot.com'
