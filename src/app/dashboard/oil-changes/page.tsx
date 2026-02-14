@@ -154,8 +154,13 @@ export default function OilChangesPage() {
   
   const formatDate = (dateValue: string | Timestamp | undefined) => {
     if (!dateValue) return 'Pendiente';
-    const date = (dateValue as Timestamp)?.toDate ? (dateValue as Timestamp).toDate() : new Date(dateValue);
-    return format(date, 'dd MMM yyyy', { locale: es });
+    try {
+        const date = (dateValue as Timestamp)?.toDate ? (dateValue as Timestamp).toDate() : new Date(dateValue);
+        if(isNaN(date.getTime())) throw new Error('Invalid date');
+        return format(date, 'dd MMM yyyy', { locale: es });
+    } catch(e) {
+        return "Fecha inválida";
+    }
   };
   
   if (isUserLoading) {

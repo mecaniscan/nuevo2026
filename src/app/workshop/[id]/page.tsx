@@ -288,9 +288,14 @@ export default function WorkshopDetailPage() {
     }
 
     const formatDate = (dateValue: string | Timestamp | undefined) => {
-        if (!dateValue) return '';
-        const date = (dateValue as Timestamp)?.toDate ? (dateValue as Timestamp).toDate() : new Date(dateValue);
-        return format(date, 'dd MMM yyyy', { locale: es });
+        if (!dateValue) return 'Fecha no disponible';
+        try {
+            const date = (dateValue as Timestamp)?.toDate ? (dateValue as Timestamp).toDate() : new Date(dateValue);
+            if(isNaN(date.getTime())) throw new Error('Invalid date');
+            return format(date, 'dd MMM yyyy', { locale: es });
+        } catch(e) {
+            return "Fecha inválida";
+        }
     };
 
     if (isWorkshopLoading || isUserLoading || isServicesLoading || areReviewsLoading || isFavoriteLoading || areVehiclesLoading) {
