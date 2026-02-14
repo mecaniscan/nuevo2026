@@ -122,12 +122,12 @@ function RegisterVehicleForm() {
 
   useEffect(() => {
     if (editingVehicle) {
-        form.reset({
-            ...editingVehicle,
-            price: editingVehicle.price ?? null,
-            images: undefined,
-        });
-        setImagePreviews(editingVehicle.imageUrls || []);
+      form.reset({
+        ...editingVehicle,
+        price: editingVehicle.price ?? null,
+        images: undefined,
+      });
+      setImagePreviews(editingVehicle.imageUrls || []);
     }
   }, [editingVehicle, form]);
 
