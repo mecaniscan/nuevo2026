@@ -9,7 +9,7 @@ if (process.env.GEMINI_API_KEY) {
 } else {
   // In a production environment, this is a server-side error.
   // In development, it's a warning.
-  const log = process.env.NODE_ENV === 'production' ? console.error : console.warn;
+  const log = console.warn;
   log(
     'GEMINI_API_KEY environment variable not set. GenAI features will be disabled.'
   );
