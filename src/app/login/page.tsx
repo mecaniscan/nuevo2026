@@ -38,7 +38,7 @@ export default function LoginPage() {
     },
   });
 
-  async function onLoginSubmit(values: z.infer<typeof loginSchema>) {
+  function onLoginSubmit(values: z.infer<typeof loginSchema>) {
     if (!auth) {
         toast({
           variant: 'destructive',
@@ -48,28 +48,29 @@ export default function LoginPage() {
         return;
     }
     setIsLoggingIn(true);
-    try {
-      await initiateEmailSignIn(auth, values.email, values.password);
-      // The onAuthStateChanged listener in FirebaseProvider will handle the redirect
-      // after a successful login. We can optimistically navigate to the dashboard here.
-      router.push('/dashboard');
-    } catch (error: any) {
-      if (error.code === 'auth/invalid-credential' || error.code === 'auth/wrong-password' || error.code === 'auth/user-not-found') {
-        toast({
-          variant: 'destructive',
-          title: 'Error de Inicio de Sesión',
-          description: 'El correo electrónico o la contraseña son incorrectos.',
+    
+    initiateEmailSignIn(auth, values.email, values.password)
+        .then(() => {
+            router.push('/dashboard');
+        })
+        .catch ((error: any) => {
+            if (error.code === 'auth/invalid-credential' || error.code === 'auth/wrong-password' || error.code === 'auth/user-not-found') {
+                toast({
+                variant: 'destructive',
+                title: 'Error de Inicio de Sesión',
+                description: 'El correo electrónico o la contraseña son incorrectos.',
+                });
+            } else {
+                toast({
+                variant: 'destructive',
+                title: 'Error Inesperado',
+                description: 'Ocurrió un error al intentar iniciar sesión. Por favor, intenta de nuevo.',
+                });
+            }
+        })
+        .finally(() => {
+            setIsLoggingIn(false);
         });
-      } else {
-        toast({
-          variant: 'destructive',
-          title: 'Error Inesperado',
-          description: 'Ocurrió un error al intentar iniciar sesión. Por favor, intenta de nuevo.',
-        });
-      }
-    } finally {
-      setIsLoggingIn(false);
-    }
   }
 
   return (

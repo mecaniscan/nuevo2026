@@ -42,16 +42,14 @@ export async function initiateEmailSignUpAndCreateUser(auth: Auth, firestore: Fi
     };
 
     // Use setDoc and handle potential permission errors
-    return new Promise((resolve, reject) => {
-        setDoc(userDocRef, userData)
-            .then(() => resolve())
-            .catch((error) => {
-                errorEmitter.emit('permission-error', new FirestorePermissionError({
-                    path: userDocRef.path,
-                    operation: 'create',
-                    requestResourceData: userData
-                }));
-                reject(error);
-            });
-    });
+    try {
+        await setDoc(userDocRef, userData);
+    } catch (error) {
+        errorEmitter.emit('permission-error', new FirestorePermissionError({
+            path: userDocRef.path,
+            operation: 'create',
+            requestResourceData: userData
+        }));
+        throw error;
+    }
 }
