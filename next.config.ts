@@ -42,12 +42,6 @@ const nextConfig: NextConfig = {
       },
       {
         protocol: 'https',
-        hostname: 'studio-3565960860-31363.firebasestorage.app',
-        port: '',
-        pathname: '/**',
-      },
-      {
-        protocol: 'https',
         hostname: 'api.qrserver.com',
         port: '',
         pathname: '/**',
