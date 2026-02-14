@@ -23,45 +23,6 @@ import { getPlaceholderImage } from '@/lib/placeholder-images';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { countries, carBrands } from '@/lib/data';
 
-const vehicleSchema = z.object({
-  type: z.string().optional(),
-  brand: z.string({ required_error: 'La marca es obligatoria.' }),
-  model: z.string().min(1, 'El modelo es obligatorio.'),
-  year: z.preprocess(
-    (a) => a ? parseInt(z.string().parse(a), 10) : new Date().getFullYear(),
-    z.number().min(1900, 'El año no es válido.').max(new Date().getFullYear() + 1, 'El año no es válido.')
-  ),
-  vin: z.string().optional(),
-  licensePlate: z.string().optional(),
-  price: z.preprocess(
-    (a) => (a !== '' && a !== null && a !== undefined) ? parseFloat(z.string().parse(String(a))) : null,
-    z.number().nullable().optional()
-  ),
-  currentMileage: z.preprocess(
-    (a) => a ? parseInt(z.string().parse(a), 10) : 0,
-    z.number().optional()
-  ),
-  country: z.string({ required_error: 'El país es obligatorio.' }),
-  isForSale: z.boolean().default(false),
-  images: z.any().optional(),
-}).refine(data => {
-    if (data.isForSale) {
-        return (data.images && data.images.length > 0 && data.images.length <= 3) || (Array.isArray(data.images) && data.images.length > 0)
-    }
-    return true;
-}, {
-    message: "Debes subir entre 1 y 3 imágenes para publicar en el marketplace.",
-    path: ["images"],
-}).refine(data => {
-    if (data.isForSale) {
-        return data.price && data.price > 0;
-    }
-    return true;
-}, {
-    message: "El precio es obligatorio para poner el vehículo a la venta.",
-    path: ["price"],
-});
-
 function RegisterVehicleForm() {
   const { user, isUserLoading } = useUser();
   const firestore = useFirestore();
@@ -87,7 +48,50 @@ function RegisterVehicleForm() {
     return vehicles.find(v => v.id === editingVehicleId) || null;
   }, [editingVehicleId, vehicles]);
 
-  
+  const vehicleSchema = z.object({
+    type: z.string().optional(),
+    brand: z.string({ required_error: 'La marca es obligatoria.' }),
+    model: z.string().min(1, 'El modelo es obligatorio.'),
+    year: z.preprocess(
+      (a) => a ? parseInt(z.string().parse(a), 10) : new Date().getFullYear(),
+      z.number().min(1900, 'El año no es válido.').max(new Date().getFullYear() + 1, 'El año no es válido.')
+    ),
+    vin: z.string().optional(),
+    licensePlate: z.string().optional(),
+    price: z.preprocess(
+        (a) => (a !== '' && a !== null && a !== undefined) ? parseFloat(z.string().parse(String(a))) : null,
+        z.number().nullable().optional()
+    ),
+    currentMileage: z.preprocess(
+      (a) => a ? parseInt(z.string().parse(a), 10) : 0,
+      z.number().optional()
+    ),
+    country: z.string({ required_error: 'El país es obligatorio.' }),
+    isForSale: z.boolean().default(false),
+    images: z.any().optional(),
+  }).refine(data => {
+      if (data.isForSale) {
+        // When editing, if there are existing images and no new ones are uploaded, validation passes.
+        if (editingVehicle && editingVehicle.imageUrls && editingVehicle.imageUrls.length > 0 && (!data.images || data.images.length === 0)) {
+            return true;
+        }
+        // When creating, or when new images are uploaded during edit, we check the new files.
+        return data.images && data.images.length > 0 && data.images.length <= 3;
+      }
+      return true;
+  }, {
+      message: "Debes subir entre 1 y 3 imágenes para publicar en el marketplace.",
+      path: ["images"],
+  }).refine(data => {
+      if (data.isForSale) {
+          return data.price != null && data.price > 0;
+      }
+      return true;
+  }, {
+      message: "El precio es obligatorio para poner el vehículo a la venta.",
+      path: ["price"],
+  });
+
   const userDocRef = useMemoFirebase(() => {
     if (!firestore || !user?.uid) return null;
     return doc(firestore, 'users', user.uid);
@@ -104,7 +108,7 @@ function RegisterVehicleForm() {
       year: new Date().getFullYear(),
       vin: '',
       licensePlate: '',
-      price: undefined,
+      price: null,
       currentMileage: 0,
       country: '',
       isForSale: false,
@@ -120,7 +124,7 @@ function RegisterVehicleForm() {
     if (editingVehicle) {
         form.reset({
             ...editingVehicle,
-            price: editingVehicle.price ?? undefined,
+            price: editingVehicle.price ?? null,
             images: undefined,
         });
         setImagePreviews(editingVehicle.imageUrls || []);
@@ -163,7 +167,7 @@ function RegisterVehicleForm() {
     try {
       let finalImageUrls: string[] = editingVehicle?.imageUrls || [];
   
-      if (values.isForSale && values.images instanceof FileList && values.images.length > 0) {
+      if (values.images instanceof FileList && values.images.length > 0) {
         finalImageUrls = await uploadImages(values.images);
       } else if (!values.isForSale) {
         finalImageUrls = [];
