@@ -63,12 +63,6 @@ service cloud.firestore {
       allow delete: if isAuth() && resource.data.userId == request.auth.uid;
     }
     
-    // OBD Codes: Publicly readable data.
-    match /obd_codes/{obdCodeId} {
-      allow read: if true;
-      allow write: if false; // This data should be read-only
-    }
-    
     // Marketplace: Publicly readable, writeable only by the vehicle's owner.
     match /marketplace/{vehicleId} {
       allow read: if true;

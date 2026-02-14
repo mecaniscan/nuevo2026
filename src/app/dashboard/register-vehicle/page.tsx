@@ -19,7 +19,7 @@ import { Switch } from '@/components/ui/switch';
 import { v4 as uuidv4 } from 'uuid';
 import Image from 'next/image';
 import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from '@/components/ui/carousel';
-import { PlaceHolderImages } from '@/lib/placeholder-images';
+import { getPlaceholderImage } from '@/lib/placeholder-images';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { countries, carBrands } from '@/lib/data';
 
@@ -73,7 +73,7 @@ function RegisterVehicleForm() {
 
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [imagePreviews, setImagePreviews] = useState<string[]>([]);
-  const backgroundImage = PlaceHolderImages.find(p => p.id === 'vehicle-registration-background');
+  const backgroundImage = getPlaceholderImage('vehicle-registration-background');
   
   const vehiclesCollectionRef = useMemoFirebase(() => {
     if (!firestore || !user?.uid) return null;

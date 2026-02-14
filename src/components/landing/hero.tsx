@@ -2,10 +2,10 @@ import { Button } from "@/components/ui/button";
 import { ArrowRight, ShoppingCart } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
-import { PlaceHolderImages } from '@/lib/placeholder-images';
+import { getPlaceholderImage } from '@/lib/placeholder-images';
 
 export function HeroSection() {
-    const heroImage = PlaceHolderImages.find(p => p.id === "hero-image");
+    const heroImage = getPlaceholderImage("hero-image");
 
     return (
         <section className="relative w-full h-[60vh] md:h-[80vh] overflow-hidden">

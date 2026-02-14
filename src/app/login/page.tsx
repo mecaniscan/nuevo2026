@@ -14,7 +14,7 @@ import { Loader2, Lock } from 'lucide-react';
 import Link from 'next/link';
 import { useAuth } from '@/firebase';
 import { initiateEmailSignIn } from '@/firebase/non-blocking-login';
-import { PlaceHolderImages } from '@/lib/placeholder-images';
+import { getPlaceholderImage } from '@/lib/placeholder-images';
 import Image from 'next/image';
 
 
@@ -28,7 +28,7 @@ export default function LoginPage() {
   const { toast } = useToast();
   const router = useRouter();
   const [isLoggingIn, setIsLoggingIn] = useState(false);
-  const loginImage = PlaceHolderImages.find(p => p.id === 'login-background');
+  const loginImage = getPlaceholderImage('login-background');
 
   const form = useForm<z.infer<typeof loginSchema>>({
     resolver: zodResolver(loginSchema),
