@@ -1,10 +1,57 @@
 {
   "entities": {
+    "User": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "User",
+      "type": "object",
+      "description": "Represents a customer account in the MechConnect application. This entity stores personal profile information for customers.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the User entity."
+        },
+        "firstName": {
+          "type": "string",
+          "description": "The first name of the user."
+        },
+        "lastName": {
+          "type": "string",
+          "description": "The last name of the user."
+        },
+        "email": {
+          "type": "string",
+          "description": "The email address of the user, used for contact and potentially linked to an external authentication system.",
+          "format": "email"
+        },
+        "phoneNumber": {
+          "type": "string",
+          "description": "The phone number of the user."
+        },
+        "createdAt": {
+          "type": "string",
+          "description": "Timestamp when the user account was created.",
+          "format": "date-time"
+        },
+        "updatedAt": {
+          "type": "string",
+          "description": "Timestamp when the user account was last updated.",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "id",
+        "firstName",
+        "lastName",
+        "email",
+        "createdAt",
+        "updatedAt"
+      ]
+    },
     "Workshop": {
       "$schema": "http://json-schema.org/draft-07/schema#",
       "title": "Workshop",
       "type": "object",
-      "description": "Represents a mechanic workshop registered in the application.",
+      "description": "Represents a mechanical workshop registered in the MechConnect application.",
       "properties": {
         "id": {
           "type": "string",
@@ -12,7 +59,7 @@
         },
         "name": {
           "type": "string",
-          "description": "Name of the workshop."
+          "description": "The official name of the workshop."
         },
         "description": {
           "type": "string",
@@ -20,48 +67,57 @@
         },
         "address": {
           "type": "string",
-          "description": "Full address of the workshop."
+          "description": "The physical street address of the workshop."
         },
         "latitude": {
           "type": "number",
-          "description": "Latitude coordinate of the workshop's location."
+          "description": "The geographical latitude coordinate of the workshop's location, for map display."
         },
         "longitude": {
           "type": "number",
-          "description": "Longitude coordinate of the workshop's location."
+          "description": "The geographical longitude coordinate of the workshop's location, for map display."
         },
-        "contactNumber": {
+        "phoneNumber": {
           "type": "string",
-          "description": "Phone number of the workshop."
-        },
-        "whatsappNumber": {
-          "type": "string",
-          "description": "WhatsApp number of the workshop."
+          "description": "The primary contact phone number for the workshop."
         },
         "email": {
           "type": "string",
-          "description": "Email address of the workshop.",
+          "description": "The primary contact email address for the workshop.",
           "format": "email"
         },
-        "obdScannerService": {
+        "website": {
+          "type": "string",
+          "description": "The official website URL for the workshop (optional).",
+          "format": "uri"
+        },
+        "openingHours": {
+          "type": "array",
+          "description": "An array of strings describing the daily opening hours of the workshop (e.g., 'Monday: 09:00-17:00', 'Saturday: 10:00-14:00').",
+          "items": {
+            "type": "string"
+          }
+        },
+        "serviceIds": {
+          "type": "array",
+          "description": "References to Service IDs offered by this workshop. (Relationship: Workshop N:N Service)",
+          "items": {
+            "type": "string"
+          }
+        },
+        "hasObdiiScannerService": {
           "type": "boolean",
-          "description": "Indicates whether the workshop offers OBDII scanner services."
+          "description": "Indicates if the workshop explicitly offers OBDII scanner services, useful for filtering and highlighting."
         },
-        "ownerId": {
+        "createdAt": {
           "type": "string",
-          "description": "Reference to UserProfile representing the workshop owner. (Relationship: UserProfile 1:N Workshop)"
+          "description": "Timestamp when the workshop profile was created.",
+          "format": "date-time"
         },
-        "imageUrl": {
+        "updatedAt": {
           "type": "string",
-          "description": "URL of the workshop's main image."
-        },
-        "averageRating": {
-          "type": "number",
-          "description": "The average rating of the workshop, from 0 to 5."
-        },
-        "reviewCount": {
-          "type": "number",
-          "description": "The total number of reviews for the workshop."
+          "description": "Timestamp when the workshop profile was last updated.",
+          "format": "date-time"
         }
       },
       "required": [
@@ -70,223 +126,196 @@
         "address",
         "latitude",
         "longitude",
-        "contactNumber",
-        "obdScannerService",
-        "ownerId"
+        "phoneNumber",
+        "email",
+        "openingHours",
+        "serviceIds",
+        "hasObdiiScannerService",
+        "createdAt",
+        "updatedAt"
       ]
-    },
-    "UserProfile": {
-      "$schema": "http://json-schema.org/draft-07/schema#",
-      "title": "UserProfile",
-      "type": "object",
-      "description": "Represents a user profile in the application.",
-      "properties": {
-        "id": {
-          "type": "string",
-          "description": "Unique identifier for the UserProfile entity."
-        },
-        "firstName": {
-          "type": "string",
-          "description": "First name of the user."
-        },
-        "lastName": {
-          "type": "string",
-          "description": "Last name of the user."
-        },
-        "email": {
-          "type": "string",
-          "description": "Email address of the user.",
-          "format": "email"
-        },
-        "whatsappNumber": {
-          "type": "string",
-          "description": "WhatsApp number of the user."
-        }
-      },
-      "required": ["id", "firstName", "lastName", "email"]
-    },
-    "Appointment": {
-      "$schema": "http://json-schema.org/draft-07/schema#",
-      "title": "Appointment",
-      "type": "object",
-      "description": "Represents an appointment booked by a user at a workshop.",
-      "properties": {
-        "id": {
-          "type": "string",
-          "description": "Unique identifier for the Appointment entity."
-        },
-        "userId": {
-          "type": "string",
-          "description": "Reference to UserProfile. (Relationship: UserProfile 1:N Appointment)"
-        },
-        "workshopId": {
-          "type": "string",
-          "description": "Reference to Workshop. (Relationship: Workshop 1:N Appointment)"
-        },
-        "workshopName": {
-          "type": "string",
-          "description": "Denormalized name of the workshop."
-        },
-        "vehicleId": {
-          "type": "string",
-          "description": "Reference to the user's vehicle for the appointment."
-        },
-        "vehicleName": {
-          "type": "string",
-          "description": "Denormalized name of the user's vehicle."
-        },
-        "appointmentDateTime": {
-          "type": "string",
-          "description": "Date and time of the appointment.",
-          "format": "date-time"
-        },
-        "description": {
-          "type": "string",
-          "description": "Additional notes or details for the appointment."
-        },
-        "status": {
-          "type": "string",
-          "description": "Status of the appointment (e.g., scheduled, completed, cancelled)."
-        }
-      },
-      "required": [
-        "id",
-        "userId",
-        "workshopId",
-        "appointmentDateTime",
-        "status",
-        "vehicleId",
-        "vehicleName"
-      ]
-    },
-    "Vehicle": {
-      "$schema": "http://json-schema.org/draft-07/schema#",
-      "title": "Vehicle",
-      "type": "object",
-      "description": "Represents a user's vehicle, which can be listed for sale.",
-      "properties": {
-        "id": { "type": "string", "description": "Unique identifier for the vehicle." },
-        "userId": { "type": "string", "description": "ID of the user who owns the vehicle." },
-        "type": { "type": "string", "description": "Type of vehicle (e.g., Sedan, SUV)." },
-        "brand": { "type": "string", "description": "Brand of the vehicle (e.g., Toyota)." },
-        "model": { "type": "string", "description": "Model of the vehicle (e.g., Corolla)." },
-        "year": { "type": "number", "description": "Manufacturing year." },
-        "vin": { "type": "string", "description": "Vehicle Identification Number." },
-        "licensePlate": { "type": "string", "description": "License plate number." },
-        "price": { "type": "number", "description": "Price if the vehicle is for sale." },
-        "currentMileage": { "type": "number", "description": "Current mileage of the vehicle." },
-        "imageUrls": {
-          "type": "array",
-          "items": { "type": "string" },
-          "description": "List of image URLs for the vehicle."
-        },
-        "isForSale": { "type": "boolean", "description": "Indicates if the vehicle is listed in the marketplace." },
-        "country": { "type": "string", "description": "Country where the vehicle is located." },
-        "sellerName": { "type": "string", "description": "Denormalized seller's name for marketplace listing." },
-        "sellerWhatsapp": { "type": "string", "description": "Denormalized seller's WhatsApp for marketplace listing." },
-        "certificateNumber": { "type": "string", "description": "Unique certificate number for marketplace validation." }
-      },
-      "required": ["id", "userId", "brand", "model", "year", "isForSale", "country", "sellerName", "certificateNumber"]
-    },
-    "Review": {
-      "$schema": "http://json-schema.org/draft-07/schema#",
-      "title": "Review",
-      "type": "object",
-      "description": "Represents a user review for a workshop. The document ID is the user's ID to enforce one review per user per workshop.",
-      "properties": {
-        "workshopId": {
-          "type": "string",
-          "description": "Reference to Workshop. (Relationship: Workshop 1:N Review)"
-        },
-        "userId": {
-          "type": "string",
-          "description": "Reference to UserProfile. Same as the document ID."
-        },
-        "rating": {
-          "type": "number",
-          "description": "Rating from 1 to 5."
-        },
-        "comment": {
-          "type": "string",
-          "description": "The user's comment."
-        },
-        "createdAt": {
-          "type": "string",
-          "format": "date-time",
-          "description": "Timestamp of when the review was created."
-        },
-        "authorName": {
-          "type": "string",
-          "description": "Denormalized user name for display."
-        }
-      },
-      "required": ["workshopId", "userId", "rating", "comment", "createdAt", "authorName"]
     },
     "Service": {
       "$schema": "http://json-schema.org/draft-07/schema#",
       "title": "Service",
       "type": "object",
-      "description": "Represents a service offered by a workshop.",
+      "description": "Represents a type of mechanical service that workshops can offer and customers can book.",
       "properties": {
         "id": {
           "type": "string",
-          "description": "Unique identifier for the service."
+          "description": "Unique identifier for the Service entity."
         },
         "name": {
           "type": "string",
-          "description": "Name of the service."
+          "description": "The name of the service (e.g., 'Oil Change', 'OBDII Scan', 'Brake Inspection')."
         },
         "description": {
           "type": "string",
-          "description": "Description of the service."
+          "description": "A detailed description of the service."
         },
-        "price": {
-          "type": "number",
-          "description": "Price of the service."
+        "isObdiiScannerService": {
+          "type": "boolean",
+          "description": "Indicates if this service specifically involves an OBDII scanner."
         }
       },
-      "required": ["id", "name", "price"]
+      "required": [
+        "id",
+        "name",
+        "description",
+        "isObdiiScannerService"
+      ]
+    },
+    "Appointment": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Appointment",
+      "type": "object",
+      "description": "Represents a customer's booking for a specific service at a workshop.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the Appointment entity."
+        },
+        "customerId": {
+          "type": "string",
+          "description": "Reference to the User who booked the appointment. (Relationship: User 1:N Appointment)"
+        },
+        "workshopId": {
+          "type": "string",
+          "description": "Reference to the Workshop where the appointment is booked. (Relationship: Workshop 1:N Appointment)"
+        },
+        "serviceId": {
+          "type": "string",
+          "description": "Reference to the specific Service requested for this appointment. (Relationship: Service 1:N Appointment)"
+        },
+        "scheduledDateTime": {
+          "type": "string",
+          "description": "The planned date and time for the appointment.",
+          "format": "date-time"
+        },
+        "status": {
+          "type": "string",
+          "description": "The current status of the appointment (e.g., 'Pending', 'Confirmed', 'Completed', 'Cancelled')."
+        },
+        "customerNotes": {
+          "type": "string",
+          "description": "Optional notes or specific requests provided by the customer for the appointment."
+        },
+        "createdAt": {
+          "type": "string",
+          "description": "Timestamp when the appointment was created.",
+          "format": "date-time"
+        },
+        "updatedAt": {
+          "type": "string",
+          "description": "Timestamp when the appointment was last updated.",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "id",
+        "customerId",
+        "workshopId",
+        "serviceId",
+        "scheduledDateTime",
+        "status",
+        "createdAt",
+        "updatedAt"
+      ]
     }
   },
   "auth": {
-    "providers": ["password", "anonymous"]
+    "providers": [
+      "password",
+      "anonymous"
+    ]
   },
   "firestore": {
-    "/users/{userId}": {
-      "schema": {
-        "$ref": "#/entities/UserProfile"
+    "structure": [
+      {
+        "path": "/users/{userId}",
+        "definition": {
+          "entityName": "user",
+          "schema": {
+            "$ref": "#/backend/entities/User"
+          },
+          "description": "Stores individual user profiles. Access is restricted to the user whose ID matches the document ID (path parameter).",
+          "params": [
+            {
+              "name": "userId",
+              "description": "The unique identifier of the user, corresponding to Firebase Authentication UID."
+            }
+          ]
+        }
       },
-      "description": "Stores user profile information. Path-based ownership enables simple security rules."
-    },
-    "/workshops/{workshopId}": {
-      "schema": {
-        "$ref": "#/entities/Workshop"
+      {
+        "path": "/workshops/{workshopId}",
+        "definition": {
+          "entityName": "workshop",
+          "schema": {
+            "$ref": "#/backend/entities/Workshop"
+          },
+          "description": "Stores details of mechanical workshops. Publicly readable for all users. Write access is restricted to the workshop owner. This document includes a denormalized 'ownerId' field for authorization independence.",
+          "params": [
+            {
+              "name": "workshopId",
+              "description": "The unique identifier of the workshop."
+            }
+          ]
+        }
       },
-      "description": "Stores workshop information, including ownerId for access control. No denormalized authorization data is needed as the `ownerId` is present. Enables listing all workshops."
-    },
-    "/workshops/{workshopId}/services/{serviceId}": {
-      "schema": {
-        "$ref": "#/entities/Service"
+      {
+        "path": "/services/{serviceId}",
+        "definition": {
+          "entityName": "service",
+          "schema": {
+            "$ref": "#/backend/entities/Service"
+          },
+          "description": "Stores global definitions of mechanical services. Publicly readable by all users. Write access is restricted to administrators.",
+          "params": [
+            {
+              "name": "serviceId",
+              "description": "The unique identifier of the service."
+            }
+          ]
+        }
       },
-      "description": "Stores the services offered by a specific workshop."
-    },
-     "/workshops/{workshopId}/reviews/{userId}": {
-      "schema": {
-        "$ref": "#/entities/Review"
+      {
+        "path": "/users/{customerId}/appointments/{appointmentId}",
+        "definition": {
+          "entityName": "appointment",
+          "schema": {
+            "$ref": "#/backend/entities/Appointment"
+          },
+          "description": "Stores appointments booked by a customer at a workshop. Access is granted to the `customerId` (from path) and the `workshopOwnerId`. This document includes denormalized 'customerId' and 'workshopOwnerId' fields for authorization independence.",
+          "params": [
+            {
+              "name": "customerId",
+              "description": "The unique identifier of the user (customer) who booked the appointment."
+            },
+            {
+              "name": "appointmentId",
+              "description": "The unique identifier of the appointment."
+            }
+          ]
+        }
       },
-      "description": "Stores user reviews for a workshop. The document ID is the user's ID to enforce uniqueness."
-    },
-    "/appointments/{appointmentId}": {
-      "schema": {
-        "$ref": "#/entities/Appointment"
-      },
-      "description": "Stores appointment information, including userId and workshopId. This setup facilitates queries by user or workshop. Enables listing all appointments."
-    },
-    "/marketplace/{vehicleId}": {
-      "schema": {
-        "$ref": "#/entities/Vehicle"
-      },
-      "description": "Publicly readable collection of vehicles for sale. This collection should be populated by a backend process that mirrors documents from the private `users/{userId}/vehicles` collection when `isForSale` is true."
-    }
+      {
+        "path": "/roles_admin/{userId}",
+        "definition": {
+          "entityName": "admin_role",
+          "schema": {
+            "$ref": "#/backend/entities/AdminRole"
+          },
+          "description": "Serves as an authorization collection. The existence of a document at this path grants administrative privileges to the corresponding user (userId). This utilizes an 'existence over content' pattern for DBAC.",
+          "params": [
+            {
+              "name": "userId",
+              "description": "The unique identifier of the user with administrative privileges."
+            }
+          ]
+        }
+      }
+    ],
+    "reasoning": "The recommended Firestore structure for MechConnect prioritizes Authorization Independence, Structural Segregation, and clear Access Modeling to ensure robust security, scalability, and debuggability. \n\n**Authorization Independence via Denormalization (CRITICAL):**\nTo eliminate the need for `get()` calls in security rules and enable atomic operations, key authorization contexts are denormalized:\n*   **Workshops:** Each `workshop` document will include an `ownerId` field (referencing a `User`'s UID). This denormalization allows rules to check `request.auth.uid == resource.data.ownerId` directly when a workshop owner attempts to modify their workshop, without needing to traverse a complex hierarchy or make additional reads.\n*   **Appointments:** Each `appointment` document, placed under a user's subcollection (`/users/{customerId}/appointments/{appointmentId}`), will include `customerId` (which is also the path parameter, but explicit in the document for clarity and collection group query rules) and `workshopOwnerId` (denormalized from the associated `Workshop` document). This ensures that both the customer and the workshop owner can be authorized to read/write the appointment directly from the `appointment` document itself, using rules like `request.auth.uid == resource.data.customerId` OR `request.auth.uid == resource.data.workshopOwnerId`.\n\n**Structural Segregation & QAPs:**\nCollections are designed with homogeneous security postures, simplifying security rules and supporting efficient query access patterns (QAPs):\n*   **`/users/{userId}`:** This collection stores private user profiles. Only the authenticated user matching `{userId}` can read or write their own profile. This inherently supports QAPs as a user only queries their own specific document.\n*   **`/workshops/{workshopId}`:** This collection is publicly readable, allowing any user to browse workshops for location, services, etc. Write access is restricted to the `ownerId` stored within each `workshop` document. This supports QAPs for public listings and owner-specific updates.\n*   **`/services/{serviceId}`:** This collection provides global, read-only definitions of available services. It is publicly readable by all. Write access would be restricted to administrators (managed via `/roles_admin`). This supports QAPs for listing all available services.\n*   **`/users/{customerId}/appointments/{appointmentId}`:** Appointments are placed hierarchically under the customer who booked them. This makes it trivial for a customer to retrieve their own appointments (`/users/{request.auth.uid}/appointments`). For workshops to view their relevant appointments, a collection group query on `appointments` will be used, with rules filtering by the denormalized `workshopOwnerId`. This structure effectively supports QAPs for both customers and workshop owners.\n*   **`/roles_admin/{userId}`:** This collection uses an 'existence over content' pattern for administrative roles. A document's presence for a specific `userId` grants admin privileges. This is crucial for securely managing global resources like `Service` definitions or potentially all `Workshop` documents."
   }
 }

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
 import {
   Query,
   onSnapshot,
@@ -58,79 +58,57 @@ export function useCollection<T = any>(
   type StateDataType = ResultItemType[] | null;
 
   const [data, setData] = useState<StateDataType>(null);
-  const [isLoading, setIsLoading] = useState<boolean>(true);
+  const [isLoading, setIsLoading] = useState<boolean>(false);
   const [error, setError] = useState<FirestoreError | Error | null>(null);
-  
-  const cleanupRef = useRef<(() => void) | null>(null);
 
   useEffect(() => {
-    // If a cleanup function from a previous query exists, run it first.
-    if (cleanupRef.current) {
-        cleanupRef.current();
-        cleanupRef.current = null;
-    }
-    
-    // If the query is null/undefined, it means we are not ready to fetch.
-    // Reset state to initial and wait.
     if (!memoizedTargetRefOrQuery) {
-        setData(null);
-        setIsLoading(true); // We are "loading" because we are waiting for a valid query
-        setError(null);
-        return;
+      setData(null);
+      setIsLoading(false);
+      setError(null);
+      return;
     }
-    
+
     setIsLoading(true);
     setError(null);
 
-    // Set up the new snapshot listener.
+    // Directly use memoizedTargetRefOrQuery as it's assumed to be the final query
     const unsubscribe = onSnapshot(
       memoizedTargetRefOrQuery,
       (snapshot: QuerySnapshot<DocumentData>) => {
-        const results: ResultItemType[] = snapshot.docs.map(doc => ({ ...(doc.data() as T), id: doc.id }));
+        const results: ResultItemType[] = [];
+        for (const doc of snapshot.docs) {
+          results.push({ ...(doc.data() as T), id: doc.id });
+        }
         setData(results);
         setError(null);
         setIsLoading(false);
       },
       (error: FirestoreError) => {
-        // This logic extracts the path from either a ref or a query.
-        // It's wrapped in a try-catch because it accesses internal SDK properties (_query)
-        // which could change in future versions, making it brittle.
-        let path: string = 'unknown_path';
-        try {
-            path =
-            memoizedTargetRefOrQuery.type === 'collection'
-                ? (memoizedTargetRefOrQuery as CollectionReference).path
-                : (memoizedTargetRefOrQuery as unknown as InternalQuery)._query.path.canonicalString();
-        } catch(e) {
-            console.warn("Could not determine path for Firestore permission error. This might be due to a Firebase SDK update.", e);
-        }
+        // This logic extracts the path from either a ref or a query
+        const path: string =
+          memoizedTargetRefOrQuery.type === 'collection'
+            ? (memoizedTargetRefOrQuery as CollectionReference).path
+            : (memoizedTargetRefOrQuery as unknown as InternalQuery)._query.path.canonicalString()
 
         const contextualError = new FirestorePermissionError({
           operation: 'list',
           path,
-        });
+        })
 
-        setError(contextualError);
-        setData(null);
-        setIsLoading(false);
+        setError(contextualError)
+        setData(null)
+        setIsLoading(false)
 
         // trigger global error propagation
         errorEmitter.emit('permission-error', contextualError);
       }
     );
-    
-    cleanupRef.current = unsubscribe;
 
-    // Standard cleanup function for when the component unmounts or query changes.
-    return () => {
-        unsubscribe();
-        cleanupRef.current = null;
-    };
-  }, [memoizedTargetRefOrQuery]); 
-
+    return () => unsubscribe();
+  }, [memoizedTargetRefOrQuery]); // Re-run if the target query/reference changes.
   if(memoizedTargetRefOrQuery && !memoizedTargetRefOrQuery.__memo) {
-    throw new Error('Query was not properly memoized using useMemoFirebase');
+    throw new Error(memoizedTargetRefOrQuery + ' was not properly memoized using useMemoFirebase');
   }
-  
   return { data, isLoading, error };
 }
