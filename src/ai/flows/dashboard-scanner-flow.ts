@@ -15,6 +15,7 @@ export async function scanDashboard(input: DashboardScanInput): Promise<Dashboar
 
 const dashboardScannerPrompt = ai.definePrompt({
   name: 'dashboardScannerPrompt',
+  model: 'googleai/gemini-2.5-flash',
   input: {schema: DashboardScanInputSchema},
   output: {schema: DashboardScanOutputSchema},
   prompt: `You are an expert mechanic specializing in vehicle diagnostics.
@@ -34,6 +35,13 @@ const scanDashboardFlow = ai.defineFlow(
     outputSchema: DashboardScanOutputSchema,
   },
   async input => {
+    // Gracefully handle the case where the AI service is not configured.
+    if (!process.env.GEMINI_API_KEY) {
+      console.error("Attempted to run scanDashboardFlow, but GEMINI_API_KEY is not set.");
+      // Return a valid, empty response to prevent client-side errors.
+      return { indicators: [] };
+    }
+
     const {output} = await dashboardScannerPrompt(input);
     return output!;
   }
