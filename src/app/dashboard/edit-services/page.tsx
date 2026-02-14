@@ -39,9 +39,9 @@ export default function EditServicesPage() {
   
   // Fetch User's Workshop
   const userWorkshopsQuery = useMemoFirebase(() => {
-    if (!firestore || !user) return null;
+    if (!firestore || !user?.uid) return null;
     return query(collection(firestore, 'workshops'), where('ownerId', '==', user.uid));
-  }, [firestore, user]);
+  }, [firestore, user?.uid]);
 
   const { data: workshops, isLoading: isWorkshopsLoading } = useCollection<Workshop>(userWorkshopsQuery);
   const workshop = workshops?.[0];
@@ -80,25 +80,25 @@ export default function EditServicesPage() {
     
     setIsSubmitting(true);
     
-    const batch = writeBatch(firestore);
-    const servicesColRef = collection(firestore, `workshops/${workshop.id}/services`);
-    
-    const formIds = new Set(values.services.map(s => s.id).filter(Boolean));
-
-    currentServices?.forEach(serviceInDb => {
-      if (!formIds.has(serviceInDb.id)) {
-          const docRef = doc(servicesColRef, serviceInDb.id);
-          batch.delete(docRef);
-      }
-    });
-    
-    values.services.forEach(service => {
-      const docRef = service.id ? doc(servicesColRef, service.id) : doc(servicesColRef);
-      const { id, ...serviceData } = service; 
-      batch.set(docRef, { ...serviceData, id: docRef.id }, { merge: true });
-    });
-
     try {
+        const batch = writeBatch(firestore);
+        const servicesColRef = collection(firestore, `workshops/${workshop.id}/services`);
+        
+        const formIds = new Set(values.services.map(s => s.id).filter(Boolean));
+
+        currentServices?.forEach(serviceInDb => {
+        if (!formIds.has(serviceInDb.id)) {
+            const docRef = doc(servicesColRef, serviceInDb.id);
+            batch.delete(docRef);
+        }
+        });
+        
+        values.services.forEach(service => {
+        const docRef = service.id ? doc(servicesColRef, service.id) : doc(servicesColRef);
+        const { id, ...serviceData } = service; 
+        batch.set(docRef, { ...serviceData, id: docRef.id }, { merge: true });
+        });
+
         await batch.commit();
         toast({
             title: '¡Servicios Actualizados!',

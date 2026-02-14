@@ -29,9 +29,9 @@ export default function MyVehiclesPage() {
   const { toast } = useToast();
 
   const vehiclesCollectionRef = useMemoFirebase(() => {
-    if (!firestore || !user) return null;
+    if (!firestore || !user?.uid) return null;
     return collection(firestore, `users/${user.uid}/vehicles`);
-  }, [firestore, user]);
+  }, [firestore, user?.uid]);
 
   const vehiclesQuery = useMemoFirebase(() => {
     if (!vehiclesCollectionRef) return null;
@@ -46,14 +46,14 @@ export default function MyVehiclesPage() {
         return;
     }
     
-    const batch = writeBatch(firestore);
-    const userVehicleRef = doc(vehiclesCollectionRef, vehicleId);
-    const marketplaceRef = doc(firestore, 'marketplace', vehicleId);
-    
-    batch.delete(userVehicleRef);
-    batch.delete(marketplaceRef);
-    
     try {
+        const batch = writeBatch(firestore);
+        const userVehicleRef = doc(vehiclesCollectionRef, vehicleId);
+        const marketplaceRef = doc(firestore, 'marketplace', vehicleId);
+        
+        batch.delete(userVehicleRef);
+        batch.delete(marketplaceRef);
+        
         await batch.commit();
         toast({
             title: 'Vehículo Eliminado',
@@ -62,7 +62,7 @@ export default function MyVehiclesPage() {
     } catch (error: any) {
         console.error("Error deleting vehicle:", error);
          errorEmitter.emit('permission-error', new FirestorePermissionError({
-             path: userVehicleRef.path,
+             path: `users/${user.uid}/vehicles/${vehicleId}`,
              operation: 'delete',
         }));
     }

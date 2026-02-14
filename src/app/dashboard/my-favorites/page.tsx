@@ -27,9 +27,9 @@ export default function MyFavoritesPage() {
   const { toast } = useToast();
 
   const favoritesQuery = useMemoFirebase(() => {
-    if (!firestore || !user) return null;
+    if (!firestore || !user?.uid) return null;
     return query(collection(firestore, `users/${user.uid}/favorites`), orderBy('addedAt', 'desc'));
-  }, [firestore, user]);
+  }, [firestore, user?.uid]);
 
   const { data: favorites, isLoading: areFavoritesLoading } = useCollection<FavoriteWorkshop>(favoritesQuery);
 

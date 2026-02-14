@@ -61,9 +61,9 @@ export default function RegisterWorkshopPage() {
 
   // Fetch User's Workshops
   const userWorkshopsQuery = useMemoFirebase(() => {
-    if (!firestore || !user) return null;
+    if (!firestore || !user?.uid) return null;
     return query(collection(firestore, 'workshops'), where('ownerId', '==', user.uid));
-  }, [firestore, user]);
+  }, [firestore, user?.uid]);
 
   const { data: workshops, isLoading: isWorkshopsLoading } = useCollection<Workshop>(userWorkshopsQuery);
 

@@ -43,9 +43,9 @@ export default function ProfilePage() {
   }, [isUserLoading, user, router, toast]);
 
   const userDocRef = useMemoFirebase(() => {
-    if (!firestore || !user) return null;
+    if (!firestore || !user?.uid) return null;
     return doc(firestore, 'users', user.uid);
-  }, [firestore, user]);
+  }, [firestore, user?.uid]);
 
   const { data: userData, isLoading: isUserDataLoading } = useDoc<User>(userDocRef);
 
@@ -90,10 +90,10 @@ export default function ProfilePage() {
 
     setIsSubmitting(true);
     
-    const userRef = doc(firestore, 'users', user.uid);
-    const { email, ...dataToUpdate } = values;
-    
     try {
+        const userRef = doc(firestore, 'users', user.uid);
+        const { email, ...dataToUpdate } = values;
+        
         await updateDoc(userRef, dataToUpdate);
         
         const newDisplayName = `${values.firstName} ${values.lastName}`;
@@ -107,8 +107,9 @@ export default function ProfilePage() {
         });
         router.push('/dashboard');
     } catch (error) {
+        const { email, ...dataToUpdate } = values;
         errorEmitter.emit('permission-error', new FirestorePermissionError({
-            path: userRef.path,
+            path: `users/${user.uid}`,
             operation: 'update',
             requestResourceData: dataToUpdate
         }));

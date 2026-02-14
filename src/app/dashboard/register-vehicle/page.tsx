@@ -76,9 +76,9 @@ function RegisterVehicleForm() {
   const backgroundImage = PlaceHolderImages.find(p => p.id === 'vehicle-registration-background');
   
   const vehiclesCollectionRef = useMemoFirebase(() => {
-    if (!firestore || !user) return null;
+    if (!firestore || !user?.uid) return null;
     return collection(firestore, `users/${user.uid}/vehicles`);
-  }, [firestore, user]);
+  }, [firestore, user?.uid]);
 
   const { data: vehicles, isLoading: areVehiclesLoading } = useCollection<Vehicle>(vehiclesCollectionRef);
 
@@ -89,9 +89,9 @@ function RegisterVehicleForm() {
 
   
   const userDocRef = useMemoFirebase(() => {
-    if (!firestore || !user) return null;
+    if (!firestore || !user?.uid) return null;
     return doc(firestore, 'users', user.uid);
-  }, [firestore, user]);
+  }, [firestore, user?.uid]);
   const { data: userData, isLoading: isUserDataLoading } = useDoc<User>(userDocRef);
 
   const form = useForm<z.infer<typeof vehicleSchema>>({

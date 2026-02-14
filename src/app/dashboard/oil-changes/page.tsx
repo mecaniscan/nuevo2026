@@ -55,16 +55,16 @@ export default function OilChangesPage() {
 
   // Fetch Vehicles
   const vehiclesCollection = useMemoFirebase(() => {
-    if (!firestore || !user) return null;
+    if (!firestore || !user?.uid) return null;
     return collection(firestore, `users/${user.uid}/vehicles`);
-  }, [firestore, user]);
+  }, [firestore, user?.uid]);
   const { data: vehicles, isLoading: areVehiclesLoading } = useCollection<Vehicle>(vehiclesCollection);
 
   // Fetch Oil Changes
   const oilChangesCollection = useMemoFirebase(() => {
-    if (!firestore || !user) return null;
+    if (!firestore || !user?.uid) return null;
     return collection(firestore, `users/${user.uid}/oilChanges`);
-  }, [firestore, user]);
+  }, [firestore, user?.uid]);
 
   const oilChangesQuery = useMemoFirebase(() => {
     if (!oilChangesCollection) return null;
@@ -96,30 +96,37 @@ export default function OilChangesPage() {
 
     setIsSubmitting(true);
 
-    const selectedVehicle = vehicles.find(v => v.id === values.vehicleId);
-    if (!selectedVehicle) {
-        toast({ variant: 'destructive', title: 'Error', description: 'Vehículo seleccionado no válido.' });
-        setIsSubmitting(false);
-        return;
-    }
-    
-    const oilChangeData = {
-        ...values,
-        userId: user.uid,
-        vehicleName: `${selectedVehicle.brand} ${selectedVehicle.model}`, // Denormalized name
-        date: serverTimestamp(),
-      };
-
     try {
-      const oilChangesColRef = collection(firestore, `users/${user.uid}/oilChanges`);
-      await addDoc(oilChangesColRef, oilChangeData);
-      
-      toast({
-        title: '¡Registro Añadido!',
-        description: 'El cambio de aceite ha sido guardado en tu historial.',
-      });
-      form.reset();
+        const selectedVehicle = vehicles.find(v => v.id === values.vehicleId);
+        if (!selectedVehicle) {
+            toast({ variant: 'destructive', title: 'Error', description: 'Vehículo seleccionado no válido.' });
+            setIsSubmitting(false);
+            return;
+        }
+        
+        const oilChangeData = {
+            ...values,
+            userId: user.uid,
+            vehicleName: `${selectedVehicle.brand} ${selectedVehicle.model}`, // Denormalized name
+            date: serverTimestamp(),
+          };
+
+        const oilChangesColRef = collection(firestore, `users/${user.uid}/oilChanges`);
+        await addDoc(oilChangesColRef, oilChangeData);
+        
+        toast({
+            title: '¡Registro Añadido!',
+            description: 'El cambio de aceite ha sido guardado en tu historial.',
+        });
+        form.reset();
     } catch (error) {
+        const selectedVehicle = vehicles.find(v => v.id === values.vehicleId);
+        const oilChangeData = {
+            ...values,
+            userId: user.uid,
+            vehicleName: selectedVehicle ? `${selectedVehicle.brand} ${selectedVehicle.model}` : 'Unknown Vehicle',
+            date: serverTimestamp(),
+          };
         errorEmitter.emit('permission-error', new FirestorePermissionError({
             path: `users/${user.uid}/oilChanges`,
             operation: 'create',

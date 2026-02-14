@@ -62,9 +62,9 @@ export default function EditWorkshopPage() {
 
   // Fetch User's Workshop
   const userWorkshopsQuery = useMemoFirebase(() => {
-    if (!firestore || !user) return null;
+    if (!firestore || !user?.uid) return null;
     return query(collection(firestore, 'workshops'), where('ownerId', '==', user.uid));
-  }, [firestore, user]);
+  }, [firestore, user?.uid]);
 
   const { data: workshops, isLoading: isWorkshopsLoading } = useCollection<Workshop>(userWorkshopsQuery);
   const workshop = workshops?.[0];
@@ -117,31 +117,33 @@ export default function EditWorkshopPage() {
 
     setIsSubmitting(true);
     
-    let imageUrl = workshop.imageUrl;
-    if (values.image && values.image.length > 0) {
-        const newImageUrl = await uploadImage(values.image[0]);
-        if (newImageUrl) {
-          imageUrl = newImageUrl;
-        } else {
-          // Halt submission if image upload fails
-          setIsSubmitting(false);
-          return;
-        }
-    }
-
-    const workshopRef = doc(firestore, 'workshops', workshop.id);
-    const { image, ...dataToUpdate } = values;
-    
-    const finalData = { ...dataToUpdate, imageUrl };
-    
     try {
-        await updateDoc(workshopRef, finalData);
-        toast({
-            title: '¡Taller Actualizado!',
-            description: 'La información de tu taller ha sido guardada.',
-        });
-        router.push('/dashboard');
+      let imageUrl = workshop.imageUrl;
+      if (values.image && values.image.length > 0) {
+          const newImageUrl = await uploadImage(values.image[0]);
+          if (newImageUrl) {
+            imageUrl = newImageUrl;
+          } else {
+            // Halt submission if image upload fails
+            setIsSubmitting(false);
+            return;
+          }
+      }
+
+      const workshopRef = doc(firestore, 'workshops', workshop.id);
+      const { image, ...dataToUpdate } = values;
+      
+      const finalData = { ...dataToUpdate, imageUrl };
+      
+      await updateDoc(workshopRef, finalData);
+      toast({
+          title: '¡Taller Actualizado!',
+          description: 'La información de tu taller ha sido guardada.',
+      });
+      router.push('/dashboard');
     } catch (error) {
+        const { image, ...dataToUpdate } = values;
+        const finalData = { ...dataToUpdate, imageUrl: workshop.imageUrl };
         errorEmitter.emit('permission-error', new FirestorePermissionError({
             path: workshopRef.path,
             operation: 'update',

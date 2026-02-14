@@ -77,9 +77,9 @@ export default function WorkshopDetailPage() {
 
     // Fetch User's Vehicles
     const vehiclesCollectionRef = useMemoFirebase(() => {
-        if (!firestore || !user) return null;
+        if (!firestore || !user?.uid) return null;
         return collection(firestore, `users/${user.uid}/vehicles`);
-    }, [firestore, user]);
+    }, [firestore, user?.uid]);
     const { data: vehicles, isLoading: areVehiclesLoading } = useCollection<Vehicle>(vehiclesCollectionRef);
 
     const userHasReviewed = useMemo(() => {
@@ -89,9 +89,9 @@ export default function WorkshopDetailPage() {
 
     // Fetch User Favorites
     const favoriteRef = useMemoFirebase(() => {
-        if (!firestore || !user || !workshopId) return null;
+        if (!firestore || !user?.uid || !workshopId) return null;
         return doc(firestore, `users/${user.uid}/favorites`, workshopId);
-    }, [firestore, user, workshopId]);
+    }, [firestore, user?.uid, workshopId]);
     const { data: favorite, isLoading: isFavoriteLoading } = useDoc<FavoriteWorkshop>(favoriteRef);
     const isFavorite = !!favorite;
 
@@ -173,25 +173,27 @@ export default function WorkshopDetailPage() {
 
         setIsSubmitting(true);
         
-        const selectedVehicle = vehicles.find(v => v.id === values.vehicleId);
-        if (!selectedVehicle) {
-            toast({ variant: 'destructive', title: 'Error', description: 'Vehículo seleccionado no válido.' });
-            setIsSubmitting(false);
-            return;
-        }
-        
         const appointmentData: Omit<Appointment, 'id'> = {
-          workshopId: workshop.id,
-          workshopName: workshop.name,
-          userId: user.uid,
-          vehicleId: selectedVehicle.id,
-          vehicleName: `${selectedVehicle.brand} ${selectedVehicle.model}`,
-          appointmentDateTime: values.appointmentDateTime.toISOString(),
-          description: values.description,
-          status: 'scheduled',
+            workshopId: workshop.id,
+            workshopName: workshop.name,
+            userId: user.uid,
+            vehicleId: '', // placeholder
+            vehicleName: '', // placeholder
+            appointmentDateTime: values.appointmentDateTime.toISOString(),
+            description: values.description,
+            status: 'scheduled',
         };
-        
+
         try {
+            const selectedVehicle = vehicles.find(v => v.id === values.vehicleId);
+            if (!selectedVehicle) {
+                toast({ variant: 'destructive', title: 'Error', description: 'Vehículo seleccionado no válido.' });
+                setIsSubmitting(false);
+                return;
+            }
+            appointmentData.vehicleId = selectedVehicle.id;
+            appointmentData.vehicleName = `${selectedVehicle.brand} ${selectedVehicle.model}`;
+
             await addDoc(collection(firestore, 'appointments'), appointmentData);
             
             const date = format(values.appointmentDateTime, "eeee, dd 'de' MMMM 'de' yyyy", { locale: es });
@@ -275,7 +277,6 @@ export default function WorkshopDetailPage() {
                 workshopId,
                 userId: user.uid,
                 authorName: user.displayName || user.email,
-                createdAt: serverTimestamp(),
             };
              errorEmitter.emit('permission-error', new FirestorePermissionError({
                 path: reviewRef.path,
