@@ -1,11 +1,11 @@
 'use client';
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { useUser, useFirestore, useMemoFirebase, FirestorePermissionError, errorEmitter, useCollection } from '@/firebase';
 import { collection, query, orderBy, doc, writeBatch } from 'firebase/firestore';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2, PlusCircle, Car, Trash2, Pencil, Briefcase, BadgePercent, AlertCircle } from 'lucide-react';
+import { Loader2, PlusCircle, Car, Trash2, Pencil, Briefcase, BadgePercent } from 'lucide-react';
 import Link from 'next/link';
 import type { Vehicle } from '@/lib/types';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -40,33 +40,36 @@ export default function MyVehiclesPage() {
 
   const { data: vehicles, isLoading: areVehiclesLoading } = useCollection<Vehicle>(vehiclesQuery);
 
-  function handleDeleteVehicle(vehicleId: string) {
+  function handleDeleteVehicle(vehicle: Vehicle) {
     if (!user || !firestore || !vehiclesCollectionRef) {
         toast({ variant: 'destructive', title: 'Error', description: 'No autenticado.' });
         return;
     }
     
     const batch = writeBatch(firestore);
-    const userVehicleRef = doc(vehiclesCollectionRef, vehicleId);
-    const marketplaceRef = doc(firestore, 'marketplace', vehicleId);
+    const userVehicleRef = doc(vehiclesCollectionRef, vehicle.id);
     
     batch.delete(userVehicleRef);
-    batch.delete(marketplaceRef);
+
+    if (vehicle.isForSale) {
+        const marketplaceRef = doc(firestore, 'marketplace', vehicle.id);
+        batch.delete(marketplaceRef);
+    }
     
     batch.commit()
         .then(() => {
             toast({
                 title: 'Vehículo Eliminado',
-                description: 'El vehículo ha sido eliminado de tus registros y del marketplace.',
+                description: 'El vehículo ha sido eliminado de tus registros.',
             });
         })
         .catch(() => {
              errorEmitter.emit('permission-error', new FirestorePermissionError({
-                 path: `users/${user.uid}/vehicles/${vehicleId}`,
+                 path: `users/${user.uid}/vehicles/${vehicle.id}`,
                  operation: 'delete',
             }));
         });
-}
+  }
 
   const isLoading = isUserLoading || areVehiclesLoading;
   
@@ -178,7 +181,7 @@ export default function MyVehiclesPage() {
                                                     <AlertDialogFooter>
                                                         <AlertDialogCancel>Cancelar</AlertDialogCancel>
                                                         <AlertDialogAction
-                                                            onClick={() => handleDeleteVehicle(vehicle.id)}
+                                                            onClick={() => handleDeleteVehicle(vehicle)}
                                                             className="bg-destructive hover:bg-destructive/90"
                                                         >
                                                             Eliminar
