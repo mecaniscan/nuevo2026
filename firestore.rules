@@ -73,8 +73,10 @@ service cloud.firestore {
     match /marketplace/{vehicleId} {
       // Anyone can see vehicles for sale.
       allow get, list: if true;
-      // Only the vehicle owner can add/update/remove it from the marketplace.
-      allow create, update, delete: if isOwner(request.resource.data.userId);
+      // The user creating the vehicle must be the owner.
+      allow create: if isOwner(request.resource.data.userId);
+      // Only the vehicle owner can update or remove it from the marketplace.
+      allow update, delete: if isOwner(resource.data.userId);
     }
   }
 }
