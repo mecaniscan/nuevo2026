@@ -68,7 +68,7 @@ export type Vehicle = {
     year: number;
     vin: string;
     licensePlate: string;
-    price?: number;
+    price?: number | null;
     currentMileage: number;
     imageUrls: string[];
     isForSale: boolean;

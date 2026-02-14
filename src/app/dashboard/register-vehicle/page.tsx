@@ -34,8 +34,8 @@ const vehicleSchema = z.object({
   vin: z.string().optional(),
   licensePlate: z.string().optional(),
   price: z.preprocess(
-    (a) => a ? parseFloat(z.string().parse(a)) : undefined,
-    z.number().optional()
+    (a) => (a !== '' && a !== null && a !== undefined) ? parseFloat(z.string().parse(String(a))) : null,
+    z.number().nullable().optional()
   ),
   currentMileage: z.preprocess(
     (a) => a ? parseInt(z.string().parse(a), 10) : 0,

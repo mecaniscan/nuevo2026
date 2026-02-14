@@ -159,7 +159,7 @@ export default function MyVehiclesPage() {
                                           )}
                                         </TableCell>
                                         <TableCell>{vehicle.currentMileage?.toLocaleString()} km</TableCell>
-                                        <TableCell>{vehicle.price ? `$${vehicle.price.toLocaleString()}`: 'N/A'}</TableCell>
+                                        <TableCell>{vehicle.price != null ? `$${vehicle.price.toLocaleString()}`: 'N/A'}</TableCell>
                                         <TableCell className="text-right">
                                             <Button variant="ghost" size="icon" className="text-primary hover:bg-primary/10" asChild>
                                                 <Link href={`/dashboard/register-vehicle?edit=${vehicle.id}`}><Pencil className="h-4 w-4" /></Link>
