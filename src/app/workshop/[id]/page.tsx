@@ -133,15 +133,16 @@ export default function WorkshopDetailPage() {
         const favRef = doc(firestore, `users/${user.uid}/favorites`, workshopId);
 
         if (isFavorite) {
-            try {
-                await deleteDoc(favRef);
-                toast({ title: 'Eliminado de Favoritos', description: `${workshop.name} ha sido eliminado de tu lista.` });
-            } catch (error) {
-                errorEmitter.emit('permission-error', new FirestorePermissionError({
-                    path: favRef.path,
-                    operation: 'delete'
-                }));
-            }
+            deleteDoc(favRef)
+                .then(() => {
+                    toast({ title: 'Eliminado de Favoritos', description: `${workshop.name} ha sido eliminado de tu lista.` });
+                })
+                .catch(() => {
+                    errorEmitter.emit('permission-error', new FirestorePermissionError({
+                        path: favRef.path,
+                        operation: 'delete'
+                    }));
+                });
         } else {
             const favoriteData: FavoriteWorkshop = {
                 workshopId,
@@ -151,21 +152,22 @@ export default function WorkshopDetailPage() {
                 averageRating: workshop.averageRating || 0,
                 addedAt: serverTimestamp() as Timestamp,
             };
-            try {
-                await setDoc(favRef, favoriteData);
-                toast({ title: '¡Guardado en Favoritos!', description: `${workshop.name} ha sido añadido a tu lista.` });
-            } catch (error) {
-                errorEmitter.emit('permission-error', new FirestorePermissionError({
-                    path: favRef.path,
-                    operation: 'create',
-                    requestResourceData: favoriteData
-                }));
-            }
+            setDoc(favRef, favoriteData)
+                .then(() => {
+                    toast({ title: '¡Guardado en Favoritos!', description: `${workshop.name} ha sido añadido a tu lista.` });
+                })
+                .catch(() => {
+                    errorEmitter.emit('permission-error', new FirestorePermissionError({
+                        path: favRef.path,
+                        operation: 'create',
+                        requestResourceData: favoriteData
+                    }));
+                });
         }
     };
 
 
-    async function onAppointmentSubmit(values: z.infer<typeof appointmentSchema>) {
+    function onAppointmentSubmit(values: z.infer<typeof appointmentSchema>) {
         if (!workshop || !workshop.whatsappNumber || !user || !firestore || !vehicles) {
             toast({ variant: 'destructive', title: 'Error', description: 'Falta información para agendar la cita.' });
             return;
@@ -184,40 +186,41 @@ export default function WorkshopDetailPage() {
             status: 'scheduled',
         };
 
-        try {
-            const selectedVehicle = vehicles.find(v => v.id === values.vehicleId);
-            if (!selectedVehicle) {
-                toast({ variant: 'destructive', title: 'Error', description: 'Vehículo seleccionado no válido.' });
-                setIsSubmitting(false);
-                return;
-            }
-            appointmentData.vehicleId = selectedVehicle.id;
-            appointmentData.vehicleName = `${selectedVehicle.brand} ${selectedVehicle.model}`;
-
-            await addDoc(collection(firestore, 'appointments'), appointmentData);
-            
-            const date = format(values.appointmentDateTime, "eeee, dd 'de' MMMM 'de' yyyy", { locale: es });
-            const message = `Hola ${workshop.name}, me gustaría agendar una cita para mi ${selectedVehicle.brand} ${selectedVehicle.model} el día ${date}. El motivo es: "${values.description}". ¿Tienen disponibilidad?`;
-            const whatsappUrl = `https://wa.me/${workshop.whatsappNumber.replace(/\D/g, '')}?text=${encodeURIComponent(message)}`;
-            
-            window.open(whatsappUrl, '_blank');
-            
-            toast({
-                title: '¡Cita Registrada!',
-                description: 'Redirigiendo a WhatsApp para que confirmes tu cita con el taller.',
-            });
-            appointmentForm.reset();
-            router.push('/dashboard/my-appointments');
-
-        } catch (error) {
-            errorEmitter.emit('permission-error', new FirestorePermissionError({
-                path: 'appointments',
-                operation: 'create',
-                requestResourceData: appointmentData,
-            }));
-        } finally {
-             setIsSubmitting(false);
+        
+        const selectedVehicle = vehicles.find(v => v.id === values.vehicleId);
+        if (!selectedVehicle) {
+            toast({ variant: 'destructive', title: 'Error', description: 'Vehículo seleccionado no válido.' });
+            setIsSubmitting(false);
+            return;
         }
+        appointmentData.vehicleId = selectedVehicle.id;
+        appointmentData.vehicleName = `${selectedVehicle.brand} ${selectedVehicle.model}`;
+
+        addDoc(collection(firestore, 'appointments'), appointmentData)
+            .then(() => {
+                const date = format(values.appointmentDateTime, "eeee, dd 'de' MMMM 'de' yyyy", { locale: es });
+                const message = `Hola ${workshop.name}, me gustaría agendar una cita para mi ${selectedVehicle.brand} ${selectedVehicle.model} el día ${date}. El motivo es: "${values.description}". ¿Tienen disponibilidad?`;
+                const whatsappUrl = `https://wa.me/${workshop.whatsappNumber.replace(/\D/g, '')}?text=${encodeURIComponent(message)}`;
+                
+                window.open(whatsappUrl, '_blank');
+                
+                toast({
+                    title: '¡Cita Registrada!',
+                    description: 'Redirigiendo a WhatsApp para que confirmes tu cita con el taller.',
+                });
+                appointmentForm.reset();
+                router.push('/dashboard/my-appointments');
+            })
+            .catch(() => {
+                 errorEmitter.emit('permission-error', new FirestorePermissionError({
+                    path: 'appointments',
+                    operation: 'create',
+                    requestResourceData: appointmentData,
+                }));
+            })
+            .finally(() => {
+                setIsSubmitting(false);
+            });
     }
     
     async function onReviewSubmit(values: z.infer<typeof reviewSchema>) {
@@ -231,14 +234,19 @@ export default function WorkshopDetailPage() {
         }
         setIsSubmittingReview(true);
       
-        const reviewCollectionRef = collection(firestore, `workshops/${workshopId}/reviews`);
-        const reviewRef = doc(reviewCollectionRef);
+        const reviewRef = doc(firestore, `workshops/${workshopId}/reviews`, user.uid);
 
         try {
             await runTransaction(firestore, async (transaction) => {
                 const workshopDoc = await transaction.get(workshopRef);
                 if (!workshopDoc.exists()) {
                     throw "El taller no existe.";
+                }
+
+                // Check if review already exists inside transaction for race conditions
+                const existingReviewDoc = await transaction.get(reviewRef);
+                if (existingReviewDoc.exists()) {
+                    throw new Error("Ya has dejado una reseña para este taller.");
                 }
 
                 const currentData = workshopDoc.data();
@@ -253,9 +261,8 @@ export default function WorkshopDetailPage() {
                     averageRating: newAverageRating
                 });
 
-                const reviewData = {
+                const reviewData: Omit<Review, 'id' | 'createdAt'> & { createdAt: any } = {
                     ...values,
-                    id: reviewRef.id,
                     workshopId,
                     userId: user.uid,
                     authorName: user.displayName || user.email,
@@ -270,19 +277,26 @@ export default function WorkshopDetailPage() {
             });
             reviewForm.reset({rating: 0, comment: ""});
 
-        } catch (error) {
-            const reviewData = {
-                ...values,
-                id: reviewRef.id,
-                workshopId,
-                userId: user.uid,
-                authorName: user.displayName || user.email,
-            };
-             errorEmitter.emit('permission-error', new FirestorePermissionError({
-                path: reviewRef.path,
-                operation: 'create',
-                requestResourceData: reviewData
-            }));
+        } catch (error: any) {
+            if (error.message === "Ya has dejado una reseña para este taller.") {
+                 toast({
+                    variant: "destructive",
+                    title: "Acción no permitida",
+                    description: error.message,
+                });
+            } else {
+                 const reviewData = {
+                    ...values,
+                    workshopId,
+                    userId: user.uid,
+                    authorName: user.displayName || user.email,
+                };
+                 errorEmitter.emit('permission-error', new FirestorePermissionError({
+                    path: reviewRef.path,
+                    operation: 'create',
+                    requestResourceData: reviewData
+                }));
+            }
         } finally {
             setIsSubmittingReview(false);
         }

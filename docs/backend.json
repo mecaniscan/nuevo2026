@@ -56,12 +56,12 @@
           "description": "URL of the workshop's main image."
         },
         "averageRating": {
-            "type": "number",
-            "description": "The average rating of the workshop, from 0 to 5."
+          "type": "number",
+          "description": "The average rating of the workshop, from 0 to 5."
         },
         "reviewCount": {
-            "type": "number",
-            "description": "The total number of reviews for the workshop."
+          "type": "number",
+          "description": "The total number of reviews for the workshop."
         }
       },
       "required": [
@@ -103,12 +103,7 @@
           "description": "WhatsApp number of the user."
         }
       },
-      "required": [
-        "id",
-        "firstName",
-        "lastName",
-        "email"
-      ]
+      "required": ["id", "firstName", "lastName", "email"]
     },
     "Appointment": {
       "$schema": "http://json-schema.org/draft-07/schema#",
@@ -133,12 +128,12 @@
           "description": "Denormalized name of the workshop."
         },
         "vehicleId": {
-            "type": "string",
-            "description": "Reference to the user's vehicle for the appointment."
+          "type": "string",
+          "description": "Reference to the user's vehicle for the appointment."
         },
         "vehicleName": {
-            "type": "string",
-            "description": "Denormalized name of the user's vehicle."
+          "type": "string",
+          "description": "Denormalized name of the user's vehicle."
         },
         "appointmentDateTime": {
           "type": "string",
@@ -183,43 +178,99 @@
           "description": "A description of what the error code means."
         }
       },
-      "required": [
-        "id",
-        "code",
-        "description"
-      ]
+      "required": ["id", "code", "description"]
     },
     "Vehicle": {
-        "$schema": "http://json-schema.org/draft-07/schema#",
-        "title": "Vehicle",
-        "type": "object",
-        "description": "Represents a user's vehicle, which can be listed for sale.",
-        "properties": {
-            "id": {"type": "string", "description": "Unique identifier for the vehicle."},
-            "userId": {"type": "string", "description": "ID of the user who owns the vehicle."},
-            "type": {"type": "string", "description": "Type of vehicle (e.g., Sedan, SUV)."},
-            "brand": {"type": "string", "description": "Brand of the vehicle (e.g., Toyota)."},
-            "model": {"type": "string", "description": "Model of the vehicle (e.g., Corolla)."},
-            "year": {"type": "number", "description": "Manufacturing year."},
-            "vin": {"type": "string", "description": "Vehicle Identification Number."},
-            "licensePlate": {"type": "string", "description": "License plate number."},
-            "price": {"type": "number", "description": "Price if the vehicle is for sale."},
-            "currentMileage": {"type": "number", "description": "Current mileage of the vehicle."},
-            "imageUrls": {"type": "array", "items": {"type": "string"}, "description": "List of image URLs for the vehicle."},
-            "isForSale": {"type": "boolean", "description": "Indicates if the vehicle is listed in the marketplace."},
-            "country": {"type": "string", "description": "Country where the vehicle is located."},
-            "sellerName": {"type": "string", "description": "Denormalized seller's name for marketplace listing."},
-            "sellerWhatsapp": {"type": "string", "description": "Denormalized seller's WhatsApp for marketplace listing."},
-            "certificateNumber": {"type": "string", "description": "Unique certificate number for marketplace validation."}
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Vehicle",
+      "type": "object",
+      "description": "Represents a user's vehicle, which can be listed for sale.",
+      "properties": {
+        "id": { "type": "string", "description": "Unique identifier for the vehicle." },
+        "userId": { "type": "string", "description": "ID of the user who owns the vehicle." },
+        "type": { "type": "string", "description": "Type of vehicle (e.g., Sedan, SUV)." },
+        "brand": { "type": "string", "description": "Brand of the vehicle (e.g., Toyota)." },
+        "model": { "type": "string", "description": "Model of the vehicle (e.g., Corolla)." },
+        "year": { "type": "number", "description": "Manufacturing year." },
+        "vin": { "type": "string", "description": "Vehicle Identification Number." },
+        "licensePlate": { "type": "string", "description": "License plate number." },
+        "price": { "type": "number", "description": "Price if the vehicle is for sale." },
+        "currentMileage": { "type": "number", "description": "Current mileage of the vehicle." },
+        "imageUrls": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "List of image URLs for the vehicle."
         },
-        "required": ["id", "userId", "brand", "model", "year", "isForSale", "country", "sellerName", "certificateNumber"]
+        "isForSale": { "type": "boolean", "description": "Indicates if the vehicle is listed in the marketplace." },
+        "country": { "type": "string", "description": "Country where the vehicle is located." },
+        "sellerName": { "type": "string", "description": "Denormalized seller's name for marketplace listing." },
+        "sellerWhatsapp": { "type": "string", "description": "Denormalized seller's WhatsApp for marketplace listing." },
+        "certificateNumber": { "type": "string", "description": "Unique certificate number for marketplace validation." }
+      },
+      "required": ["id", "userId", "brand", "model", "year", "isForSale", "country", "sellerName", "certificateNumber"]
+    },
+    "Review": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Review",
+      "type": "object",
+      "description": "Represents a user review for a workshop. The document ID is the user's ID to enforce one review per user per workshop.",
+      "properties": {
+        "workshopId": {
+          "type": "string",
+          "description": "Reference to Workshop. (Relationship: Workshop 1:N Review)"
+        },
+        "userId": {
+          "type": "string",
+          "description": "Reference to UserProfile. Same as the document ID."
+        },
+        "rating": {
+          "type": "number",
+          "description": "Rating from 1 to 5."
+        },
+        "comment": {
+          "type": "string",
+          "description": "The user's comment."
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Timestamp of when the review was created."
+        },
+        "authorName": {
+          "type": "string",
+          "description": "Denormalized user name for display."
+        }
+      },
+      "required": ["workshopId", "userId", "rating", "comment", "createdAt", "authorName"]
+    },
+    "Service": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Service",
+      "type": "object",
+      "description": "Represents a service offered by a workshop.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the service."
+        },
+        "name": {
+          "type": "string",
+          "description": "Name of the service."
+        },
+        "description": {
+          "type": "string",
+          "description": "Description of the service."
+        },
+        "price": {
+          "type": "number",
+          "description": "Price of the service."
+        }
+      },
+      "required": ["id", "name", "price"]
     }
   },
   "auth": {
-    "providers": [
-      "password",
-      "anonymous"
-    ]
+    "providers": ["password", "anonymous"]
   },
   "firestore": {
     "/users/{userId}": {
@@ -233,6 +284,18 @@
         "$ref": "#/entities/Workshop"
       },
       "description": "Stores workshop information, including ownerId for access control. No denormalized authorization data is needed as the `ownerId` is present. Enables listing all workshops."
+    },
+    "/workshops/{workshopId}/services/{serviceId}": {
+      "schema": {
+        "$ref": "#/entities/Service"
+      },
+      "description": "Stores the services offered by a specific workshop."
+    },
+     "/workshops/{workshopId}/reviews/{userId}": {
+      "schema": {
+        "$ref": "#/entities/Review"
+      },
+      "description": "Stores user reviews for a workshop. The document ID is the user's ID to enforce uniqueness."
     },
     "/appointments/{appointmentId}": {
       "schema": {

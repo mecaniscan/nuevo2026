@@ -40,14 +40,17 @@ service cloud.firestore {
         allow write: if isAuth() && get(/databases/$(database)/documents/workshops/$(workshopId)).data.ownerId == request.auth.uid;
       }
       
-      // Workshop Reviews: Readable by all, but create/update/delete is restricted.
-      match /reviews/{reviewId} {
+      // Workshop Reviews: Readable by all. User can create their own review doc (once).
+      // User can update/delete their own review.
+      match /reviews/{userId} {
         allow read: if true;
+        // User can only create a document with their own userId.
+        // The transaction on the client prevents overwriting.
         allow create: if isAuth() 
-                       && request.resource.data.userId == request.auth.uid
-                       // Prevent user from submitting multiple reviews for the same workshop
-                       && !exists(/databases/$(database)/documents/workshops/$(workshopId)/reviews/$(reviewId));
-        allow update, delete: if isAuth() && get(/databases/$(database)/documents/workshops/$(workshopId)/reviews/$(reviewId)).data.userId == request.auth.uid;
+                       && request.auth.uid == userId 
+                       && request.resource.data.userId == request.auth.uid;
+        // Only the user who created the review can update or delete it.
+        allow update, delete: if isAuth() && request.auth.uid == userId;
       }
     }
     
