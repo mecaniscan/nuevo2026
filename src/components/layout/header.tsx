@@ -26,9 +26,6 @@ function MainNav({ className }: { className?: string }) {
        <Link href="/marketplace" className="text-sm font-medium transition-colors hover:text-primary">
         Marketplace
       </Link>
-      <Link href="/#decoder" className="text-sm font-medium transition-colors hover:text-primary">
-        Scanner IA
-      </Link>
     </nav>
   );
 }
@@ -92,7 +89,6 @@ export function Header() {
               <div className="flex flex-col space-y-3">
                   <Link href="/#workshops" onClick={() => setIsSheetOpen(false)} className="text-muted-foreground transition-colors hover:text-primary">Talleres</Link>
                   <Link href="/marketplace" onClick={() => setIsSheetOpen(false)} className="text-muted-foreground transition-colors hover:text-primary">Marketplace</Link>
-                  <Link href="/#decoder" onClick={() => setIsSheetOpen(false)} className="text-muted-foreground transition-colors hover:text-primary">Scanner IA</Link>
               </div>
             </SheetContent>
           </Sheet>

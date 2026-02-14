@@ -202,7 +202,7 @@ export default function DashboardPage() {
         </div>
 
         {/* Citas Section */}
-        <div>
+        <div className="lg:col-span-1">
             <ActionButton 
                 href="/dashboard/my-appointments"
                 icon={<Calendar className="h-8 w-8 text-primary"/>}
@@ -232,7 +232,7 @@ export default function DashboardPage() {
         </div>
 
         {/* Oil Change Section */}
-        <div className="lg:col-span-1">
+        <div className="lg:col-span-3">
              <ActionButton 
                 href="/dashboard/oil-changes"
                 icon={<Droplets className="h-8 w-8 text-primary"/>}
@@ -240,17 +240,6 @@ export default function DashboardPage() {
                 description="Lleva un historial de los cambios de aceite."
             />
         </div>
-
-        {/* AI Scanner Section */}
-        <div className="lg:col-span-2">
-            <ActionButton 
-                href="/#decoder"
-                icon={<ScanLine className="h-8 w-8 text-primary"/>}
-                title="Scanner con IA"
-                description="Diagnostica problemas con tu cámara."
-            />
-        </div>
-
 
         {/* Account Settings */}
         <div className="lg:col-span-3">

@@ -2,4 +2,4 @@
 import { config } from 'dotenv';
 config();
 
-import '@/ai/flows/dashboard-scanner-flow.ts';
+// This file is used to register Genkit flows for development.
