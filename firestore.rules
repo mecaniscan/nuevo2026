@@ -24,10 +24,6 @@ service cloud.firestore {
       allow read, update, delete: if isOwner(userId);
       
       // Subcollections of USER
-      match /vehicles/{vehicleId} {
-        allow read, list, create, update, delete: if isOwner(userId);
-      }
-      
       match /oilChanges/{oilChangeId} {
         allow read, list, create, update, delete: if isOwner(userId);
       }
@@ -35,6 +31,11 @@ service cloud.firestore {
       match /favorites/{workshopId} {
           allow read, list, create, delete: if isOwner(userId);
       }
+    }
+
+    // Explicit rule for user vehicles
+    match /users/{userId}/vehicles/{vehicleId} {
+      allow read, list, create, update, delete: if isOwner(userId);
     }
 
     // WORKSHOPS collection
