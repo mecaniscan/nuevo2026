@@ -2,11 +2,11 @@ import { VehicleForm } from '@/components/vehicles/vehicle-form';
 import Image from 'next/image';
 import { getPlaceholderImage } from '@/lib/placeholder-images';
 
-export default function RegisterVehiclePage({
-    searchParams = {},
-}: {
-    searchParams?: { [key: string]: string | string[] | undefined };
-}) {
+type RegisterVehiclePageProps = {
+    searchParams: { [key: string]: string | string[] | undefined };
+};
+
+export default function RegisterVehiclePage({ searchParams }: RegisterVehiclePageProps) {
     const editId = typeof searchParams?.edit === 'string' ? searchParams.edit : null;
     const backgroundImage = getPlaceholderImage('login-background');
     
