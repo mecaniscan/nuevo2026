@@ -14,7 +14,7 @@ import { useToast } from '@/hooks/use-toast';
 import { Loader2, PlusCircle, Car, Briefcase, BadgePercent, ArrowLeft } from 'lucide-react';
 import Link from 'next/link';
 import type { Vehicle, User } from '@/lib/types';
-import { useRouter, useSearchParams } from 'next/navigation';
+import { useRouter } from 'next/navigation';
 import { Switch } from '@/components/ui/switch';
 import { v4 as uuidv4 } from 'uuid';
 import Image from 'next/image';
@@ -67,18 +67,13 @@ const vehicleSchema = z.object({
   });
 
 
-export function VehicleForm() {
+export function VehicleForm({ editId }: { editId: string | null }) {
   const { user, isUserLoading } = useUser();
   const firestore = useFirestore();
   const storage = useStorage();
   const { toast } = useToast();
   const router = useRouter();
-  const searchParams = useSearchParams();
-  const [editingVehicleId, setEditingVehicleId] = useState<string | null>(null);
-
-  useEffect(() => {
-    setEditingVehicleId(searchParams.get('edit'));
-  }, [searchParams]);
+  const editingVehicleId = editId;
 
   useEffect(() => {
     if (!isUserLoading && !user) {
