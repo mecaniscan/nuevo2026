@@ -23,44 +23,7 @@ import { getPlaceholderImage } from '@/lib/placeholder-images';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { countries, carBrands } from '@/lib/data';
 
-function RegisterVehicleForm() {
-  const { user, isUserLoading } = useUser();
-  const firestore = useFirestore();
-  const storage = useStorage();
-  const { toast } = useToast();
-  const router = useRouter();
-  const searchParams = useSearchParams();
-  const [editingVehicleId, setEditingVehicleId] = useState<string | null>(null);
-
-  useEffect(() => {
-    // This ensures searchParams are only read on the client, after hydration.
-    setEditingVehicleId(searchParams.get('edit'));
-  }, [searchParams]);
-
-  useEffect(() => {
-    if (!isUserLoading && !user) {
-        router.push('/login');
-    }
-  }, [isUserLoading, user, router]);
-
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [imagePreviews, setImagePreviews] = useState<string[]>([]);
-  const backgroundImage = getPlaceholderImage('vehicle-registration-background');
-  
-  // Fetch the specific vehicle being edited
-  const vehicleDocRef = useMemoFirebase(() => {
-    if (!firestore || !user?.uid || !editingVehicleId) return null;
-    return doc(firestore, `users/${user.uid}/vehicles`, editingVehicleId);
-  }, [firestore, user?.uid, editingVehicleId]);
-  const { data: editingVehicle, isLoading: isEditingVehicleLoading } = useDoc<Vehicle>(vehicleDocRef);
-
-  // Still need the collection ref for creating new vehicles
-  const vehiclesCollectionRef = useMemoFirebase(() => {
-    if (!firestore || !user?.uid) return null;
-    return collection(firestore, `users/${user.uid}/vehicles`);
-  }, [firestore, user?.uid]);
-
-  const vehicleSchema = useMemo(() => z.object({
+const vehicleSchema = z.object({
     type: z.string().optional(),
     brand: z.string({ required_error: 'La marca es obligatoria.' }),
     model: z.string().min(1, 'El modelo es obligatorio.'),
@@ -81,13 +44,12 @@ function RegisterVehicleForm() {
     country: z.string({ required_error: 'El país es obligatorio.' }),
     isForSale: z.boolean().default(false),
     images: z.any().optional(),
+    hasExistingImages: z.boolean().optional(),
   }).refine(data => {
       if (data.isForSale) {
-        // When editing, if there are existing images and no new ones are uploaded, validation passes.
-        if (editingVehicle && editingVehicle.imageUrls && editingVehicle.imageUrls.length > 0 && (!data.images || data.images.length === 0)) {
+        if (data.hasExistingImages && (!data.images || data.images.length === 0)) {
             return true;
         }
-        // When creating, or when new images are uploaded during edit, we check the new files.
         return data.images && data.images.length > 0 && data.images.length <= 3;
       }
       return true;
@@ -102,8 +64,43 @@ function RegisterVehicleForm() {
   }, {
       message: "El precio es obligatorio para poner el vehículo a la venta.",
       path: ["price"],
-  }), [editingVehicle]);
+  });
 
+
+export default function RegisterVehiclePage() {
+  const { user, isUserLoading } = useUser();
+  const firestore = useFirestore();
+  const storage = useStorage();
+  const { toast } = useToast();
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const [editingVehicleId, setEditingVehicleId] = useState<string | null>(null);
+
+  useEffect(() => {
+    setEditingVehicleId(searchParams.get('edit'));
+  }, [searchParams]);
+
+  useEffect(() => {
+    if (!isUserLoading && !user) {
+        router.push('/login');
+    }
+  }, [isUserLoading, user, router]);
+
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [imagePreviews, setImagePreviews] = useState<string[]>([]);
+  const backgroundImage = getPlaceholderImage('vehicle-registration-background');
+  
+  const vehicleDocRef = useMemoFirebase(() => {
+    if (!firestore || !user?.uid || !editingVehicleId) return null;
+    return doc(firestore, `users/${user.uid}/vehicles`, editingVehicleId);
+  }, [firestore, user?.uid, editingVehicleId]);
+  const { data: editingVehicle, isLoading: isEditingVehicleLoading } = useDoc<Vehicle>(vehicleDocRef);
+
+  const vehiclesCollectionRef = useMemoFirebase(() => {
+    if (!firestore || !user?.uid) return null;
+    return collection(firestore, `users/${user.uid}/vehicles`);
+  }, [firestore, user?.uid]);
+  
   const userDocRef = useMemoFirebase(() => {
     if (!firestore || !user?.uid) return null;
     return doc(firestore, 'users', user.uid);
@@ -125,6 +122,7 @@ function RegisterVehicleForm() {
       country: '',
       isForSale: false,
       images: undefined,
+      hasExistingImages: false,
     },
   });
   
@@ -138,6 +136,7 @@ function RegisterVehicleForm() {
         ...editingVehicle,
         price: editingVehicle.price ?? null,
         images: undefined,
+        hasExistingImages: !!(editingVehicle.imageUrls && editingVehicle.imageUrls.length > 0)
       });
       setImagePreviews(editingVehicle.imageUrls || []);
     }
@@ -186,7 +185,7 @@ function RegisterVehicleForm() {
       }
   
       const vehicleId = editingVehicleId || doc(vehiclesCollectionRef).id;
-      const { images, ...formValues } = values;
+      const { images, hasExistingImages, ...formValues } = values;
   
       const vehiclePayload: Vehicle = {
         id: vehicleId,
@@ -216,7 +215,7 @@ function RegisterVehicleForm() {
       if (vehiclePayload.isForSale) {
         batch.set(marketplaceRef, vehiclePayload, { merge: true });
       } else {
-        if(editingVehicleId) { // only delete from marketplace if it existed before
+        if(editingVehicleId) { 
            batch.delete(marketplaceRef);
         }
       }
@@ -382,11 +381,4 @@ function RegisterVehicleForm() {
       </Card>
     </div>
   );
-}
-
-
-export default function RegisterVehiclePage() {
-    return (
-        <RegisterVehicleForm />
-    )
 }
