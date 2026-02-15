@@ -30,7 +30,12 @@ function RegisterVehicleForm() {
   const { toast } = useToast();
   const router = useRouter();
   const searchParams = useSearchParams();
-  const editingVehicleId = searchParams.get('edit');
+  const [editingVehicleId, setEditingVehicleId] = useState<string | null>(null);
+
+  useEffect(() => {
+    // This ensures searchParams are only read on the client, after hydration.
+    setEditingVehicleId(searchParams.get('edit'));
+  }, [searchParams]);
 
   useEffect(() => {
     if (!isUserLoading && !user) {
