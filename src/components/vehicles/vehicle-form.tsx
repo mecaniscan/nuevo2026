@@ -31,6 +31,9 @@ export function VehicleForm({ editId }: { editId: string | null }) {
   const { toast } = useToast();
   const router = useRouter();
 
+  // This will only run once on the client, after hydration, making it safe for SSR/build.
+  const [currentYear] = useState(() => new Date().getFullYear());
+
   useEffect(() => {
     if (!isUserLoading && !user) {
         router.push('/login');
@@ -60,23 +63,16 @@ export function VehicleForm({ editId }: { editId: string | null }) {
   const vehicleSchema = useMemo(() => {
     return z.object({
       type: z.string().optional(),
-      brand: z.string({ required_error: 'La marca es obligatoria.' }),
+      brand: z.string({ required_error: 'La marca es obligatoria.' }).min(1, 'La marca es obligatoria.'),
       model: z.string().min(1, 'El modelo es obligatorio.'),
-      year: z.preprocess(
-        (a) => a ? parseInt(z.string().parse(a), 10) : new Date().getFullYear(),
-        z.number().min(1900, 'El año no es válido.').max(new Date().getFullYear() + 1, 'El año no es válido.')
-      ),
+      year: z.coerce.number({invalid_type_error: 'El año debe ser un número.'})
+        .min(1900, 'El año no es válido.')
+        .max(currentYear + 1, `El año no puede ser mayor que ${currentYear + 1}.`),
       vin: z.string().optional(),
       licensePlate: z.string().optional(),
-      price: z.preprocess(
-          (a) => (a !== '' && a !== null && a !== undefined) ? parseFloat(z.string().parse(String(a))) : null,
-          z.number().nullable().optional()
-      ),
-      currentMileage: z.preprocess(
-        (a) => a ? parseInt(z.string().parse(a), 10) : 0,
-        z.number().optional()
-      ),
-      country: z.string({ required_error: 'El país es obligatorio.' }),
+      price: z.coerce.number({invalid_type_error: 'El precio debe ser un número.'}).nullable().optional(),
+      currentMileage: z.coerce.number({invalid_type_error: 'El kilometraje debe ser un número.'}).optional().default(0),
+      country: z.string({ required_error: 'El país es obligatorio.' }).min(1, 'El país es obligatorio.'),
       isForSale: z.boolean().default(false),
       images: z.any().optional(),
       hasExistingImages: z.boolean().optional(),
@@ -100,7 +96,7 @@ export function VehicleForm({ editId }: { editId: string | null }) {
         message: "El precio es obligatorio para poner el vehículo a la venta.",
         path: ["price"],
     });
-  }, []);
+  }, [currentYear]);
 
   const form = useForm<z.infer<typeof vehicleSchema>>({
     resolver: zodResolver(vehicleSchema),
@@ -109,7 +105,7 @@ export function VehicleForm({ editId }: { editId: string | null }) {
       type: '',
       brand: '',
       model: '',
-      year: new Date().getFullYear(),
+      year: currentYear,
       vin: '',
       licensePlate: '',
       price: null,
@@ -299,7 +295,7 @@ export function VehicleForm({ editId }: { editId: string | null }) {
                     <FormField control={form.control} name="brand" render={({ field }) => (<FormItem><FormLabel>Marca</FormLabel><Select onValueChange={field.onChange} defaultValue={field.value}><FormControl><SelectTrigger className="bg-transparent text-white"><SelectValue placeholder="Selecciona una marca" /></SelectTrigger></FormControl><SelectContent>{carBrands.map(b => <SelectItem key={b} value={b}>{b}</SelectItem>)}</SelectContent></Select><FormMessage /></FormItem>)} />
                     <FormField control={form.control} name="model" render={({ field }) => (<FormItem><FormLabel>Modelo</FormLabel><FormControl><Input placeholder="Ej: Corolla" {...field} className="bg-transparent text-white" /></FormControl><FormMessage /></FormItem>)} />
                     <FormField control={form.control} name="type" render={({ field }) => (<FormItem><FormLabel>Tipo</FormLabel><FormControl><Input placeholder="Ej: Sedan, SUV" {...field} className="bg-transparent text-white" /></FormControl><FormMessage /></FormItem>)} />
-                    <FormField control={form.control} name="year" render={({ field }) => (<FormItem><FormLabel>Año</FormLabel><FormControl><Input type="number" placeholder="2022" {...field} className="bg-transparent text-white" /></FormControl><FormMessage /></FormItem>)} />
+                    <FormField control={form.control} name="year" render={({ field }) => (<FormItem><FormLabel>Año</FormLabel><FormControl><Input type="number" placeholder="2022" {...field} /></FormControl><FormMessage /></FormItem>)} />
                     <FormField control={form.control} name="currentMileage" render={({ field }) => (<FormItem><FormLabel>Kilometraje Actual</FormLabel><FormControl><Input type="number" placeholder="50000" {...field} className="bg-transparent text-white" /></FormControl><FormMessage /></FormItem>)} />
                     <FormField control={form.control} name="licensePlate" render={({ field }) => (<FormItem><FormLabel>Placa</FormLabel><FormControl><Input placeholder="ABC-123" {...field} className="bg-transparent text-white" /></FormControl><FormMessage /></FormItem>)} />
                     <FormField control={form.control} name="country" render={({ field }) => (<FormItem><FormLabel>País</FormLabel><Select onValueChange={field.onChange} defaultValue={field.value}><FormControl><SelectTrigger className="bg-transparent text-white"><SelectValue placeholder="Selecciona un país" /></SelectTrigger></FormControl><SelectContent>{countries.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}</SelectContent></Select><FormMessage /></FormItem>)} />
