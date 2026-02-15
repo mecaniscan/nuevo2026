@@ -3,6 +3,7 @@ import Image from 'next/image';
 import { getPlaceholderImage } from '@/lib/placeholder-images';
 
 type RegisterVehiclePageProps = {
+    params: {}; // This is part of the page props contract, even if unused.
     searchParams: { [key: string]: string | string[] | undefined };
 };
 
