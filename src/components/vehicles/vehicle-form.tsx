@@ -73,7 +73,6 @@ export function VehicleForm({ editId }: { editId: string | null }) {
   const storage = useStorage();
   const { toast } = useToast();
   const router = useRouter();
-  const editingVehicleId = editId;
 
   useEffect(() => {
     if (!isUserLoading && !user) {
@@ -82,13 +81,12 @@ export function VehicleForm({ editId }: { editId: string | null }) {
   }, [isUserLoading, user, router]);
 
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [imagePreviews, setImagePreviews] = useState<string[]>([]);
   const backgroundImage = getPlaceholderImage('vehicle-registration-background');
   
   const vehicleDocRef = useMemoFirebase(() => {
-    if (!firestore || !user?.uid || !editingVehicleId) return null;
-    return doc(firestore, `users/${user.uid}/vehicles`, editingVehicleId);
-  }, [firestore, user?.uid, editingVehicleId]);
+    if (!firestore || !user?.uid || !editId) return null;
+    return doc(firestore, `users/${user.uid}/vehicles`, editId);
+  }, [firestore, user?.uid, editId]);
   const { data: editingVehicle, isLoading: isEditingVehicleLoading } = useDoc<Vehicle>(vehicleDocRef);
 
   const vehiclesCollectionRef = useMemoFirebase(() => {
@@ -121,34 +119,19 @@ export function VehicleForm({ editId }: { editId: string | null }) {
     },
   });
   
-  const { watch } = form;
+  const { watch, reset } = form;
   const isForSale = watch("isForSale");
-  const imageFieldValue = watch('images');
 
   useEffect(() => {
     if (editingVehicle) {
-      form.reset({
+      reset({
         ...editingVehicle,
         price: editingVehicle.price ?? null,
         images: undefined,
         hasExistingImages: !!(editingVehicle.imageUrls && editingVehicle.imageUrls.length > 0)
       });
-      setImagePreviews(editingVehicle.imageUrls || []);
     }
-  }, [editingVehicle, form]);
-
-  useEffect(() => {
-    let objectUrls: string[] = [];
-    
-    if (imageFieldValue instanceof FileList && imageFieldValue.length > 0) {
-        objectUrls = Array.from(imageFieldValue).map(file => URL.createObjectURL(file));
-        setImagePreviews(objectUrls);
-    }
-
-    return () => {
-        objectUrls.forEach(url => URL.revokeObjectURL(url));
-    };
-  }, [imageFieldValue]);
+  }, [editingVehicle, reset]);
 
 
   const uploadImages = async (files: FileList): Promise<string[]> => {
@@ -179,7 +162,7 @@ export function VehicleForm({ editId }: { editId: string | null }) {
         finalImageUrls = [];
       }
   
-      const vehicleId = editingVehicleId || doc(vehiclesCollectionRef).id;
+      const vehicleId = editId || doc(vehiclesCollectionRef).id;
       const { images, hasExistingImages, ...formValues } = values;
   
       const vehiclePayload: Vehicle = {
@@ -210,7 +193,7 @@ export function VehicleForm({ editId }: { editId: string | null }) {
       if (vehiclePayload.isForSale) {
         batch.set(marketplaceRef, vehiclePayload, { merge: true });
       } else {
-        if(editingVehicleId) { 
+        if(editId) { 
            batch.delete(marketplaceRef);
         }
       }
@@ -218,15 +201,15 @@ export function VehicleForm({ editId }: { editId: string | null }) {
       batch.commit()
         .then(() => {
           toast({
-            title: editingVehicleId ? '¡Vehículo Actualizado!' : '¡Vehículo Añadido!',
-            description: `Tu vehículo ha sido ${editingVehicleId ? 'actualizado' : 'guardado'}.`,
+            title: editId ? '¡Vehículo Actualizado!' : '¡Vehículo Añadido!',
+            description: `Tu vehículo ha sido ${editId ? 'actualizado' : 'guardado'}.`,
           });
           router.push('/dashboard/my-vehicles');
         })
         .catch(() => {
           errorEmitter.emit('permission-error', new FirestorePermissionError({
-              path: editingVehicleId ? `users/${user.uid}/vehicles/${editingVehicleId}` : `users/${user.uid}/vehicles`,
-              operation: editingVehicleId ? 'update' : 'create',
+              path: editId ? `users/${user.uid}/vehicles/${editId}` : `users/${user.uid}/vehicles`,
+              operation: editId ? 'update' : 'create',
               requestResourceData: vehiclePayload,
           }));
         })
@@ -245,7 +228,7 @@ export function VehicleForm({ editId }: { editId: string | null }) {
     }
   }
 
-  const isLoading = isUserLoading || isUserDataLoading || (!!editingVehicleId && isEditingVehicleLoading);
+  const isLoading = isUserLoading || isUserDataLoading || (!!editId && isEditingVehicleLoading);
   
   if (isLoading || !user) {
     return (
@@ -254,6 +237,8 @@ export function VehicleForm({ editId }: { editId: string | null }) {
       </div>
     );
   }
+
+  const existingImages = editingVehicle?.imageUrls || [];
 
   return (
     <div className="relative flex min-h-screen w-full items-center justify-center bg-background p-4">
@@ -271,13 +256,13 @@ export function VehicleForm({ editId }: { editId: string | null }) {
       <Card className="z-20 w-full max-w-2xl shadow-2xl bg-black/30 border-white/20 text-white">
         <CardHeader>
             <CardTitle className="text-3xl font-headline text-primary flex items-center justify-between">
-                {editingVehicleId ? 'Editar Vehículo' : 'Registrar Nuevo Vehículo'}
+                {editId ? 'Editar Vehículo' : 'Registrar Nuevo Vehículo'}
                 <Button variant="ghost" size="sm" asChild>
                     <Link href="/dashboard/my-vehicles"><ArrowLeft className="mr-2"/> Volver</Link>
                 </Button>
             </CardTitle>
             <CardDescription className="text-white/80">
-                {editingVehicleId ? 'Actualiza los detalles de tu vehículo.' : 'Añade un nuevo vehículo a tu garaje digital.'}
+                {editId ? 'Actualiza los detalles de tu vehículo.' : 'Añade un nuevo vehículo a tu garaje digital.'}
             </CardDescription>
         </CardHeader>
         <CardContent>
@@ -333,21 +318,22 @@ export function VehicleForm({ editId }: { editId: string | null }) {
                                 <FormControl>
                                     <Input type="file" accept="image/*" multiple onChange={(e) => onChange(e.target.files)} className="bg-transparent text-white file:text-white" />
                                 </FormControl>
+                                <FormDescription>Subir nuevas imágenes reemplazará las existentes.</FormDescription>
                                 <FormMessage className='text-red-400' />
                                 </FormItem>
                             )}
                             />
-                            {imagePreviews.length > 0 && (
+                            {existingImages.length > 0 && (
                             <div className="mt-4">
-                                <FormLabel>Vista Previa</FormLabel>
+                                <FormLabel>Imágenes Actuales</FormLabel>
                                 <Carousel className="w-full max-w-xs mx-auto mt-2">
                                     <CarouselContent>
-                                    {imagePreviews.map((src, index) => (
+                                    {existingImages.map((src, index) => (
                                         <CarouselItem key={index}>
                                         <div className="p-1">
                                             <Card>
                                             <CardContent className="flex aspect-video items-center justify-center p-0 relative overflow-hidden rounded-md">
-                                                <Image src={src} alt={`Vista previa ${index + 1}`} fill className="object-cover"/>
+                                                <Image src={src} alt={`Imagen actual ${index + 1}`} fill className="object-cover"/>
                                             </CardContent>
                                             </Card>
                                         </div>
@@ -367,7 +353,7 @@ export function VehicleForm({ editId }: { editId: string | null }) {
                 <div className="flex flex-col gap-4 pt-6 border-t border-white/20">
                   <Button type="submit" disabled={isSubmitting}>
                     {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                    {editingVehicleId ? <>Guardar Cambios</> : <><PlusCircle className="mr-2" /> Guardar Vehículo</>}
+                    {editId ? <>Guardar Cambios</> : <><PlusCircle className="mr-2" /> Guardar Vehículo</>}
                   </Button>
                 </div>
               </form>
