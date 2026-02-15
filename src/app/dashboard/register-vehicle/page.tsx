@@ -1,5 +1,5 @@
 'use client';
-import React, { useState, useEffect, Suspense, useMemo } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
@@ -387,8 +387,6 @@ function RegisterVehicleForm() {
 
 export default function RegisterVehiclePage() {
     return (
-        <Suspense fallback={<div className="flex min-h-screen items-center justify-center bg-background"><Loader2 className="h-12 w-12 animate-spin text-primary" /></div>}>
-            <RegisterVehicleForm />
-        </Suspense>
+        <RegisterVehicleForm />
     )
 }
