@@ -41,7 +41,7 @@ export function VehicleForm({ editId }: { editId: string | null }) {
   }, [isUserLoading, user, router]);
 
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const backgroundImage = getPlaceholderImage('vehicle-registration-background');
+  const backgroundImage = getPlaceholderImage('login-background');
   
   const vehicleDocRef = useMemoFirebase(() => {
     if (!firestore || !user?.uid || !editId) return null;
