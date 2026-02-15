@@ -32,6 +32,12 @@ function RegisterVehicleForm() {
   const searchParams = useSearchParams();
   const editingVehicleId = searchParams.get('edit');
 
+  useEffect(() => {
+    if (!isUserLoading && !user) {
+        router.push('/login');
+    }
+  }, [isUserLoading, user, router]);
+
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [imagePreviews, setImagePreviews] = useState<string[]>([]);
   const backgroundImage = getPlaceholderImage('vehicle-registration-background');
@@ -242,17 +248,12 @@ function RegisterVehicleForm() {
 
   const isLoading = isUserLoading || isUserDataLoading || (!!editingVehicleId && isEditingVehicleLoading);
   
-  if (isLoading) {
+  if (isLoading || !user) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-background">
         <Loader2 className="h-12 w-12 animate-spin text-primary" />
       </div>
     );
-  }
-
-  if (!user && !isUserLoading) {
-    router.push('/login');
-    return null;
   }
 
   return (
