@@ -3,9 +3,9 @@ import Image from 'next/image';
 import { getPlaceholderImage } from '@/lib/placeholder-images';
 
 export default function RegisterVehiclePage({
-    searchParams,
+    searchParams = {},
 }: {
-    searchParams: { [key: string]: string | string[] | undefined };
+    searchParams?: { [key: string]: string | string[] | undefined };
 }) {
     const editId = typeof searchParams?.edit === 'string' ? searchParams.edit : null;
     const backgroundImage = getPlaceholderImage('login-background');
