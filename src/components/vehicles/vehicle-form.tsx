@@ -19,7 +19,6 @@ import { Switch } from '@/components/ui/switch';
 import { v4 as uuidv4 } from 'uuid';
 import Image from 'next/image';
 import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from '@/components/ui/carousel';
-import { getPlaceholderImage } from '@/lib/placeholder-images';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { countries, carBrands } from '@/lib/data';
 
@@ -31,7 +30,6 @@ export function VehicleForm({ editId }: { editId: string | null }) {
   const { toast } = useToast();
   const router = useRouter();
 
-  // This will only run once on the client, after hydration, making it safe for SSR/build.
   const [currentYear] = useState(() => new Date().getFullYear());
 
   useEffect(() => {
@@ -41,7 +39,6 @@ export function VehicleForm({ editId }: { editId: string | null }) {
   }, [isUserLoading, user, router]);
 
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const backgroundImage = getPlaceholderImage('login-background');
   
   const vehicleDocRef = useMemoFirebase(() => {
     if (!firestore || !user?.uid || !editId) return null;
@@ -230,7 +227,7 @@ export function VehicleForm({ editId }: { editId: string | null }) {
   
   if (isLoading || !user) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-background">
+      <div className="z-20 w-full max-w-2xl flex items-center justify-center p-8">
         <Loader2 className="h-12 w-12 animate-spin text-primary" />
       </div>
     );
@@ -239,18 +236,6 @@ export function VehicleForm({ editId }: { editId: string | null }) {
   const existingImages = editingVehicle?.imageUrls || [];
 
   return (
-    <div className="relative flex min-h-screen w-full items-center justify-center bg-background p-4">
-       {backgroundImage && (
-            <Image
-                src={backgroundImage.imageUrl}
-                alt={backgroundImage.description}
-                fill
-                className="absolute inset-0 z-0 object-cover"
-                priority
-                data-ai-hint={backgroundImage.imageHint}
-            />
-       )}
-       <div className="absolute inset-0 z-10 bg-black/70 backdrop-blur-sm" />
       <Card className="z-20 w-full max-w-2xl shadow-2xl bg-black/30 border-white/20 text-white">
         <CardHeader>
             <CardTitle className="text-3xl font-headline text-primary flex items-center justify-between">
@@ -358,6 +343,5 @@ export function VehicleForm({ editId }: { editId: string | null }) {
             </Form>
         </CardContent>
       </Card>
-    </div>
   );
 }
