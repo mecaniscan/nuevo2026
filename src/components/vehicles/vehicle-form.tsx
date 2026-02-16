@@ -23,14 +23,12 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { countries, carBrands } from '@/lib/data';
 
 
-export function VehicleForm({ editId }: { editId: string | null }) {
+export function VehicleForm({ editId, currentYear }: { editId: string | null; currentYear: number }) {
   const { user, isUserLoading } = useUser();
   const firestore = useFirestore();
   const storage = useStorage();
   const { toast } = useToast();
   const router = useRouter();
-
-  const [currentYear] = useState(() => new Date().getFullYear());
 
   useEffect(() => {
     if (!isUserLoading && !user) {
