@@ -3,14 +3,15 @@ import Image from 'next/image';
 import { getPlaceholderImage } from '@/lib/placeholder-images';
 
 // Define the type for page props as expected by Next.js App Router.
-// searchParams is always present, even if empty.
+// searchParams is marked as optional to satisfy the strict build-time compiler,
+// even though Next.js provides it at runtime.
 type PageProps = {
   params: { [key: string]: string };
-  searchParams: { [key: string]: string | string[] | undefined };
+  searchParams?: { [key: string]: string | string[] | undefined };
 };
 
 export default function RegisterVehiclePage({ searchParams }: PageProps) {
-  // Access searchParams directly. It's guaranteed to be an object.
+  // Safely access the optional searchParams
   const editId = searchParams?.edit ? String(searchParams.edit) : null;
   const backgroundImage = getPlaceholderImage('login-background');
   const currentYear = new Date().getFullYear();
