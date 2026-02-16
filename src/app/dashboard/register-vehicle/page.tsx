@@ -2,13 +2,15 @@ import { VehicleForm } from '@/components/vehicles/vehicle-form';
 import Image from 'next/image';
 import { getPlaceholderImage } from '@/lib/placeholder-images';
 
-export default function RegisterVehiclePage({
-  params,
-  searchParams,
-}: {
+// Define the type for page props as expected by Next.js App Router.
+// searchParams is always present, even if empty.
+type PageProps = {
   params: { [key: string]: string };
   searchParams: { [key: string]: string | string[] | undefined };
-}) {
+};
+
+export default function RegisterVehiclePage({ searchParams }: PageProps) {
+  // Access searchParams directly. It's guaranteed to be an object.
   const editId = searchParams?.edit ? String(searchParams.edit) : null;
   const backgroundImage = getPlaceholderImage('login-background');
   const currentYear = new Date().getFullYear();
