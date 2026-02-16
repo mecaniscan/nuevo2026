@@ -3,12 +3,12 @@ import Image from 'next/image';
 import { getPlaceholderImage } from '@/lib/placeholder-images';
 
 type RegisterVehiclePageProps = {
-    params: {}; // This is part of the page props contract, even if unused.
+    params: {};
     searchParams: { [key: string]: string | string[] | undefined };
 };
 
-export default function RegisterVehiclePage({ searchParams }: RegisterVehiclePageProps) {
-    const editId = typeof searchParams?.edit === 'string' ? searchParams.edit : null;
+export default function RegisterVehiclePage(props: RegisterVehiclePageProps) {
+    const editId = typeof props.searchParams?.edit === 'string' ? props.searchParams.edit : null;
     const backgroundImage = getPlaceholderImage('login-background');
     
     return (
