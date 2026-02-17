@@ -36,7 +36,7 @@ export function initializeFirebase() {
 export function getSdks(firebaseApp: FirebaseApp) {
   // Explicitly provide the full gs:// URL for the storage bucket to ensure connectivity.
   // This value was provided to correct a 'retry-limit-exceeded' error.
-  const bucketUrl = "gs://studio-3565960860-31363.firebasestorage.app";
+  const bucketUrl = "gs://studio-3565960860-31363.appspot.com";
   return {
     firebaseApp,
     auth: getAuth(firebaseApp),
