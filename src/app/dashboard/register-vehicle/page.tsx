@@ -1,15 +1,11 @@
 import { VehicleForm } from '@/components/vehicles/vehicle-form';
 import Image from 'next/image';
 import { getPlaceholderImage } from '@/lib/placeholder-images';
+import { Suspense } from 'react';
+import { Loader2 } from 'lucide-react';
 
-export default function RegisterVehiclePage({
-  searchParams,
-}: {
-  searchParams?: { [key: string]: string | string[] | undefined };
-}) {
+export default function RegisterVehiclePage() {
   const backgroundImage = getPlaceholderImage('login-background');
-  const editId = typeof searchParams?.edit === 'string' ? searchParams.edit : null;
-  const currentYear = new Date().getFullYear();
 
   return (
     <div className="relative flex min-h-screen w-full items-center justify-center bg-background p-4">
@@ -24,7 +20,13 @@ export default function RegisterVehiclePage({
         />
       )}
       <div className="absolute inset-0 z-10 bg-black/70 backdrop-blur-sm" />
-      <VehicleForm currentYear={currentYear} editId={editId} />
+      <Suspense fallback={
+        <div className="z-20 w-full max-w-2xl flex items-center justify-center p-8">
+          <Loader2 className="h-12 w-12 animate-spin text-primary" />
+        </div>
+      }>
+        <VehicleForm />
+      </Suspense>
     </div>
   );
 }

@@ -1,5 +1,6 @@
 'use client';
 import React, { useState, useEffect, useMemo } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
@@ -22,7 +23,7 @@ import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { countries, carBrands } from '@/lib/data';
 
-export function VehicleForm({ currentYear, editId }: { currentYear: number; editId: string | null }) {
+function VehicleFormContent({ currentYear, editId }: { currentYear: number; editId: string | null }) {
   const { user, isUserLoading } = useUser();
   const firestore = useFirestore();
   const storage = useStorage();
@@ -340,4 +341,28 @@ export function VehicleForm({ currentYear, editId }: { currentYear: number; edit
         </CardContent>
       </Card>
   );
+}
+
+// Wrapper component to handle client-side logic
+export function VehicleForm() {
+  const searchParams = useSearchParams();
+  const editId = searchParams.get('edit');
+  const [currentYear, setCurrentYear] = useState<number | null>(null);
+
+  useEffect(() => {
+    // This runs only on the client, after hydration
+    setCurrentYear(new Date().getFullYear());
+  }, []);
+
+  // While waiting for the currentYear from the client, show a loader.
+  // This prevents the hydration mismatch.
+  if (currentYear === null) {
+    return (
+      <div className="z-20 w-full max-w-2xl flex items-center justify-center p-8">
+          <Loader2 className="h-12 w-12 animate-spin text-primary" />
+      </div>
+    );
+  }
+
+  return <VehicleFormContent currentYear={currentYear} editId={editId} />;
 }
