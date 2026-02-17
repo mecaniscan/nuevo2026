@@ -14,7 +14,7 @@ import { useToast } from '@/hooks/use-toast';
 import { Loader2, PlusCircle, Car, Briefcase, BadgePercent, ArrowLeft } from 'lucide-react';
 import Link from 'next/link';
 import type { Vehicle, User } from '@/lib/types';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { Switch } from '@/components/ui/switch';
 import { v4 as uuidv4 } from 'uuid';
 import Image from 'next/image';
@@ -22,13 +22,18 @@ import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { countries, carBrands } from '@/lib/data';
 
-export function VehicleForm({ currentYear, editId }: { currentYear: number; editId: string | null }) {
+// The form is now a self-contained Client Component
+export function VehicleForm() {
   const { user, isUserLoading } = useUser();
   const firestore = useFirestore();
   const storage = useStorage();
   const { toast } = useToast();
   const router = useRouter();
+  const searchParams = useSearchParams(); // Use the hook to get URL params
   
+  const editId = searchParams.get('edit'); // Get the 'edit' parameter
+  const currentYear = new Date().getFullYear();
+
   const [isSubmitting, setIsSubmitting] = useState(false);
   
   const vehicleDocRef = useMemoFirebase(() => {
@@ -222,6 +227,8 @@ export function VehicleForm({ currentYear, editId }: { currentYear: number; edit
   const isLoading = isUserLoading || isUserDataLoading || (!!editId && isEditingVehicleLoading);
   
   if (isLoading || !user) {
+    // This part is important. The fallback in the page.tsx handles the initial suspense.
+    // This loader handles the subsequent data loading inside the component.
     return (
       <div className="z-20 w-full max-w-2xl flex items-center justify-center p-8">
         <Loader2 className="h-12 w-12 animate-spin text-primary" />
