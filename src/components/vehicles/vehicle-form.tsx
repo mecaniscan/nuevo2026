@@ -23,23 +23,13 @@ import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { countries, carBrands } from '@/lib/data';
 
-
-export function VehicleForm() {
+function VehicleFormContent({ currentYear, editId }: { currentYear: number; editId: string | null }) {
   const { user, isUserLoading } = useUser();
   const firestore = useFirestore();
   const storage = useStorage();
   const { toast } = useToast();
   const router = useRouter();
-  const searchParams = useSearchParams();
-  const editId = searchParams.get('edit');
-
-  const [currentYear, setCurrentYear] = useState<number | null>(null);
-
-  useEffect(() => {
-    // This runs only on the client, after hydration
-    setCurrentYear(new Date().getFullYear());
-  }, []);
-
+  
   const [isSubmitting, setIsSubmitting] = useState(false);
   
   const vehicleDocRef = useMemoFirebase(() => {
@@ -60,7 +50,7 @@ export function VehicleForm() {
   const { data: userData, isLoading: isUserDataLoading } = useDoc<User>(userDocRef);
   
   const vehicleSchema = useMemo(() => {
-    const yearForValidation = currentYear ?? new Date().getFullYear();
+    const yearForValidation = currentYear;
     return z.object({
       type: z.string().optional(),
       brand: z.string({ required_error: 'La marca es obligatoria.' }).min(1, 'La marca es obligatoria.'),
@@ -105,6 +95,7 @@ export function VehicleForm() {
       type: '',
       brand: '',
       model: '',
+      year: currentYear,
       vin: '',
       licensePlate: '',
       price: null,
@@ -127,14 +118,8 @@ export function VehicleForm() {
         images: undefined,
         hasExistingImages: !!(editingVehicle.imageUrls && editingVehicle.imageUrls.length > 0)
       });
-    } else if (currentYear) {
-      // If it's a new form, once we have the client-side year, reset the form's year value
-      reset({
-        ...form.getValues(),
-        year: currentYear
-      });
     }
-  }, [editingVehicle, reset, currentYear, form]);
+  }, [editingVehicle, reset]);
 
   useEffect(() => {
     if (!isUserLoading && !user) {
@@ -236,7 +221,7 @@ export function VehicleForm() {
     }
   }
 
-  const isLoading = isUserLoading || isUserDataLoading || (!!editId && isEditingVehicleLoading) || currentYear === null;
+  const isLoading = isUserLoading || isUserDataLoading || (!!editId && isEditingVehicleLoading);
   
   if (isLoading || !user) {
     return (
@@ -357,4 +342,29 @@ export function VehicleForm() {
         </CardContent>
       </Card>
   );
+}
+
+export function VehicleForm() {
+  const searchParams = useSearchParams();
+  const editId = searchParams.get('edit');
+  const [currentYear, setCurrentYear] = useState<number | null>(null);
+
+  useEffect(() => {
+    // This effect runs only on the client, after hydration,
+    // ensuring `new Date()` is not called on the server.
+    setCurrentYear(new Date().getFullYear());
+  }, []);
+
+  if (!currentYear) {
+    // Render a loader until the client-side year is available.
+    // This will be caught by the Suspense boundary in the page.
+    return (
+        <div className="z-20 w-full max-w-2xl flex items-center justify-center p-8">
+            <Loader2 className="h-12 w-12 animate-spin text-primary" />
+        </div>
+    );
+  }
+
+  // Once the year is set, render the actual form content.
+  return <VehicleFormContent currentYear={currentYear} editId={editId} />;
 }
