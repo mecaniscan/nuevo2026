@@ -34,11 +34,14 @@ export function initializeFirebase() {
 }
 
 export function getSdks(firebaseApp: FirebaseApp) {
+  // Directly use the storageBucket from the config, which already handles the environment variable fallback.
+  // Construct the full gs:// URL to be explicit.
+  const bucketUrl = `gs://${firebaseConfig.storageBucket}`;
   return {
     firebaseApp,
     auth: getAuth(firebaseApp),
     firestore: getFirestore(firebaseApp),
-    storage: getStorage(firebaseApp)
+    storage: getStorage(firebaseApp, bucketUrl)
   };
 }
 
