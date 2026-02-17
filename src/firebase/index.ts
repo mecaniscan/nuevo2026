@@ -34,9 +34,9 @@ export function initializeFirebase() {
 }
 
 export function getSdks(firebaseApp: FirebaseApp) {
-  // Directly use the storageBucket from the config, which already handles the environment variable fallback.
-  // Construct the full gs:// URL to be explicit.
-  const bucketUrl = `gs://${firebaseConfig.storageBucket}`;
+  // Explicitly provide the full gs:// URL for the storage bucket to ensure connectivity.
+  // This value was provided to correct a 'retry-limit-exceeded' error.
+  const bucketUrl = "gs://studio-3565960860-31363.firebasestorage.app";
   return {
     firebaseApp,
     auth: getAuth(firebaseApp),
