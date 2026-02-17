@@ -1,5 +1,6 @@
 'use client';
 import React, { useState, useEffect, useMemo } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
@@ -23,18 +24,21 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { countries, carBrands } from '@/lib/data';
 
 
-export function VehicleForm({ editId, currentYear }: { editId: string | null; currentYear: number }) {
+export function VehicleForm() {
   const { user, isUserLoading } = useUser();
   const firestore = useFirestore();
   const storage = useStorage();
   const { toast } = useToast();
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const editId = searchParams.get('edit');
+
+  const [currentYear, setCurrentYear] = useState<number | null>(null);
 
   useEffect(() => {
-    if (!isUserLoading && !user) {
-        router.push('/login');
-    }
-  }, [isUserLoading, user, router]);
+    // This runs only on the client, after hydration
+    setCurrentYear(new Date().getFullYear());
+  }, []);
 
   const [isSubmitting, setIsSubmitting] = useState(false);
   
@@ -56,13 +60,14 @@ export function VehicleForm({ editId, currentYear }: { editId: string | null; cu
   const { data: userData, isLoading: isUserDataLoading } = useDoc<User>(userDocRef);
   
   const vehicleSchema = useMemo(() => {
+    const yearForValidation = currentYear ?? new Date().getFullYear();
     return z.object({
       type: z.string().optional(),
       brand: z.string({ required_error: 'La marca es obligatoria.' }).min(1, 'La marca es obligatoria.'),
       model: z.string().min(1, 'El modelo es obligatorio.'),
       year: z.coerce.number({invalid_type_error: 'El año debe ser un número.'})
         .min(1900, 'El año no es válido.')
-        .max(currentYear + 1, `El año no puede ser mayor que ${currentYear + 1}.`),
+        .max(yearForValidation + 1, `El año no puede ser mayor que ${yearForValidation + 1}.`),
       vin: z.string().optional(),
       licensePlate: z.string().optional(),
       price: z.coerce.number({invalid_type_error: 'El precio debe ser un número.'}).nullable().optional(),
@@ -100,7 +105,6 @@ export function VehicleForm({ editId, currentYear }: { editId: string | null; cu
       type: '',
       brand: '',
       model: '',
-      year: currentYear,
       vin: '',
       licensePlate: '',
       price: null,
@@ -123,9 +127,20 @@ export function VehicleForm({ editId, currentYear }: { editId: string | null; cu
         images: undefined,
         hasExistingImages: !!(editingVehicle.imageUrls && editingVehicle.imageUrls.length > 0)
       });
+    } else if (currentYear) {
+      // If it's a new form, once we have the client-side year, reset the form's year value
+      reset({
+        ...form.getValues(),
+        year: currentYear
+      });
     }
-  }, [editingVehicle, reset]);
+  }, [editingVehicle, reset, currentYear, form]);
 
+  useEffect(() => {
+    if (!isUserLoading && !user) {
+        router.push('/login');
+    }
+  }, [isUserLoading, user, router]);
 
   const uploadImages = async (files: FileList): Promise<string[]> => {
     if (!storage || !user) {
@@ -221,7 +236,7 @@ export function VehicleForm({ editId, currentYear }: { editId: string | null; cu
     }
   }
 
-  const isLoading = isUserLoading || isUserDataLoading || (!!editId && isEditingVehicleLoading);
+  const isLoading = isUserLoading || isUserDataLoading || (!!editId && isEditingVehicleLoading) || currentYear === null;
   
   if (isLoading || !user) {
     return (
