@@ -11,7 +11,6 @@ interface PageProps {
 export default function RegisterVehiclePage({ searchParams }: PageProps) {
   const backgroundImage = getPlaceholderImage('login-background');
   const editId = searchParams?.edit;
-  const currentYear = new Date().getFullYear();
 
   return (
     <div className="relative flex min-h-screen w-full items-center justify-center bg-background p-4">
@@ -27,7 +26,7 @@ export default function RegisterVehiclePage({ searchParams }: PageProps) {
       )}
       <div className="absolute inset-0 z-10 bg-black/70 backdrop-blur-sm" />
       
-      <RegisterVehicleForm editId={editId} currentYear={currentYear} />
+      <RegisterVehicleForm editId={editId} />
     </div>
   );
 }

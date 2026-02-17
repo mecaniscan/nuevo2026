@@ -24,10 +24,9 @@ import { countries, carBrands } from '@/lib/data';
 
 interface RegisterVehicleFormProps {
   editId?: string;
-  currentYear: number;
 }
 
-export default function RegisterVehicleForm({ editId, currentYear }: RegisterVehicleFormProps) {
+export default function RegisterVehicleForm({ editId }: RegisterVehicleFormProps) {
   const { user, isUserLoading } = useUser();
   const firestore = useFirestore();
   const storage = useStorage();
@@ -35,6 +34,12 @@ export default function RegisterVehicleForm({ editId, currentYear }: RegisterVeh
   const router = useRouter();
 
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [currentYear, setCurrentYear] = useState<number | null>(null);
+
+  useEffect(() => {
+    // This runs only on the client, after hydration, to prevent mismatch
+    setCurrentYear(new Date().getFullYear());
+  }, []);
   
   const vehicleDocRef = useMemoFirebase(() => {
     if (!firestore || !user?.uid || !editId) return null;
@@ -54,7 +59,7 @@ export default function RegisterVehicleForm({ editId, currentYear }: RegisterVeh
   const { data: userData, isLoading: isUserDataLoading } = useDoc<User>(userDocRef);
   
   const vehicleSchema = useMemo(() => {
-    const year = currentYear;
+    const year = currentYear ?? new Date().getFullYear() + 1; // Use a safe default for schema creation. The form won't be visible until currentYear is set anyway.
     return z.object({
       type: z.string().optional(),
       brand: z.string({ required_error: 'La marca es obligatoria.' }).min(1, 'La marca es obligatoria.'),
@@ -95,26 +100,15 @@ export default function RegisterVehicleForm({ editId, currentYear }: RegisterVeh
   const form = useForm<z.infer<typeof vehicleSchema>>({
     resolver: zodResolver(vehicleSchema),
     mode: 'onChange',
-    defaultValues: {
-      type: '',
-      brand: '',
-      model: '',
-      year: currentYear,
-      vin: '',
-      licensePlate: '',
-      price: null,
-      currentMileage: 0,
-      country: '',
-      isForSale: false,
-      images: undefined,
-      hasExistingImages: false,
-    },
   });
   
   const { watch, reset } = form;
   const isForSale = watch("isForSale");
 
   useEffect(() => {
+    // Wait for currentYear to be set on the client before resetting the form
+    if (!currentYear) return;
+
     if (editingVehicle) {
       reset({
         ...editingVehicle,
@@ -124,9 +118,22 @@ export default function RegisterVehicleForm({ editId, currentYear }: RegisterVeh
         hasExistingImages: !!(editingVehicle.imageUrls && editingVehicle.imageUrls.length > 0)
       });
     } else {
-      reset({ ...form.getValues(), year: currentYear });
+      reset({
+        type: '',
+        brand: '',
+        model: '',
+        year: currentYear,
+        vin: '',
+        licensePlate: '',
+        price: null,
+        currentMileage: 0,
+        country: '',
+        isForSale: false,
+        images: undefined,
+        hasExistingImages: false,
+      });
     }
-  }, [editingVehicle, reset, currentYear, form]);
+  }, [editingVehicle, reset, currentYear]);
 
   useEffect(() => {
     if (!isUserLoading && !user) {
@@ -228,7 +235,7 @@ export default function RegisterVehicleForm({ editId, currentYear }: RegisterVeh
     }
   }
 
-  const isLoading = isUserLoading || isUserDataLoading || (!!editId && isEditingVehicleLoading);
+  const isLoading = isUserLoading || isUserDataLoading || (!!editId && isEditingVehicleLoading) || !currentYear;
   const existingImages = editingVehicle?.imageUrls || [];
 
   return (
@@ -246,7 +253,7 @@ export default function RegisterVehicleForm({ editId, currentYear }: RegisterVeh
       </CardHeader>
       <CardContent>
           {isLoading ? (
-              <div className="flex h-64 items-center justify-center">
+              <div className="flex h-[70vh] items-center justify-center">
                   <Loader2 className="h-12 w-12 animate-spin text-primary" />
               </div>
           ) : (
