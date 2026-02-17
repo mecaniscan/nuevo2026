@@ -165,8 +165,6 @@ export default function RegisterVehicleForm({ editId }: RegisterVehicleFormProps
   
       if (values.images instanceof FileList && values.images.length > 0) {
         finalImageUrls = await uploadImages(values.images);
-      } else if (!values.isForSale) {
-        finalImageUrls = [];
       }
   
       const vehicleId = editId || doc(vehiclesCollectionRef).id;
