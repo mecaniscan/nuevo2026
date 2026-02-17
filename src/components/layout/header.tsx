@@ -19,11 +19,11 @@ import { signOut } from 'firebase/auth';
 
 function MainNav({ className }: { className?: string }) {
   return (
-    <nav className={cn("items-center space-x-4 lg:space-x-6", className)}>
-      <Link href="/#workshops" className="text-sm font-medium transition-colors hover:text-primary">
+    <nav className={cn("items-center space-x-6 lg:space-x-8", className)}>
+      <Link href="/#workshops" className="text-base font-semibold bg-gradient-to-r from-red-500 via-yellow-400 to-orange-500 text-transparent bg-clip-text hover:opacity-80 transition-opacity">
         Talleres
       </Link>
-       <Link href="/marketplace" className="text-sm font-medium transition-colors hover:text-primary">
+       <Link href="/marketplace" className="text-base font-semibold bg-gradient-to-r from-red-500 via-yellow-400 to-orange-500 text-transparent bg-clip-text hover:opacity-80 transition-opacity">
         Marketplace
       </Link>
     </nav>
@@ -82,13 +82,13 @@ export function Header() {
                <SheetHeader>
                   <SheetTitle className="sr-only">Menú Principal</SheetTitle>
               </SheetHeader>
-              <Link href="/" className="mr-6 flex items-center space-x-2 mb-6" onClick={() => setIsSheetOpen(false)}>
+              <Link href="/" className="mr-6 flex items-center space-x-2 mb-8" onClick={() => setIsSheetOpen(false)}>
                   <Wrench className="h-6 w-6 text-primary" />
                   <span className="font-bold">MecaniScan</span>
               </Link>
-              <div className="flex flex-col space-y-3">
-                  <Link href="/#workshops" onClick={() => setIsSheetOpen(false)} className="text-muted-foreground transition-colors hover:text-primary">Talleres</Link>
-                  <Link href="/marketplace" onClick={() => setIsSheetOpen(false)} className="text-muted-foreground transition-colors hover:text-primary">Marketplace</Link>
+              <div className="flex flex-col space-y-4">
+                  <Link href="/#workshops" onClick={() => setIsSheetOpen(false)} className="text-lg font-semibold bg-gradient-to-r from-red-500 via-yellow-400 to-orange-500 text-transparent bg-clip-text hover:opacity-80 transition-opacity">Talleres</Link>
+                  <Link href="/marketplace" onClick={() => setIsSheetOpen(false)} className="text-lg font-semibold bg-gradient-to-r from-red-500 via-yellow-400 to-orange-500 text-transparent bg-clip-text hover:opacity-80 transition-opacity">Marketplace</Link>
               </div>
             </SheetContent>
           </Sheet>
