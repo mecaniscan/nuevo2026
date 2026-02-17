@@ -53,10 +53,11 @@ export default function WorkshopDetailPage() {
 
     const [isSubmitting, setIsSubmitting] = React.useState(false);
     const [isSubmittingReview, setIsSubmittingReview] = React.useState(false);
-    const [isClient, setIsClient] = React.useState(false);
+    const [today, setToday] = React.useState<Date | null>(null);
 
     React.useEffect(() => {
-        setIsClient(true);
+        // Set today's date only on the client-side to avoid hydration mismatch
+        setToday(new Date(new Date().setHours(0, 0, 0, 0)));
     }, []);
 
     // Fetch Workshop
@@ -576,7 +577,7 @@ export default function WorkshopDetailPage() {
                                                         mode="single"
                                                         selected={field.value}
                                                         onSelect={field.onChange}
-                                                        disabled={isClient ? (date) => date < new Date(new Date().setHours(0, 0, 0, 0)) : true}
+                                                        disabled={(date) => today ? date < today : true}
                                                         initialFocus
                                                     />
                                                     </PopoverContent>

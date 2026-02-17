@@ -12,10 +12,10 @@ const WhatsappIcon = () => (
 export function Footer() {
     const whatsappNumber = "+573181591962";
     const whatsappUrl = `https://wa.me/${whatsappNumber.replace(/\D/g, '')}`;
-    const [year, setYear] = useState(new Date().getFullYear());
+    const [currentYear, setCurrentYear] = useState<number | null>(null);
 
     useEffect(() => {
-        setYear(new Date().getFullYear());
+        setCurrentYear(new Date().getFullYear());
     }, []);
 
 
@@ -29,7 +29,7 @@ export function Footer() {
                            Creador de la APP MecaniScan ANTONIO RUIZ, Venezolano
                         </p>
                         <p className="text-xs text-muted-foreground">
-                            &copy; {year} MecaniScan. Todos los derechos reservados.
+                            &copy; {currentYear || '...'} MecaniScan. Todos los derechos reservados.
                         </p>
                     </div>
                 </div>
