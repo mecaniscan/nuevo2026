@@ -53,6 +53,11 @@ export default function WorkshopDetailPage() {
 
     const [isSubmitting, setIsSubmitting] = React.useState(false);
     const [isSubmittingReview, setIsSubmittingReview] = React.useState(false);
+    const [isClient, setIsClient] = React.useState(false);
+
+    React.useEffect(() => {
+        setIsClient(true);
+    }, []);
 
     // Fetch Workshop
     const workshopRef = useMemoFirebase(() => {
@@ -571,9 +576,7 @@ export default function WorkshopDetailPage() {
                                                         mode="single"
                                                         selected={field.value}
                                                         onSelect={field.onChange}
-                                                        disabled={(date) =>
-                                                            date < new Date(new Date().toDateString())
-                                                        }
+                                                        disabled={isClient ? (date) => date < new Date(new Date().setHours(0, 0, 0, 0)) : true}
                                                         initialFocus
                                                     />
                                                     </PopoverContent>
