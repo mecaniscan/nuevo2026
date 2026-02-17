@@ -1,6 +1,5 @@
 'use client';
 import React, { useState, useEffect, useMemo } from 'react';
-import { useSearchParams } from 'next/navigation';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
@@ -23,7 +22,7 @@ import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { countries, carBrands } from '@/lib/data';
 
-function VehicleFormContent({ currentYear, editId }: { currentYear: number; editId: string | null }) {
+export function VehicleForm({ currentYear, editId }: { currentYear: number; editId: string | null }) {
   const { user, isUserLoading } = useUser();
   const firestore = useFirestore();
   const storage = useStorage();
@@ -50,14 +49,13 @@ function VehicleFormContent({ currentYear, editId }: { currentYear: number; edit
   const { data: userData, isLoading: isUserDataLoading } = useDoc<User>(userDocRef);
   
   const vehicleSchema = useMemo(() => {
-    const yearForValidation = currentYear;
     return z.object({
       type: z.string().optional(),
       brand: z.string({ required_error: 'La marca es obligatoria.' }).min(1, 'La marca es obligatoria.'),
       model: z.string().min(1, 'El modelo es obligatorio.'),
       year: z.coerce.number({invalid_type_error: 'El año debe ser un número.'})
         .min(1900, 'El año no es válido.')
-        .max(yearForValidation + 1, `El año no puede ser mayor que ${yearForValidation + 1}.`),
+        .max(currentYear + 1, `El año no puede ser mayor que ${currentYear + 1}.`),
       vin: z.string().optional(),
       licensePlate: z.string().optional(),
       price: z.coerce.number({invalid_type_error: 'El precio debe ser un número.'}).nullable().optional(),
@@ -278,7 +276,7 @@ function VehicleFormContent({ currentYear, editId }: { currentYear: number; edit
                     <FormField control={form.control} name="brand" render={({ field }) => (<FormItem><FormLabel>Marca</FormLabel><Select onValueChange={field.onChange} defaultValue={field.value}><FormControl><SelectTrigger className="bg-transparent text-white"><SelectValue placeholder="Selecciona una marca" /></SelectTrigger></FormControl><SelectContent>{carBrands.map(b => <SelectItem key={b} value={b}>{b}</SelectItem>)}</SelectContent></Select><FormMessage /></FormItem>)} />
                     <FormField control={form.control} name="model" render={({ field }) => (<FormItem><FormLabel>Modelo</FormLabel><FormControl><Input placeholder="Ej: Corolla" {...field} className="bg-transparent text-white" /></FormControl><FormMessage /></FormItem>)} />
                     <FormField control={form.control} name="type" render={({ field }) => (<FormItem><FormLabel>Tipo</FormLabel><FormControl><Input placeholder="Ej: Sedan, SUV" {...field} className="bg-transparent text-white" /></FormControl><FormMessage /></FormItem>)} />
-                    <FormField control={form.control} name="year" render={({ field }) => (<FormItem><FormLabel>Año</FormLabel><FormControl><Input type="number" placeholder="2022" {...field} /></FormControl><FormMessage /></FormItem>)} />
+                    <FormField control={form.control} name="year" render={({ field }) => (<FormItem><FormLabel>Año</FormLabel><FormControl><Input type="number" placeholder="2022" {...field} className="bg-transparent text-white" /></FormControl><FormMessage /></FormItem>)} />
                     <FormField control={form.control} name="currentMileage" render={({ field }) => (<FormItem><FormLabel>Kilometraje Actual</FormLabel><FormControl><Input type="number" placeholder="50000" {...field} className="bg-transparent text-white" /></FormControl><FormMessage /></FormItem>)} />
                     <FormField control={form.control} name="licensePlate" render={({ field }) => (<FormItem><FormLabel>Placa</FormLabel><FormControl><Input placeholder="ABC-123" {...field} className="bg-transparent text-white" /></FormControl><FormMessage /></FormItem>)} />
                     <FormField control={form.control} name="country" render={({ field }) => (<FormItem><FormLabel>País</FormLabel><Select onValueChange={field.onChange} defaultValue={field.value}><FormControl><SelectTrigger className="bg-transparent text-white"><SelectValue placeholder="Selecciona un país" /></SelectTrigger></FormControl><SelectContent>{countries.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}</SelectContent></Select><FormMessage /></FormItem>)} />
@@ -342,29 +340,4 @@ function VehicleFormContent({ currentYear, editId }: { currentYear: number; edit
         </CardContent>
       </Card>
   );
-}
-
-export function VehicleForm() {
-  const searchParams = useSearchParams();
-  const editId = searchParams.get('edit');
-  const [currentYear, setCurrentYear] = useState<number | null>(null);
-
-  useEffect(() => {
-    // This effect runs only on the client, after hydration,
-    // ensuring `new Date()` is not called on the server.
-    setCurrentYear(new Date().getFullYear());
-  }, []);
-
-  if (!currentYear) {
-    // Render a loader until the client-side year is available.
-    // This will be caught by the Suspense boundary in the page.
-    return (
-        <div className="z-20 w-full max-w-2xl flex items-center justify-center p-8">
-            <Loader2 className="h-12 w-12 animate-spin text-primary" />
-        </div>
-    );
-  }
-
-  // Once the year is set, render the actual form content.
-  return <VehicleFormContent currentYear={currentYear} editId={editId} />;
 }
