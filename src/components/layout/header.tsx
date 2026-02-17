@@ -106,9 +106,9 @@ export function Header() {
           {!user && !isUserLoading && (
             <>
                <Button variant="ghost" asChild>
-                <Link href="/login">Iniciar Sesión</Link>
+                <Link href="/login" className="text-base font-semibold bg-gradient-to-r from-red-500 via-yellow-400 to-orange-500 text-transparent bg-clip-text hover:opacity-80 transition-opacity">Iniciar Sesión</Link>
               </Button>
-               <Button asChild>
+               <Button asChild className="bg-gradient-to-r from-red-500 via-yellow-400 to-orange-500 text-primary-foreground hover:opacity-90 transition-opacity">
                 <Link href="/register">Crear Cuenta</Link>
               </Button>
             </>
