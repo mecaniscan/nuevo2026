@@ -1,3 +1,4 @@
+
 {
   "entities": {
     "UserProfile": {
@@ -102,6 +103,23 @@
             "certificateNumber": { "type": "string" }
         },
         "required": ["id", "userId", "brand", "model", "year", "isForSale", "country", "sellerName"]
+    },
+    "OilChange": {
+      "title": "Oil Change",
+      "type": "object",
+      "description": "Represents an oil change record.",
+      "properties": {
+        "id": { "type": "string" },
+        "userId": { "type": "string" },
+        "vehicleId": { "type": "string" },
+        "vehicleName": { "type": "string" },
+        "date": { "type": "string", "format": "date-time" },
+        "oilType": { "type": "string" },
+        "oilPrice": { "type": "number" },
+        "mileage": { "type": "number" },
+        "nextChangeMileage": { "type": "number" }
+      },
+      "required": ["id", "userId", "vehicleId", "date", "oilType", "oilPrice", "mileage", "nextChangeMileage"]
     }
   },
   "auth": {

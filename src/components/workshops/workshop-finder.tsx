@@ -1,6 +1,7 @@
+
 "use client";
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { WorkshopCard } from './workshop-card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -10,7 +11,6 @@ import { useCollection, useFirestore, useMemoFirebase } from '@/firebase';
 import { collection, query, where, getDocs } from 'firebase/firestore';
 import type { Workshop, Service } from '@/lib/types';
 import React from 'react';
-
 
 export function WorkshopFinder() {
   const [searchTerm, setSearchTerm] = useState('');
@@ -32,34 +32,48 @@ export function WorkshopFinder() {
   }, [workshopsCollection, showObdOnly]);
 
   const { data: workshops, isLoading: isWorkshopsLoading } = useCollection<Workshop>(workshopsQuery);
-  const [allServices, setAllServices] = React.useState<Map<string, Service[]>>(new Map());
-  const [areServicesLoading, setAreServicesLoading] = React.useState(true);
+  const [allServices, setAllServices] = useState<Map<string, Service[]>>(new Map());
+  const [areServicesLoading, setAreServicesLoading] = useState(false);
   
-  React.useEffect(() => {
+  useEffect(() => {
+    let isMounted = true;
+
     async function fetchAllServices() {
         if (!workshops || workshops.length === 0 || !firestore) {
-            setAreServicesLoading(false);
+            if (isMounted) setAreServicesLoading(false);
             return;
         };
 
-        setAreServicesLoading(true);
+        if (isMounted) setAreServicesLoading(true);
         const servicesMap = new Map<string, Service[]>();
         
         try {
-            for (const workshop of workshops) {
+            // Fetch services in parallel for all workshops to improve performance
+            const servicePromises = workshops.map(async (workshop) => {
                 const servicesColRef = collection(firestore, `workshops/${workshop.id}/services`);
                 const servicesSnapshot = await getDocs(servicesColRef);
                 const services = servicesSnapshot.docs.map(doc => ({ ...doc.data(), id: doc.id } as Service));
-                servicesMap.set(workshop.id, services);
+                return { id: workshop.id, services };
+            });
+
+            const results = await Promise.all(servicePromises);
+            
+            if (isMounted) {
+                results.forEach(res => servicesMap.set(res.id, res.services));
+                setAllServices(servicesMap);
             }
-            setAllServices(servicesMap);
         } catch (error) {
             console.error("Error fetching services for workshops:", error);
         } finally {
-            setAreServicesLoading(false);
+            if (isMounted) setAreServicesLoading(false);
         }
     }
+
     fetchAllServices();
+
+    return () => {
+        isMounted = false;
+    };
   }, [workshops, firestore]);
 
 
@@ -111,15 +125,13 @@ export function WorkshopFinder() {
               </div>
             )}
             
-            {!isLoading && filteredWorkshops && (
+            {!isLoading && filteredWorkshops && filteredWorkshops.length > 0 ? (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
                   {filteredWorkshops.map(workshop => (
                     <WorkshopCard key={workshop.id} workshop={workshop as any} />
                   ))}
               </div>
-            )}
-
-            {!isLoading && (!filteredWorkshops || filteredWorkshops.length === 0) && (
+            ) : !isLoading && (
                 <div className="text-center text-muted-foreground mt-12 col-span-full h-64 flex flex-col justify-center items-center">
                     <p className="text-lg">No se encontraron talleres.</p>
                     <p className="text-sm">Prueba con otro término de búsqueda o ajusta los filtros.</p>
@@ -130,6 +142,3 @@ export function WorkshopFinder() {
     </section>
   );
 }
-
-    
-    
