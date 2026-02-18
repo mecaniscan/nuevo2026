@@ -2,7 +2,7 @@
 
 import Image from 'next/image';
 import { getPlaceholderImage } from '@/lib/placeholder-images';
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, Suspense } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
@@ -24,7 +24,7 @@ import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { countries, carBrands } from '@/lib/data';
 
-export default function RegisterVehiclePage() {
+function RegisterVehicleFormContent() {
   const backgroundImage = getPlaceholderImage('login-background');
   
   const { user, isUserLoading } = useUser();
@@ -39,7 +39,6 @@ export default function RegisterVehiclePage() {
   const [currentYear, setCurrentYear] = useState<number | null>(null);
 
   useEffect(() => {
-    // This runs only on the client, after hydration, to prevent mismatch
     setCurrentYear(new Date().getFullYear());
   }, []);
   
@@ -47,6 +46,7 @@ export default function RegisterVehiclePage() {
     if (!firestore || !user?.uid || !editId) return null;
     return doc(firestore, `users/${user.uid}/vehicles`, editId);
   }, [firestore, user?.uid, editId]);
+  
   const { data: editingVehicle, isLoading: isEditingVehicleLoading } = useDoc<Vehicle>(vehicleDocRef);
 
   const vehiclesCollectionRef = useMemoFirebase(() => {
@@ -58,17 +58,18 @@ export default function RegisterVehiclePage() {
     if (!firestore || !user?.uid) return null;
     return doc(firestore, 'users', user.uid);
   }, [firestore, user?.uid]);
+  
   const { data: userData, isLoading: isUserDataLoading } = useDoc<User>(userDocRef);
   
   const vehicleSchema = useMemo(() => {
-    const year = currentYear ?? new Date().getFullYear() + 1;
+    const year = currentYear ?? new Date().getFullYear();
     return z.object({
       type: z.string().optional(),
       brand: z.string({ required_error: 'La marca es obligatoria.' }).min(1, 'La marca es obligatoria.'),
       model: z.string().min(1, 'El modelo es obligatorio.'),
       year: z.coerce.number({invalid_type_error: 'El año debe ser un número.'})
         .min(1900, 'El año no es válido.')
-        .max(year + 1, `El año no puede ser mayor que ${'${year + 1}'}.`),
+        .max(year + 2, `El año no es válido.`),
       vin: z.string().optional(),
       licensePlate: z.string().optional(),
       price: z.coerce.number({invalid_type_error: 'El precio debe ser un número.'}).nullable().optional(),
@@ -108,7 +109,7 @@ export default function RegisterVehiclePage() {
   const isForSale = watch("isForSale");
 
   useEffect(() => {
-    if (!currentYear) return;
+    if (currentYear === null) return;
 
     if (editingVehicle) {
       reset({
@@ -224,7 +225,6 @@ export default function RegisterVehiclePage() {
         });
 
     } catch (error: any) {
-      console.error("Error during image upload or processing:", error);
       toast({
           variant: 'destructive',
           title: 'Error de Envío',
@@ -234,7 +234,7 @@ export default function RegisterVehiclePage() {
     }
   }
 
-  const isLoading = isUserLoading || isUserDataLoading || (!!editId && isEditingVehicleLoading) || !currentYear;
+  const isLoading = isUserLoading || isUserDataLoading || (!!editId && isEditingVehicleLoading) || currentYear === null;
   const existingImages = editingVehicle?.imageUrls || [];
 
   return (
@@ -336,7 +336,7 @@ export default function RegisterVehiclePage() {
                                                   <div className="p-1">
                                                       <Card>
                                                       <CardContent className="flex aspect-video items-center justify-center p-0 relative overflow-hidden rounded-md">
-                                                          <Image src={src} alt={`Imagen actual ${'${index + 1}'}`} fill className="object-cover"/>
+                                                          <Image src={src} alt={`Imagen actual ${index + 1}`} fill className="object-cover"/>
                                                       </CardContent>
                                                       </Card>
                                                   </div>
@@ -365,5 +365,13 @@ export default function RegisterVehiclePage() {
           </CardContent>
         </Card>
     </div>
+  );
+}
+
+export default function RegisterVehiclePage() {
+  return (
+    <Suspense fallback={<div className="flex min-h-screen items-center justify-center"><Loader2 className="h-12 w-12 animate-spin text-primary" /></div>}>
+      <RegisterVehicleFormContent />
+    </Suspense>
   );
 }
