@@ -32,9 +32,10 @@ export function VehicleForm() {
 
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [currentYear, setCurrentYear] = useState<number | null>(null);
+  const [isMounted, setIsMounted] = useState(false);
 
   useEffect(() => {
-    // Evitar errores de hidratación calculando el año solo en el cliente
+    setIsMounted(true);
     setCurrentYear(new Date().getFullYear());
   }, []);
   
@@ -58,7 +59,7 @@ export function VehicleForm() {
   const { data: userData, isLoading: isUserDataLoading } = useDoc<User>(userDocRef);
   
   const vehicleSchema = useMemo(() => {
-    const year = currentYear ?? 2025; // Fallback constante para SSR
+    const year = currentYear || 2025;
     return z.object({
       type: z.string().optional(),
       brand: z.string({ required_error: 'La marca es obligatoria.' }).min(1, 'La marca es obligatoria.'),
@@ -83,7 +84,7 @@ export function VehicleForm() {
         }
         return true;
     }, {
-        message: "Debes subir entre 1 y 3 imágenes para publicar en el marketplace.",
+        message: "Debes subir entre 1 y 3 imágenes para el marketplace.",
         path: ["images"],
     }).refine(data => {
         if (data.isForSale) {
@@ -105,7 +106,7 @@ export function VehicleForm() {
   const isForSale = watch("isForSale");
 
   useEffect(() => {
-    if (currentYear === null) return;
+    if (!isMounted || currentYear === null) return;
 
     if (editingVehicle) {
       reset({
@@ -131,12 +132,10 @@ export function VehicleForm() {
         hasExistingImages: false,
       });
     }
-  }, [editingVehicle, reset, currentYear]);
+  }, [editingVehicle, reset, currentYear, isMounted]);
 
   const uploadImages = async (files: FileList): Promise<string[]> => {
-    if (!storage || !user) {
-        throw new Error("Storage service not available.");
-    }
+    if (!storage || !user) throw new Error("Storage service not available.");
     const uploadPromises = Array.from(files).map(file => {
         const imageRef = storageRef(storage, `vehicles/${user.uid}/${uuidv4()}`);
         return uploadBytes(imageRef, file).then(snapshot => getDownloadURL(snapshot.ref));
@@ -186,46 +185,35 @@ export function VehicleForm() {
       batch.set(userVehicleRef, vehiclePayload, { merge: true });
 
       const marketplaceRef = doc(firestore, 'marketplace', vehicleId);
-
       if (vehiclePayload.isForSale) {
         batch.set(marketplaceRef, vehiclePayload, { merge: true });
-      } else {
-        if(editId) { 
-           batch.delete(marketplaceRef);
-        }
+      } else if (editId) { 
+        batch.delete(marketplaceRef);
       }
       
       batch.commit()
         .then(() => {
           toast({
             title: editId ? '¡Vehículo Actualizado!' : '¡Vehículo Añadido!',
-            description: `Tu vehículo ha sido ${editId ? 'actualizado' : 'guardado'}.`,
+            description: `Tu vehículo ha sido guardado exitosamente.`,
           });
           router.push('/dashboard/my-vehicles');
         })
         .catch(() => {
           errorEmitter.emit('permission-error', new FirestorePermissionError({
-              path: editId ? `users/${user.uid}/vehicles/${editId}` : `users/${user.uid}/vehicles`,
+              path: userVehicleRef.path,
               operation: editId ? 'update' : 'create',
               requestResourceData: vehiclePayload,
           }));
         })
-        .finally(() => {
-            setIsSubmitting(false);
-        });
-
-    } catch (error: any) {
-      toast({
-          variant: 'destructive',
-          title: 'Error de Envío',
-          description: 'No se pudo procesar la solicitud. Por favor, intente de nuevo.',
-      });
+        .finally(() => setIsSubmitting(false));
+    } catch (error) {
+      toast({ variant: 'destructive', title: 'Error', description: 'No se pudo procesar la solicitud.' });
       setIsSubmitting(false);
     }
   }
 
-  const isLoading = isUserLoading || isUserDataLoading || (!!editId && isEditingVehicleLoading) || currentYear === null;
-  const existingImages = editingVehicle?.imageUrls || [];
+  const isLoading = !isMounted || isUserLoading || isUserDataLoading || (!!editId && isEditingVehicleLoading);
 
   if (isLoading) {
       return (
@@ -234,6 +222,8 @@ export function VehicleForm() {
           </div>
       );
   }
+
+  const existingImages = editingVehicle?.imageUrls || [];
 
   return (
     <Form {...form}>
@@ -264,38 +254,36 @@ export function VehicleForm() {
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                <FormField control={form.control} name="brand" render={({ field }) => (<FormItem><FormLabel>Marca</FormLabel><Select onValueChange={field.onChange} value={field.value}><FormControl><SelectTrigger className="bg-transparent text-white"><SelectValue placeholder="Selecciona una marca" /></SelectTrigger></FormControl><SelectContent>{carBrands.map(b => <SelectItem key={b} value={b}>{b}</SelectItem>)}</SelectContent></Select><FormMessage /></FormItem>)} />
+                <FormField control={form.control} name="brand" render={({ field }) => (<FormItem><FormLabel>Marca</FormLabel><Select onValueChange={field.onChange} value={field.value}><FormControl><SelectTrigger className="bg-transparent text-white"><SelectValue placeholder="Marca" /></SelectTrigger></FormControl><SelectContent>{carBrands.map(b => <SelectItem key={b} value={b}>{b}</SelectItem>)}</SelectContent></Select><FormMessage /></FormItem>)} />
                 <FormField control={form.control} name="model" render={({ field }) => (<FormItem><FormLabel>Modelo</FormLabel><FormControl><Input placeholder="Ej: Corolla" {...field} className="bg-transparent text-white" /></FormControl><FormMessage /></FormItem>)} />
-                <FormField control={form.control} name="type" render={({ field }) => (<FormItem><FormLabel>Tipo</FormLabel><FormControl><Input placeholder="Ej: Sedan, SUV" {...field} className="bg-transparent text-white" /></FormControl><FormMessage /></FormItem>)} />
-                <FormField control={form.control} name="year" render={({ field }) => (<FormItem><FormLabel>Año</FormLabel><FormControl><Input type="number" placeholder="2022" {...field} className="bg-transparent text-white" /></FormControl><FormMessage /></FormItem>)} />
-                <FormField control={form.control} name="currentMileage" render={({ field }) => (<FormItem><FormLabel>Kilometraje Actual</FormLabel><FormControl><Input type="number" placeholder="50000" {...field} className="bg-transparent text-white" /></FormControl><FormMessage /></FormItem>)} />
-                <FormField control={form.control} name="licensePlate" render={({ field }) => (<FormItem><FormLabel>Placa</FormLabel><FormControl><Input placeholder="ABC-123" {...field} className="bg-transparent text-white" /></FormControl><FormMessage /></FormItem>)} />
-                <FormField control={form.control} name="country" render={({ field }) => (<FormItem><FormLabel>País</FormLabel><Select onValueChange={field.onChange} value={field.value}><FormControl><SelectTrigger className="bg-transparent text-white"><SelectValue placeholder="Selecciona un país" /></SelectTrigger></FormControl><SelectContent>{countries.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}</SelectContent></Select><FormMessage /></FormItem>)} />
+                <FormField control={form.control} name="type" render={({ field }) => (<FormItem><FormLabel>Tipo</FormLabel><FormControl><Input placeholder="Ej: Sedan" {...field} className="bg-transparent text-white" /></FormControl><FormMessage /></FormItem>)} />
+                <FormField control={form.control} name="year" render={({ field }) => (<FormItem><FormLabel>Año</FormLabel><FormControl><Input type="number" {...field} className="bg-transparent text-white" /></FormControl><FormMessage /></FormItem>)} />
+                <FormField control={form.control} name="currentMileage" render={({ field }) => (<FormItem><FormLabel>Km</FormLabel><FormControl><Input type="number" {...field} className="bg-transparent text-white" /></FormControl><FormMessage /></FormItem>)} />
+                <FormField control={form.control} name="licensePlate" render={({ field }) => (<FormItem><FormLabel>Placa</FormLabel><FormControl><Input {...field} className="bg-transparent text-white" /></FormControl><FormMessage /></FormItem>)} />
+                <FormField control={form.control} name="country" render={({ field }) => (<FormItem><FormLabel>País</FormLabel><Select onValueChange={field.onChange} value={field.value}><FormControl><SelectTrigger className="bg-transparent text-white"><SelectValue placeholder="País" /></SelectTrigger></FormControl><SelectContent>{countries.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}</SelectContent></Select><FormMessage /></FormItem>)} />
                 <div className="lg:col-span-2">
-                    <FormField control={form.control} name="vin" render={({ field }) => (<FormItem><FormLabel>Código VIN (Opcional)</FormLabel><FormControl><Input placeholder="17 caracteres" {...field} className="bg-transparent text-white"/></FormControl><FormMessage /></FormItem>)} />
+                    <FormField control={form.control} name="vin" render={({ field }) => (<FormItem><FormLabel>VIN</FormLabel><FormControl><Input {...field} className="bg-transparent text-white"/></FormControl><FormMessage /></FormItem>)} />
                 </div>
             
               {isForSale && (
                 <div className="lg:col-span-3 grid grid-cols-1 md:grid-cols-2 gap-6 items-start">
-                    <FormField control={form.control} name="price" render={({ field }) => (<FormItem><FormLabel>Precio ($)</FormLabel><FormControl><Input type="number" step="0.01" placeholder="25000.00" {...field} value={field.value ?? ''} className="bg-transparent text-white" /></FormControl><FormMessage /></FormItem>)} />
+                    <FormField control={form.control} name="price" render={({ field }) => (<FormItem><FormLabel>Precio ($)</FormLabel><FormControl><Input type="number" step="0.01" {...field} value={field.value ?? ''} className="bg-transparent text-white" /></FormControl><FormMessage /></FormItem>)} />
                     <div className='space-y-2'>
                       <FormField
                         control={form.control}
                         name="images"
-                        render={({ field: { onChange, value, ...rest } }) => (
+                        render={({ field: { onChange } }) => (
                             <FormItem>
-                            <FormLabel>Imágenes del Vehículo (hasta 3)</FormLabel>
+                            <FormLabel>Fotos (máx 3)</FormLabel>
                             <FormControl>
-                                <Input type="file" accept="image/*" multiple onChange={(e) => onChange(e.target.files)} className="bg-transparent text-white file:text-white" />
+                                <Input type="file" accept="image/*" multiple onChange={(e) => onChange(e.target.files)} className="bg-transparent text-white" />
                             </FormControl>
-                            <FormDescription>Subir nuevas imágenes reemplazará las existentes.</FormDescription>
                             <FormMessage className='text-red-400' />
                             </FormItem>
                         )}
                         />
                         {existingImages.length > 0 && (
                         <div className="mt-4">
-                            <FormLabel>Imágenes Actuales</FormLabel>
                             <Carousel className="w-full max-w-xs mx-auto mt-2">
                                 <CarouselContent>
                                 {existingImages.map((src, index) => (
@@ -303,7 +291,7 @@ export function VehicleForm() {
                                     <div className="p-1">
                                         <Card>
                                         <CardContent className="flex aspect-video items-center justify-center p-0 relative overflow-hidden rounded-md">
-                                            <Image src={src} alt={`Imagen actual ${index + 1}`} fill className="object-cover"/>
+                                            <Image src={src} alt={`Img ${index + 1}`} fill className="object-cover"/>
                                         </CardContent>
                                         </Card>
                                     </div>
@@ -323,7 +311,7 @@ export function VehicleForm() {
             <div className="flex flex-col gap-4 pt-6 border-t border-white/20">
               <Button type="submit" disabled={isSubmitting}>
                 {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                {editId ? <>Guardar Cambios</> : <><PlusCircle className="mr-2" /> Guardar Vehículo</>}
+                {editId ? 'Guardar Cambios' : 'Guardar Vehículo'}
               </Button>
             </div>
         </form>
