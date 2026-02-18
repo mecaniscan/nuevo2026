@@ -7,6 +7,11 @@ import { Loader2, ArrowLeft } from 'lucide-react';
 import Link from 'next/link';
 import { VehicleForm } from '@/components/vehicles/vehicle-form';
 
+/**
+ * RegisterVehiclePage is a Server Component.
+ * It renders the background layout and wraps the Client Form in Suspense
+ * to handle Next.js 15 static generation requirements for useSearchParams.
+ */
 export default function RegisterVehiclePage() {
   const backgroundImage = getPlaceholderImage('login-background');
   
