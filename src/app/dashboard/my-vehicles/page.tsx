@@ -5,7 +5,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { useUser, useFirestore, useMemoFirebase, FirestorePermissionError, errorEmitter, useCollection } from '@/firebase';
 import { collection, query, orderBy, doc, writeBatch } from 'firebase/firestore';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2, PlusCircle, Car, Trash2, Pencil, Briefcase, BadgePercent } from 'lucide-react';
+import { Loader2, PlusCircle, Car, Trash2, Pencil, Briefcase, BadgePercent, FileText } from 'lucide-react';
 import Link from 'next/link';
 import type { Vehicle } from '@/lib/types';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -133,7 +133,6 @@ export default function MyVehiclesPage() {
                                 <TableHead>Placa</TableHead>
                                 <TableHead>Estado</TableHead>
                                 <TableHead>Kilometraje</TableHead>
-                                <TableHead>Precio</TableHead>
                                 <TableHead className="text-right">Acciones</TableHead>
                             </TableRow>
                         </TableHeader>
@@ -159,14 +158,16 @@ export default function MyVehiclesPage() {
                                           )}
                                         </TableCell>
                                         <TableCell>{vehicle.currentMileage?.toLocaleString()} km</TableCell>
-                                        <TableCell>{vehicle.price != null ? `$${vehicle.price.toLocaleString()}`: 'N/A'}</TableCell>
-                                        <TableCell className="text-right">
-                                            <Button variant="ghost" size="icon" className="text-primary hover:bg-primary/10" asChild>
+                                        <TableCell className="text-right flex justify-end gap-1">
+                                            <Button variant="ghost" size="icon" className="text-primary hover:bg-primary/10" asChild title="Ver Certificado">
+                                                <Link href={`/dashboard/my-vehicles/${vehicle.id}/certificate`}><FileText className="h-4 w-4" /></Link>
+                                            </Button>
+                                            <Button variant="ghost" size="icon" className="text-primary hover:bg-primary/10" asChild title="Editar">
                                                 <Link href={`/dashboard/register-vehicle?edit=${vehicle.id}`}><Pencil className="h-4 w-4" /></Link>
                                             </Button>
                                             <AlertDialog>
                                                 <AlertDialogTrigger asChild>
-                                                    <Button variant="ghost" size="icon" className="text-destructive hover:bg-destructive/10">
+                                                    <Button variant="ghost" size="icon" className="text-destructive hover:bg-destructive/10" title="Eliminar">
                                                         <Trash2 className="h-4 w-4" />
                                                     </Button>
                                                 </AlertDialogTrigger>
@@ -194,7 +195,7 @@ export default function MyVehiclesPage() {
                                 ))
                             ) : (
                                 <TableRow>
-                                    <TableCell colSpan={7} className="text-center h-24">
+                                    <TableCell colSpan={6} className="text-center h-24">
                                         No has registrado ningún vehículo todavía.
                                     </TableCell>
                                 </TableRow>

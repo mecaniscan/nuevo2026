@@ -1,5 +1,5 @@
 'use client';
-import { Wrench, LogOut, PanelLeft, ShoppingCart, User, Search, Settings } from 'lucide-react';
+import { Wrench, LogOut, PanelLeft, ShoppingCart, User, Search, Settings, FileCheck } from 'lucide-react';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { useUser, useAuth } from '@/firebase';
@@ -17,14 +17,17 @@ import { Avatar, AvatarFallback, AvatarImage } from '../ui/avatar';
 import { cn } from '@/lib/utils';
 import { signOut } from 'firebase/auth';
 
-function MainNav({ className }: { className?: string }) {
+function MainNav({ className, onLinkClick }: { className?: string, onLinkClick?: () => void }) {
   return (
     <nav className={cn("items-center space-x-6 lg:space-x-8", className)}>
-      <Link href="/#workshops" className="text-base font-semibold bg-gradient-to-r from-red-500 via-yellow-400 to-orange-500 text-transparent bg-clip-text hover:opacity-80 transition-opacity">
+      <Link href="/#workshops" onClick={onLinkClick} className="text-base font-semibold bg-gradient-to-r from-red-500 via-yellow-400 to-orange-500 text-transparent bg-clip-text hover:opacity-80 transition-opacity">
         Talleres
       </Link>
-       <Link href="/marketplace" className="text-base font-semibold bg-gradient-to-r from-red-500 via-yellow-400 to-orange-500 text-transparent bg-clip-text hover:opacity-80 transition-opacity">
+       <Link href="/marketplace" onClick={onLinkClick} className="text-base font-semibold bg-gradient-to-r from-red-500 via-yellow-400 to-orange-500 text-transparent bg-clip-text hover:opacity-80 transition-opacity">
         Marketplace
+      </Link>
+      <Link href="/verify" onClick={onLinkClick} className="text-base font-semibold bg-gradient-to-r from-red-500 via-yellow-400 to-orange-500 text-transparent bg-clip-text hover:opacity-80 transition-opacity flex items-center gap-1">
+        <FileCheck className="h-4 w-4 text-orange-500" /> Validar Certificado
       </Link>
     </nav>
   );
@@ -87,8 +90,7 @@ export function Header() {
                   <span className="font-bold">MecaniScan</span>
               </Link>
               <div className="flex flex-col space-y-4">
-                  <Link href="/#workshops" onClick={() => setIsSheetOpen(false)} className="text-lg font-semibold bg-gradient-to-r from-red-500 via-yellow-400 to-orange-500 text-transparent bg-clip-text hover:opacity-80 transition-opacity">Talleres</Link>
-                  <Link href="/marketplace" onClick={() => setIsSheetOpen(false)} className="text-lg font-semibold bg-gradient-to-r from-red-500 via-yellow-400 to-orange-500 text-transparent bg-clip-text hover:opacity-80 transition-opacity">Marketplace</Link>
+                  <MainNav className="flex flex-col items-start space-x-0 space-y-4" onLinkClick={() => setIsSheetOpen(false)} />
               </div>
             </SheetContent>
           </Sheet>
