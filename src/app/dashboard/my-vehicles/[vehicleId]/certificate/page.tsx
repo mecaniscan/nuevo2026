@@ -5,7 +5,7 @@ import { doc } from 'firebase/firestore';
 import type { Vehicle } from '@/lib/types';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Loader2, ArrowLeft, Printer, ShieldCheck, Download, Calendar, MapPin, Hash, Car } from 'lucide-react';
+import { Loader2, ArrowLeft, Printer, ShieldCheck, Calendar, MapPin, Hash, Car, User } from 'lucide-react';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
 import Image from 'next/image';
@@ -117,7 +117,6 @@ export default function VehicleCertificatePage() {
                         </div>
                         <div className="text-center space-y-2">
                              <div className="bg-white p-2 rounded-lg inline-block border-2 border-primary/20">
-                                {/* Simplified QR placeholder */}
                                 <Image 
                                     src={`https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(`https://mecaniscan.app/validate-certificate/${vehicle.certificateNumber}`)}`}
                                     alt="QR Verification"
@@ -133,27 +132,62 @@ export default function VehicleCertificatePage() {
                     </div>
                 </div>
 
-                <div className="bg-primary/5 p-6 rounded-lg border border-primary/10">
-                    <h3 className="text-sm font-bold uppercase mb-4 text-center">Detalles del Registro</h3>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div>
-                            <p className="text-[10px] text-muted-foreground uppercase font-bold">Número de Certificado</p>
-                            <p className="text-sm font-mono font-bold break-all text-primary">{vehicle.certificateNumber}</p>
+                <div className="bg-primary/5 p-6 rounded-lg border border-primary/10 space-y-4">
+                    <h3 className="text-sm font-bold uppercase text-center border-b border-primary/10 pb-2">Detalles del Registro y Venta</h3>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div className="space-y-4">
+                            <div>
+                                <p className="text-[10px] text-muted-foreground uppercase font-bold">Número de Certificado</p>
+                                <p className="text-xs font-mono font-bold break-all text-primary">{vehicle.certificateNumber}</p>
+                            </div>
+                            <div>
+                                <p className="text-[10px] text-muted-foreground uppercase font-bold">Titular del Registro (Vendedor)</p>
+                                <p className="text-sm font-bold">{vehicle.sellerName}</p>
+                            </div>
                         </div>
-                        <div className="md:text-right">
-                             <p className="text-[10px] text-muted-foreground uppercase font-bold">Titular del Registro</p>
-                             <p className="text-sm font-bold">{vehicle.sellerName}</p>
+                        <div className="space-y-4">
+                            <div>
+                                <p className="text-[10px] text-muted-foreground uppercase font-bold flex items-center gap-1">
+                                    <User className="h-3 w-3" /> Nombre del Comprador
+                                </p>
+                                <div className="mt-1 h-8 border-b-2 border-dotted border-primary/30 w-full flex items-end">
+                                    <span className="text-xs text-muted-foreground italic px-1 print:hidden">Espacio para completar...</span>
+                                </div>
+                            </div>
+                            <div>
+                                <p className="text-[10px] text-muted-foreground uppercase font-bold flex items-center gap-1">
+                                    <Hash className="h-3 w-3" /> Identificación del Comprador
+                                </p>
+                                <div className="mt-1 h-8 border-b-2 border-dotted border-primary/30 w-full flex items-end">
+                                    <span className="text-xs text-muted-foreground italic px-1 print:hidden">DNI / Pasaporte...</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-12 pt-12">
+                    <div className="text-center space-y-2">
+                        <div className="border-t border-foreground/40 pt-2">
+                            <p className="text-[10px] font-bold uppercase">Firma del Vendedor</p>
+                            <p className="text-[9px] text-muted-foreground">{vehicle.sellerName}</p>
+                        </div>
+                    </div>
+                    <div className="text-center space-y-2">
+                        <div className="border-t border-foreground/40 pt-2">
+                            <p className="text-[10px] font-bold uppercase">Firma del Comprador</p>
+                            <p className="text-[9px] text-muted-foreground">Nombre y Apellido</p>
                         </div>
                     </div>
                 </div>
 
                 <div className="text-center pt-8 space-y-4">
-                    <p className="text-xs text-muted-foreground max-w-lg mx-auto italic">
-                        "Este documento certifica que el vehículo descrito arriba se encuentra registrado en la plataforma MecaniScan. El código único de verificación garantiza que los datos coinciden con nuestra base de datos oficial en tiempo real."
+                    <p className="text-[10px] text-muted-foreground max-w-lg mx-auto italic leading-tight">
+                        "Este documento certifica que el vehículo descrito se encuentra registrado oficialmente en la plataforma MecaniScan. El código único de verificación garantiza que los datos coinciden con nuestra base de datos. La validez legal definitiva de la venta depende de la ratificación de las partes ante las autoridades competentes."
                     </p>
-                    <div className="flex justify-center pt-4">
-                        <div className="border-t border-foreground/30 w-48 pt-2">
-                            <p className="text-[10px] font-bold uppercase">Sello Digital MecaniScan</p>
+                    <div className="flex justify-center pt-2">
+                        <div className="bg-primary/10 px-4 py-1 rounded-full border border-primary/20">
+                            <p className="text-[9px] font-bold uppercase tracking-widest text-primary">Sello de Verificación Digital</p>
                         </div>
                     </div>
                 </div>
@@ -161,7 +195,7 @@ export default function VehicleCertificatePage() {
             
             <CardFooter className="bg-primary/5 border-t border-primary/20 py-4 flex justify-between text-[10px] text-muted-foreground font-bold uppercase">
                 <span>Fecha de Emisión: {new Date().toLocaleDateString()}</span>
-                <span>MecaniScan v1.0 - Seguridad Vehicular</span>
+                <span>MecaniScan v1.2 - Seguridad Vehicular Avanzada</span>
             </CardFooter>
         </Card>
 
@@ -173,6 +207,8 @@ export default function VehicleCertificatePage() {
             .shadow-2xl { box-shadow: none !important; }
             .border-4 { border-width: 1px !important; }
             .bg-card { background: white !important; color: black !important; }
+            .text-muted-foreground { color: #666 !important; }
+            .border-white\/10 { border-color: #eee !important; }
           }
         `}</style>
       </div>
