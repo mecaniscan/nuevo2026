@@ -1,3 +1,4 @@
+
 'use client';
 import React, { useEffect, useState } from 'react';
 import { useFieldArray, useForm } from 'react-hook-form';
@@ -21,7 +22,7 @@ const serviceSchema = z.object({
   id: z.string().optional(),
   name: z.string().min(3, 'El nombre debe tener al menos 3 caracteres.'),
   description: z.string().optional(),
-  price: z.coerce.number().positive('El precio debe ser un número positivo.'),
+  price: z.coerce.number({ invalid_type_error: 'El precio debe ser un número.' }).positive('El precio debe ser un número positivo.'),
 });
 
 const formSchema = z.object({
@@ -107,7 +108,6 @@ export default function EditServicesPage() {
         });
         router.push('/dashboard');
     }).catch((err) => {
-        console.error("Error saving services:", err);
         errorEmitter.emit('permission-error', new FirestorePermissionError({
             path: `workshops/${workshop.id}/services`,
             operation: 'write',
@@ -155,10 +155,17 @@ export default function EditServicesPage() {
     <div className="container mx-auto py-12 px-4">
         <Card className="max-w-4xl mx-auto shadow-xl border-primary/20">
             <CardHeader className="bg-primary/5 border-b border-primary/10">
-                <CardTitle className="text-2xl font-headline text-primary">Gestionar Servicios de "{workshop.name}"</CardTitle>
-                <CardDescription>
-                    Define los servicios principales que ofreces. Máximo 3 por taller.
-                </CardDescription>
+                <div className="flex items-center justify-between">
+                  <div className="space-y-1">
+                    <CardTitle className="text-2xl font-headline text-primary">Gestionar Servicios de "{workshop.name}"</CardTitle>
+                    <CardDescription>
+                        Define los servicios principales que ofreces. Máximo 3 por taller.
+                    </CardDescription>
+                  </div>
+                  <Badge variant="outline" className="text-lg py-1 px-3">
+                    {fields.length} / 3
+                  </Badge>
+                </div>
             </CardHeader>
             <CardContent className="pt-8">
                 <Form {...form}>
@@ -240,12 +247,16 @@ export default function EditServicesPage() {
                         )}
                         
                         <div className="flex flex-col sm:flex-row gap-4 pt-6 border-t">
-                            <Button type="submit" className="flex-1 h-12 text-lg" disabled={isSubmitting}>
+                            <Button 
+                                type="submit" 
+                                className="flex-1 h-12 text-lg font-bold" 
+                                disabled={isSubmitting || !form.formState.isDirty}
+                            >
                                 {isSubmitting ? <Loader2 className="mr-2 h-5 w-5 animate-spin" /> : <Save className="mr-2 h-5 w-5" />}
-                                {isSubmitting ? 'Guardando...' : `Guardar Servicios (${fields.length}/3)`}
+                                {isSubmitting ? 'Guardando...' : 'Guardar Todos los Cambios'}
                             </Button>
                             <Button variant="ghost" className="h-12" asChild>
-                                <Link href="/dashboard">Cancelar</Link>
+                                <Link href="/dashboard">Volver al Panel</Link>
                             </Button>
                         </div>
                     </form>
