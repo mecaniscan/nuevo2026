@@ -92,7 +92,7 @@ export default function RegisterPage() {
                     <FormItem>
                       <FormLabel>Nombre</FormLabel>
                       <FormControl>
-                        <Input placeholder="Juan" {...field} />
+                        <Input placeholder="Juan" {...field} value={field.value || ''} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -105,7 +105,7 @@ export default function RegisterPage() {
                     <FormItem>
                       <FormLabel>Apellido</FormLabel>
                       <FormControl>
-                        <Input placeholder="Pérez" {...field} />
+                        <Input placeholder="Pérez" {...field} value={field.value || ''} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -119,7 +119,7 @@ export default function RegisterPage() {
                   <FormItem>
                     <FormLabel>Correo Electrónico</FormLabel>
                     <FormControl>
-                      <Input type="email" placeholder="juan@ejemplo.com" {...field} />
+                      <Input type="email" placeholder="juan@ejemplo.com" {...field} value={field.value || ''} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -132,7 +132,7 @@ export default function RegisterPage() {
                   <FormItem>
                     <FormLabel>Contraseña</FormLabel>
                     <FormControl>
-                      <Input type="password" placeholder="••••••••" {...field} />
+                      <Input type="password" placeholder="••••••••" {...field} value={field.value || ''} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -145,7 +145,7 @@ export default function RegisterPage() {
                     <FormItem>
                       <FormLabel>WhatsApp (Opcional)</FormLabel>
                       <FormControl>
-                        <Input type="tel" placeholder="+54 9 11 1234-5678" {...field} />
+                        <Input type="tel" placeholder="+54 9 11 1234-5678" {...field} value={field.value || ''} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>

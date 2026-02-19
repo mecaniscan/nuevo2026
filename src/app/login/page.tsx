@@ -105,6 +105,7 @@ export default function LoginPage() {
                             type="email" 
                             placeholder="tu@correo.com" 
                             {...field}
+                            value={field.value || ''}
                             className="bg-white/10 border-white/30 focus:bg-white/20 focus:ring-primary text-white"
                         />
                       </FormControl>
@@ -123,6 +124,7 @@ export default function LoginPage() {
                             type="password" 
                             placeholder="••••••••" 
                             {...field} 
+                            value={field.value || ''}
                             className="bg-white/10 border-white/30 focus:bg-white/20 focus:ring-primary text-white"
                         />
                       </FormControl>

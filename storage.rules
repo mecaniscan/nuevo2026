@@ -1,40 +1,35 @@
 rules_version = '2';
 
-// Reglas de seguridad para MecaniScan - Estructura de carpetas /workshops y /vehicles
+// Reglas de seguridad optimizadas para MecaniScan
 service firebase.storage {
   match /b/{bucket}/o {
 
-    // Función auxiliar para comprobar si el usuario está autenticado
     function isSignedIn() {
       return request.auth != null;
     }
 
-    // Función auxiliar para comprobar si el usuario es el propietario de la carpeta
     function isOwner(userId) {
       return isSignedIn() && request.auth.uid == userId;
     }
 
-    // Validación para subidas: archivo menor a 10MB y debe ser una imagen
+    // Validación de imagen: máx 10MB y tipo MIME correcto
     function isValidImage() {
       return request.resource.size < 10 * 1024 * 1024
         && request.resource.contentType.startsWith('image/');
     }
 
-    // Estructura de carpetas para Talleres: /workshops/{userId}/{imageId}
     match /workshops/{userId}/{imageId} {
       allow read: if true;
       allow create, update: if isOwner(userId) && isValidImage();
       allow delete: if isOwner(userId);
     }
 
-    // Estructura de carpetas para Vehículos: /vehicles/{userId}/{imageId}
     match /vehicles/{userId}/{imageId} {
       allow read: if true;
       allow create, update: if isOwner(userId) && isValidImage();
       allow delete: if isOwner(userId);
     }
     
-    // Regla por defecto para otros archivos
     match /{allPaths=**} {
       allow read: if true;
       allow write: if false;
