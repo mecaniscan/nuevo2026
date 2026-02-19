@@ -18,6 +18,7 @@ import { Switch } from '@/components/ui/switch';
 import { v4 as uuidv4 } from 'uuid';
 import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from '@/components/ui/carousel';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Card, CardContent } from '@/components/ui/card';
 import { countries, carBrands } from '@/lib/data';
 import Image from 'next/image';
 

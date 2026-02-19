@@ -27,11 +27,8 @@ export function initializeFirebase() {
  * Uses the storageBucket from config with the proper gs:// protocol.
  */
 export function getSdks(firebaseApp: FirebaseApp) {
-  // Ensure we use the gs:// protocol for the storage bucket
-  const rawBucket = firebaseConfig.storageBucket;
-  const bucketUrl = rawBucket 
-    ? (rawBucket.startsWith('gs://') ? rawBucket : `gs://${rawBucket}`)
-    : undefined;
+  // Use the provided bucket directly for consistency
+  const bucketUrl = 'gs://studio-3565960860-31363.firebasestorage.app';
   
   return {
     firebaseApp,
