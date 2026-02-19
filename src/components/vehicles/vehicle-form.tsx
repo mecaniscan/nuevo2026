@@ -215,7 +215,7 @@ export function VehicleForm() {
         })
         .finally(() => setIsSubmitting(false));
     } catch (error: any) {
-      toast({ variant: 'destructive', title: 'Error de Almacenamiento', description: error.message || 'Hubo un problema al subir las imágenes al servidor.' });
+      toast({ variant: 'destructive', title: 'Error de Almacenamiento', description: error.message || 'Hubo un problema al subir las imágenes.' });
       setIsSubmitting(false);
     }
   }

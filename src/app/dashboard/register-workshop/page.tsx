@@ -145,7 +145,7 @@ export default function RegisterWorkshopPage() {
         toast({ 
             variant: 'destructive', 
             title: 'Error de subida', 
-            description: error.message || 'No se pudo subir la imagen del taller por problemas de permisos.' 
+            description: error.message || 'No se pudo subir la imagen del taller.' 
         });
         setIsSubmitting(false);
     }
@@ -181,7 +181,7 @@ export default function RegisterWorkshopPage() {
         <CardHeader>
           <CardTitle className="text-2xl font-headline text-primary">Registra tu Taller</CardTitle>
           <CardDescription>
-            Completa el siguiente formulario para añadir tu taller a MecaniScan. La foto es opcional.
+            Completa el siguiente formulario para añadir tu taller a MecaniScan.
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -222,7 +222,7 @@ export default function RegisterWorkshopPage() {
                     <FormControl>
                       <Input type="file" accept="image/*" onChange={(e) => onChange(e.target.files)} />
                     </FormControl>
-                    <FormDescription>Sube una imagen principal que represente tu taller (máx 10MB).</FormDescription>
+                    <FormDescription>Sube una imagen principal (máx 10MB).</FormDescription>
                     <FormMessage />
                   </FormItem>
                 )}

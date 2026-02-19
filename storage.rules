@@ -1,7 +1,6 @@
 rules_version = '2';
 
 // Reglas de seguridad para Firebase Storage.
-// Permite lectura pública y escritura restringida por UID.
 service firebase.storage {
   match /b/{bucket}/o {
 
