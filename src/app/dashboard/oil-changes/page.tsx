@@ -6,11 +6,11 @@ import * as z from 'zod';
 import { Button } from '@/components/ui/button';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { useUser, useFirestore, useMemoFirebase, useCollection, FirestorePermissionError, errorEmitter } from '@/firebase';
 import { collection, query, orderBy, serverTimestamp, Timestamp, doc, addDoc, deleteDoc } from 'firebase/firestore';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2, PlusCircle, Droplets, Trash2 } from 'lucide-react';
+import { Loader2, PlusCircle, Droplets, Trash2, ArrowLeft, History } from 'lucide-react';
 import Link from 'next/link';
 import type { OilChange, Vehicle } from '@/lib/types';
 import { format } from 'date-fns';
@@ -29,22 +29,15 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog"
 
-
 const oilChangeSchema = z.object({
-  vehicleId: z.string({ required_error: 'Debes seleccionar un vehículo.' }),
+  vehicleId: z.string({ required_error: 'Debes seleccionar un vehículo.' }).min(1, 'Selecciona un vehículo.'),
   oilType: z.string().min(3, 'El tipo de aceite debe tener al menos 3 caracteres.'),
-  oilPrice: z.preprocess(
-    (a) => parseFloat(z.string().parse(a)),
-    z.number().positive('El precio debe ser un número positivo.')
-  ),
-  mileage: z.preprocess(
-    (a) => parseInt(z.string().parse(a), 10),
-    z.number().positive('El kilometraje debe ser un número positivo.')
-  ),
-  nextChangeMileage: z.preprocess(
-    (a) => parseInt(z.string().parse(a), 10),
-    z.number().positive('El próximo kilometraje debe ser un número positivo.')
-  ),
+  oilPrice: z.coerce.number().positive('El precio debe ser un número positivo.'),
+  mileage: z.coerce.number().positive('El kilometraje debe ser un número positivo.'),
+  nextChangeMileage: z.coerce.number().positive('El próximo kilometraje debe ser un número positivo.'),
+}).refine(data => data.nextChangeMileage > data.mileage, {
+  message: "El kilometraje del próximo cambio debe ser mayor al actual.",
+  path: ["nextChangeMileage"],
 });
 
 export default function OilChangesPage() {
@@ -86,20 +79,15 @@ export default function OilChangesPage() {
 
   function onSubmit(values: z.infer<typeof oilChangeSchema>) {
     if (!user || !firestore || !vehicles) {
-      toast({ variant: 'destructive', title: 'Error', description: 'Debes iniciar sesión y tener vehículos registrados.' });
+      toast({ variant: 'destructive', title: 'Error', description: 'Debes iniciar sesión.' });
       return;
-    }
-
-    if (values.nextChangeMileage <= values.mileage) {
-        form.setError("nextChangeMileage", { type: "manual", message: "El próximo cambio debe ser mayor al kilometraje actual." });
-        return;
     }
 
     setIsSubmitting(true);
 
     const selectedVehicle = vehicles.find(v => v.id === values.vehicleId);
     if (!selectedVehicle) {
-        toast({ variant: 'destructive', title: 'Error', description: 'Vehículo seleccionado no válido.' });
+        toast({ variant: 'destructive', title: 'Error', description: 'Vehículo no válido.' });
         setIsSubmitting(false);
         return;
     }
@@ -107,7 +95,7 @@ export default function OilChangesPage() {
     const oilChangeData = {
         ...values,
         userId: user.uid,
-        vehicleName: `${selectedVehicle.brand} ${selectedVehicle.model}`, // Denormalized name
+        vehicleName: `${selectedVehicle.brand} ${selectedVehicle.model}`,
         date: serverTimestamp(),
       };
 
@@ -117,15 +105,9 @@ export default function OilChangesPage() {
         .then(() => {
             toast({
                 title: '¡Registro Añadido!',
-                description: 'El cambio de aceite ha sido guardado en tu historial.',
+                description: 'El cambio de aceite ha sido guardado.',
             });
-            form.reset({
-              vehicleId: '',
-              oilType: '',
-              oilPrice: 0,
-              mileage: 0,
-              nextChangeMileage: 0,
-            });
+            form.reset();
         })
         .catch(() => {
             errorEmitter.emit('permission-error', new FirestorePermissionError({
@@ -140,18 +122,12 @@ export default function OilChangesPage() {
   }
 
   function handleDeleteOilChange(oilChangeId: string) {
-    if (!user || !firestore) {
-      toast({ variant: 'destructive', title: 'Error', description: 'No autenticado.' });
-      return;
-    }
+    if (!user || !firestore) return;
     const docRef = doc(firestore, `users/${user.uid}/oilChanges`, oilChangeId);
     
     deleteDoc(docRef)
         .then(() => {
-            toast({
-                title: 'Registro Eliminado',
-                description: 'El registro de cambio de aceite ha sido eliminado.',
-            });
+            toast({ title: 'Registro Eliminado', description: 'El historial ha sido actualizado.' });
         })
         .catch(() => {
             errorEmitter.emit('permission-error', new FirestorePermissionError({
@@ -164,12 +140,11 @@ export default function OilChangesPage() {
   const isLoading = isUserLoading || areOilChangesLoading || areVehiclesLoading;
   
   const formatDate = (dateValue: string | Timestamp | undefined) => {
-    if (!dateValue) return 'Pendiente';
+    if (!dateValue) return '---';
     try {
         const date = (dateValue as Timestamp)?.toDate ? (dateValue as Timestamp).toDate() : new Date(dateValue as string);
-        if(isNaN(date.getTime())) throw new Error('Invalid date');
         return format(date, 'dd MMM yyyy', { locale: es });
-    } catch(e) {
+    } catch {
         return "Fecha inválida";
     }
   };
@@ -191,9 +166,7 @@ export default function OilChangesPage() {
             <CardDescription>Debes iniciar sesión para gestionar los cambios de aceite.</CardDescription>
           </CardHeader>
           <CardContent>
-            <Button asChild>
-              <Link href="/dashboard">Ir a Iniciar Sesión</Link>
-            </Button>
+            <Button asChild><Link href="/dashboard">Ir a Iniciar Sesión</Link></Button>
           </CardContent>
         </Card>
       </div>
@@ -201,43 +174,41 @@ export default function OilChangesPage() {
   }
 
   return (
-    <div className="container mx-auto py-12">
+    <div className="container mx-auto py-12 px-4">
       <div className="max-w-6xl mx-auto space-y-8">
         <div className="flex items-center justify-between">
             <div>
-                <h1 className="text-3xl font-bold font-headline text-primary flex items-center gap-2"><Droplets />Registro de Cambios de Aceite</h1>
-                <p className="text-muted-foreground">Añade y consulta el historial de cambios de aceite de tu vehículo.</p>
+                <h1 className="text-3xl font-bold font-headline text-primary flex items-center gap-2"><Droplets /> Cambios de Aceite</h1>
+                <p className="text-muted-foreground">Historial de mantenimiento preventivo.</p>
             </div>
              <Button variant="ghost" asChild>
-                <Link href="/dashboard">Volver al Panel</Link>
+                <Link href="/dashboard"><ArrowLeft className="mr-2 h-4 w-4" /> Volver</Link>
             </Button>
         </div>
 
-        <Card>
-          <CardHeader>
-            <CardTitle>Añadir Nuevo Registro</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <Form {...form}>
-              <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                   <FormField
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+          <Card className="lg:col-span-1 border-primary/20 shadow-lg">
+            <CardHeader className="bg-primary/5 border-b border-primary/10">
+              <CardTitle className="text-xl">Nuevo Registro</CardTitle>
+            </CardHeader>
+            <CardContent className="pt-6">
+              <Form {...form}>
+                <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+                  <FormField
                       control={form.control}
                       name="vehicleId"
                       render={({ field }) => (
                         <FormItem>
                           <FormLabel>Vehículo</FormLabel>
-                          <Select onValueChange={field.onChange} value={field.value || ''} disabled={!vehicles || vehicles.length === 0}>
+                          <Select onValueChange={field.onChange} value={field.value || ''} disabled={!vehicles?.length}>
                             <FormControl>
                               <SelectTrigger>
-                                <SelectValue placeholder={!vehicles || vehicles.length === 0 ? "Primero registra un vehículo" : "Selecciona un vehículo"} />
+                                <SelectValue placeholder={!vehicles?.length ? "No hay vehículos" : "Seleccionar..."} />
                               </SelectTrigger>
                             </FormControl>
                             <SelectContent>
-                              {vehicles?.map(vehicle => (
-                                <SelectItem key={vehicle.id} value={vehicle.id}>
-                                  {vehicle.brand} {vehicle.model} ({vehicle.year})
-                                </SelectItem>
+                              {vehicles?.map(v => (
+                                <SelectItem key={v.id} value={v.id}>{v.brand} {v.model}</SelectItem>
                               ))}
                             </SelectContent>
                           </Select>
@@ -251,7 +222,7 @@ export default function OilChangesPage() {
                     render={({ field }) => (
                       <FormItem>
                         <FormLabel>Tipo de Aceite</FormLabel>
-                        <FormControl><Input placeholder="Ej: 10W-40 Sintético" {...field} value={field.value || ''} /></FormControl>
+                        <FormControl><Input placeholder="Ej: 10W-40" {...field} value={field.value || ''} /></FormControl>
                         <FormMessage />
                       </FormItem>
                     )}
@@ -261,8 +232,8 @@ export default function OilChangesPage() {
                     name="oilPrice"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Precio del Aceite ($)</FormLabel>
-                        <FormControl><Input type="number" step="0.01" placeholder="75.00" {...field} value={field.value || ''} /></FormControl>
+                        <FormLabel>Precio ($)</FormLabel>
+                        <FormControl><Input type="number" step="0.01" {...field} value={field.value || ''} /></FormControl>
                         <FormMessage />
                       </FormItem>
                     )}
@@ -272,8 +243,8 @@ export default function OilChangesPage() {
                     name="mileage"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Kilometraje Actual (km)</FormLabel>
-                        <FormControl><Input type="number" placeholder="150000" {...field} value={field.value || ''} /></FormControl>
+                        <FormLabel>KM Actual</FormLabel>
+                        <FormControl><Input type="number" {...field} value={field.value || ''} /></FormControl>
                         <FormMessage />
                       </FormItem>
                     )}
@@ -283,97 +254,82 @@ export default function OilChangesPage() {
                     name="nextChangeMileage"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Próximo Cambio (km)</FormLabel>
-                        <FormControl><Input type="number" placeholder="160000" {...field} value={field.value || ''} /></FormControl>
+                        <FormLabel>Próximo Cambio (KM)</FormLabel>
+                        <FormControl><Input type="number" {...field} value={field.value || ''} /></FormControl>
                         <FormMessage />
                       </FormItem>
                     )}
                   />
-                </div>
-                <Button type="submit" disabled={isSubmitting || !vehicles || vehicles.length === 0}>
-                  {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                  <PlusCircle className="mr-2" />
-                  Guardar Registro
-                </Button>
-                {(!vehicles || vehicles.length === 0) && !isLoading && (
-                    <p className="text-sm text-muted-foreground">Debes <Link href="/dashboard/my-vehicles" className="underline">registrar un vehículo</Link> antes de añadir un cambio de aceite.</p>
-                )}
-              </form>
-            </Form>
-          </CardContent>
-        </Card>
-        
-        <Card>
-            <CardHeader>
-                <CardTitle>Historial de Cambios</CardTitle>
-            </CardHeader>
-            <CardContent>
-                {isLoading ? (
-                     <div className="flex h-40 items-center justify-center"><Loader2 className="w-12 h-12 animate-spin text-primary" /></div>
-                ) : (
-                    <Table>
-                        <TableHeader>
-                            <TableRow>
-                                <TableHead>Fecha</TableHead>
-                                <TableHead>Vehículo</TableHead>
-                                <TableHead>Tipo de Aceite</TableHead>
-                                <TableHead>Kilometraje</TableHead>
-                                <TableHead>Próximo Cambio</TableHead>
-                                <TableHead className="text-right">Precio</TableHead>
-                                <TableHead className="text-right">Acciones</TableHead>
-                            </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                            {oilChanges && oilChanges.length > 0 ? (
-                                oilChanges.map((change) => (
-                                    <TableRow key={change.id}>
-                                        <TableCell>{formatDate(change.date)}</TableCell>
-                                        <TableCell className="font-medium">{change.vehicleName}</TableCell>
-                                        <TableCell>{change.oilType}</TableCell>
-                                        <TableCell>{change.mileage.toLocaleString()} km</TableCell>
-                                        <TableCell>{change.nextChangeMileage.toLocaleString()} km</TableCell>
-                                        <TableCell className="text-right">${change.oilPrice.toFixed(2)}</TableCell>
-                                        <TableCell className="text-right">
-                                            <AlertDialog>
-                                                <AlertDialogTrigger asChild>
-                                                    <Button variant="ghost" size="icon" className="text-destructive hover:bg-destructive/10">
-                                                        <Trash2 className="h-4 w-4" />
-                                                    </Button>
-                                                </AlertDialogTrigger>
-                                                <AlertDialogContent>
-                                                    <AlertDialogHeader>
-                                                        <AlertDialogTitle>¿Estás seguro?</AlertDialogTitle>
-                                                        <AlertDialogDescription>
-                                                            Esta acción no se puede deshacer. Esto eliminará permanentemente
-                                                            el registro del cambio de aceite.
-                                                        </AlertDialogDescription>
-                                                    </AlertDialogHeader>
-                                                    <AlertDialogFooter>
-                                                        <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                                                        <AlertDialogAction
-                                                            onClick={() => handleDeleteOilChange(change.id)}
-                                                            className="bg-destructive hover:bg-destructive/90"
-                                                        >
-                                                            Eliminar
-                                                        </AlertDialogAction>
-                                                    </AlertDialogFooter>
-                                                </AlertDialogContent>
-                                            </AlertDialog>
-                                        </TableCell>
-                                    </TableRow>
-                                ))
-                            ) : (
-                                <TableRow>
-                                    <TableCell colSpan={7} className="text-center h-24">
-                                        No hay registros de cambios de aceite.
-                                    </TableCell>
-                                </TableRow>
-                            )}
-                        </TableBody>
-                    </Table>
-                )}
+                  <Button type="submit" className="w-full" disabled={isSubmitting || !vehicles?.length}>
+                    {isSubmitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <PlusCircle className="mr-2 h-4 w-4" />}
+                    Guardar Registro
+                  </Button>
+                </form>
+              </Form>
             </CardContent>
-        </Card>
+          </Card>
+          
+          <Card className="lg:col-span-2 shadow-lg">
+              <CardHeader className="flex flex-row items-center gap-2">
+                  <History className="h-5 w-5 text-primary" />
+                  <CardTitle>Historial Reciente</CardTitle>
+              </CardHeader>
+              <CardContent>
+                  {isLoading ? (
+                       <div className="flex h-60 items-center justify-center"><Loader2 className="w-10 h-10 animate-spin text-primary/50" /></div>
+                  ) : (
+                      <Table>
+                          <TableHeader>
+                              <TableRow>
+                                  <TableHead>Fecha</TableHead>
+                                  <TableHead>Vehículo</TableHead>
+                                  <TableHead>Aceite</TableHead>
+                                  <TableHead>Próximo (KM)</TableHead>
+                                  <TableHead className="text-right">Acción</TableHead>
+                              </TableRow>
+                          </TableHeader>
+                          <TableBody>
+                              {oilChanges?.length ? (
+                                  oilChanges.map((change) => (
+                                      <TableRow key={change.id} className="hover:bg-muted/30">
+                                          <TableCell className="text-xs">{formatDate(change.date)}</TableCell>
+                                          <TableCell className="font-medium text-xs">{change.vehicleName}</TableCell>
+                                          <TableCell className="text-xs">{change.oilType}</TableCell>
+                                          <TableCell className="text-xs font-bold text-orange-500">{change.nextChangeMileage.toLocaleString()}</TableCell>
+                                          <TableCell className="text-right">
+                                              <AlertDialog>
+                                                  <AlertDialogTrigger asChild>
+                                                      <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-destructive hover:bg-destructive/10">
+                                                          <Trash2 className="h-4 w-4" />
+                                                      </Button>
+                                                  </AlertDialogTrigger>
+                                                  <AlertDialogContent>
+                                                      <AlertDialogHeader>
+                                                          <AlertDialogTitle>¿Eliminar registro?</AlertDialogTitle>
+                                                          <AlertDialogDescription>Esta acción es permanente y no se puede deshacer.</AlertDialogDescription>
+                                                      </AlertDialogHeader>
+                                                      <AlertDialogFooter>
+                                                          <AlertDialogCancel>No, cancelar</AlertDialogCancel>
+                                                          <AlertDialogAction onClick={() => handleDeleteOilChange(change.id)} className="bg-destructive hover:bg-destructive/90">Sí, eliminar</AlertDialogAction>
+                                                      </AlertDialogFooter>
+                                                  </AlertDialogContent>
+                                              </AlertDialog>
+                                          </TableCell>
+                                      </TableRow>
+                                  ))
+                              ) : (
+                                  <TableRow>
+                                      <TableCell colSpan={5} className="text-center h-40 text-muted-foreground italic">
+                                          No hay registros cargados.
+                                      </TableCell>
+                                  </TableRow>
+                              )}
+                          </TableBody>
+                      </Table>
+                  )}
+              </CardContent>
+          </Card>
+        </div>
       </div>
     </div>
   );

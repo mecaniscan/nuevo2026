@@ -11,7 +11,7 @@ import { useUser, useFirestore, useMemoFirebase, useCollection, FirestorePermiss
 import { collection, query, where, doc, writeBatch } from 'firebase/firestore';
 import { useToast } from '@/hooks/use-toast';
 import { useRouter } from 'next/navigation';
-import { Loader2, PlusCircle, Trash2, AlertCircle } from 'lucide-react';
+import { Loader2, PlusCircle, Trash2, AlertCircle, Save } from 'lucide-react';
 import Link from 'next/link';
 import type { Workshop, Service } from '@/lib/types';
 import { Textarea } from '@/components/ui/textarea';
@@ -21,10 +21,7 @@ const serviceSchema = z.object({
   id: z.string().optional(),
   name: z.string().min(3, 'El nombre debe tener al menos 3 caracteres.'),
   description: z.string().optional(),
-  price: z.union([z.string(), z.number()]).transform((val) => {
-    const num = typeof val === 'string' ? parseFloat(val) : val;
-    return isNaN(num) ? 0 : num;
-  }).pipe(z.number().positive('El precio debe ser un número positivo.')),
+  price: z.coerce.number().positive('El precio debe ser un número positivo.'),
 });
 
 const formSchema = z.object({
@@ -155,15 +152,15 @@ export default function EditServicesPage() {
   }
   
   return (
-    <div className="container mx-auto py-12">
-        <Card className="max-w-4xl mx-auto">
-            <CardHeader>
-            <CardTitle className="text-2xl font-headline text-primary">Gestionar Servicios de "{workshop.name}"</CardTitle>
-            <CardDescription>
-                Añade hasta un máximo de 3 servicios que tu taller ofrece a los clientes.
-            </CardDescription>
+    <div className="container mx-auto py-12 px-4">
+        <Card className="max-w-4xl mx-auto shadow-xl border-primary/20">
+            <CardHeader className="bg-primary/5 border-b border-primary/10">
+                <CardTitle className="text-2xl font-headline text-primary">Gestionar Servicios de "{workshop.name}"</CardTitle>
+                <CardDescription>
+                    Define los servicios principales que ofreces. Máximo 3 por taller.
+                </CardDescription>
             </CardHeader>
-            <CardContent>
+            <CardContent className="pt-8">
                 <Form {...form}>
                     <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
                         {fields.length >= 3 && (
@@ -171,22 +168,22 @@ export default function EditServicesPage() {
                                 <AlertCircle className="h-4 w-4" />
                                 <AlertTitle>Límite Alcanzado</AlertTitle>
                                 <AlertDescription>
-                                    Has alcanzado el máximo de 3 servicios permitidos por taller.
+                                    Has alcanzado el máximo de 3 servicios permitidos.
                                 </AlertDescription>
                             </Alert>
                         )}
                         
                         <div className="space-y-6">
                             {fields.map((field, index) => (
-                                <Card key={field.id} className="p-4 relative border-primary/20 bg-card/50">
-                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <Card key={field.id} className="p-4 relative border-primary/10 bg-card/30 group hover:border-primary/30 transition-colors">
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pr-10">
                                         <FormField
                                             control={form.control}
                                             name={`services.${index}.name`}
                                             render={({ field }) => (
                                                 <FormItem>
-                                                <FormLabel>Nombre del Servicio</FormLabel>
-                                                <FormControl><Input placeholder="Ej: Cambio de Aceite" {...field} value={field.value || ''} /></FormControl>
+                                                <FormLabel className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Nombre del Servicio</FormLabel>
+                                                <FormControl><Input placeholder="Ej: Cambio de Aceite" {...field} value={field.value || ''} className="bg-background/50" /></FormControl>
                                                 <FormMessage />
                                                 </FormItem>
                                             )}
@@ -196,8 +193,8 @@ export default function EditServicesPage() {
                                             name={`services.${index}.price`}
                                             render={({ field }) => (
                                                 <FormItem>
-                                                <FormLabel>Precio ($)</FormLabel>
-                                                <FormControl><Input type="number" step="0.01" placeholder="50.00" {...field} value={field.value || ''} /></FormControl>
+                                                <FormLabel className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Precio ($)</FormLabel>
+                                                <FormControl><Input type="number" step="0.01" placeholder="50.00" {...field} value={field.value || ''} className="bg-background/50" /></FormControl>
                                                 <FormMessage />
                                                 </FormItem>
                                             )}
@@ -208,15 +205,21 @@ export default function EditServicesPage() {
                                                 name={`services.${index}.description`}
                                                 render={({ field }) => (
                                                     <FormItem>
-                                                    <FormLabel>Descripción (Opcional)</FormLabel>
-                                                    <FormControl><Textarea rows={2} placeholder="Describe brevemente el servicio." {...field} value={field.value || ''} /></FormControl>
+                                                    <FormLabel className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Descripción (Opcional)</FormLabel>
+                                                    <FormControl><Textarea rows={2} placeholder="Describe brevemente el servicio." {...field} value={field.value || ''} className="bg-background/50" /></FormControl>
                                                     <FormMessage />
                                                     </FormItem>
                                                 )}
                                             />
                                         </div>
                                     </div>
-                                    <Button type="button" variant="ghost" size="icon" className="absolute top-2 right-2 text-destructive hover:bg-destructive/10" onClick={() => remove(index)}>
+                                    <Button 
+                                      type="button" 
+                                      variant="ghost" 
+                                      size="icon" 
+                                      className="absolute top-4 right-4 text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors" 
+                                      onClick={() => remove(index)}
+                                    >
                                         <Trash2 className="h-5 w-5" />
                                         <span className="sr-only">Eliminar servicio</span>
                                     </Button>
@@ -224,22 +227,24 @@ export default function EditServicesPage() {
                             ))}
                         </div>
 
-                        <Button 
-                            type="button" 
-                            variant="outline" 
-                            disabled={fields.length >= 3}
-                            onClick={() => append({ name: '', description: '', price: 10 })}
-                        >
-                            <PlusCircle className="mr-2 h-4 w-4" />
-                            {fields.length >= 3 ? 'Límite de Servicios Alcanzado' : 'Añadir Nuevo Servicio'}
-                        </Button>
+                        {fields.length < 3 && (
+                          <Button 
+                              type="button" 
+                              variant="outline" 
+                              className="w-full border-dashed border-2 py-8 hover:bg-primary/5 hover:border-primary/30 transition-all"
+                              onClick={() => append({ name: '', description: '', price: 10 })}
+                          >
+                              <PlusCircle className="mr-2 h-5 w-5" />
+                              Añadir Nuevo Servicio
+                          </Button>
+                        )}
                         
-                        <div className="flex gap-4 pt-4 border-t">
-                            <Button type="submit" disabled={isSubmitting}>
-                                {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                                Guardar Servicios ({fields.length}/3)
+                        <div className="flex flex-col sm:flex-row gap-4 pt-6 border-t">
+                            <Button type="submit" className="flex-1 h-12 text-lg" disabled={isSubmitting}>
+                                {isSubmitting ? <Loader2 className="mr-2 h-5 w-5 animate-spin" /> : <Save className="mr-2 h-5 w-5" />}
+                                {isSubmitting ? 'Guardando...' : `Guardar Servicios (${fields.length}/3)`}
                             </Button>
-                            <Button variant="ghost" asChild>
+                            <Button variant="ghost" className="h-12" asChild>
                                 <Link href="/dashboard">Cancelar</Link>
                             </Button>
                         </div>
