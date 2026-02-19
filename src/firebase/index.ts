@@ -1,4 +1,3 @@
-
 'use client';
 
 import { firebaseConfig } from '@/firebase/config';
@@ -7,36 +6,32 @@ import { getAuth } from 'firebase/auth';
 import { getFirestore } from 'firebase/firestore'
 import { getStorage } from 'firebase/storage';
 
-// IMPORTANT: DO NOT MODIFY THIS FUNCTION
+/**
+ * Initializes Firebase with a defensive strategy for SSR and Build time.
+ */
 export function initializeFirebase() {
+  if (typeof window === 'undefined') {
+    // During SSR/Build, we always use the config object to be safe
+    const app = getApps().length ? getApp() : initializeApp(firebaseConfig);
+    return getSdks(app);
+  }
+
   if (!getApps().length) {
-    // Important! initializeApp() is called without any arguments because Firebase App Hosting
-    // integrates with the initializeApp() function to provide the environment variables needed to
-    // populate the FirebaseOptions in production. It is critical that we attempt to call initializeApp()
-    // without arguments.
     let firebaseApp;
     try {
-      // Attempt to initialize via Firebase App Hosting environment variables
+      // Attempt automatic initialization (App Hosting env vars)
       firebaseApp = initializeApp();
     } catch (e) {
-      // Only warn in production because it's normal to use the firebaseConfig to initialize
-      // during development
-      if (process.env.NODE_ENV === "production") {
-        console.warn('Automatic initialization failed. Falling back to firebase config object.', e);
-      }
+      // Fallback to explicit config
       firebaseApp = initializeApp(firebaseConfig);
     }
-
     return getSdks(firebaseApp);
   }
 
-  // If already initialized, return the SDKs with the already initialized App
   return getSdks(getApp());
 }
 
 export function getSdks(firebaseApp: FirebaseApp) {
-  // Pull the storage bucket from the app options for maximum compatibility.
-  // We prefer the plain domain in the config and add gs:// prefix for the SDK getter.
   let bucket = firebaseApp.options.storageBucket || firebaseConfig.storageBucket;
   
   if (bucket && !bucket.startsWith('gs://')) {

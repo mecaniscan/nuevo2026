@@ -1,12 +1,12 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect } from 'react';
 import { useUser, useFirestore, useMemoFirebase, useCollection, useAuth, errorEmitter, FirestorePermissionError } from '@/firebase';
 import { collection, query, where, doc, getDocs, writeBatch } from 'firebase/firestore';
 import type { Workshop } from '@/lib/types';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Loader2, Calendar, Wrench, Trash2, Settings, Pencil, LogOut, Lock, Building, ArrowRight, Droplets, Car, Heart } from 'lucide-react';
+import { Loader2, Calendar, Wrench, Trash2, Settings, Pencil, LogOut, Building, ArrowRight, Droplets, Car, Heart } from 'lucide-react';
 import Link from 'next/link';
 import { useToast } from '@/hooks/use-toast';
 import {
@@ -24,7 +24,15 @@ import { signOut } from 'firebase/auth';
 import { cn } from '@/lib/utils';
 import { useRouter } from 'next/navigation';
 
-const ActionButton = ({ href, icon, title, description, disabled = false }: { href: string; icon: React.ReactNode; title: string; description: string, disabled?: boolean }) => (
+interface ActionButtonProps {
+  href: string;
+  icon: React.ReactNode;
+  title: string;
+  description: string;
+  disabled?: boolean;
+}
+
+const ActionButton = ({ href, icon, title, description, disabled = false }: ActionButtonProps) => (
   <Link href={!disabled ? href : '#'} className={cn("group block", disabled && "pointer-events-none opacity-50")}>
       <Card className="h-full transition-all duration-300 hover:border-primary hover:shadow-xl hover:-translate-y-1">
           <CardHeader className="flex flex-row items-center gap-4">
