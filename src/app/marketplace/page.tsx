@@ -6,11 +6,10 @@ import type { Vehicle } from '@/lib/types';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Loader2, MapPin, Car, Search, Info, FileText } from 'lucide-react';
+import { Loader2, MapPin, Car, Search } from 'lucide-react';
 import { Header } from '@/components/layout/header';
 import { Footer } from '@/components/layout/footer';
 import Image from 'next/image';
-import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from '@/components/ui/carousel';
 
@@ -21,7 +20,6 @@ const WhatsappIcon = () => (
 
 export default function MarketplacePage() {
   const firestore = useFirestore();
-  const router = useRouter();
   const [countryFilter, setCountryFilter] = useState('');
   const [brandFilter, setBrandFilter] = useState('');
   
@@ -49,10 +47,6 @@ function VehicleCard({ vehicle }: { vehicle: Vehicle }) {
       const whatsappUrl = `https://wa.me/${vehicle.sellerWhatsapp.replace(/\D/g, '')}?text=${encodeURIComponent(message)}`;
       window.open(whatsappUrl, '_blank');
     }
-  };
-
-  const handleViewCertificate = () => {
-    router.push(`/validate-certificate/${vehicle.certificateNumber}`);
   };
 
   return (
@@ -98,16 +92,13 @@ function VehicleCard({ vehicle }: { vehicle: Vehicle }) {
                 <p className="text-sm font-medium text-foreground">Vendedor:</p>
                 <p className="text-sm text-muted-foreground">{vehicle.sellerName || 'No disponible'}</p>
             </div>
-             <div className="w-full flex flex-col sm:flex-row gap-2">
-                 <Button variant="outline" className="flex-1" onClick={handleViewCertificate}>
-                    <FileText className="mr-2 h-4 w-4" /> Ver Certificado
-                 </Button>
+             <div className="w-full">
                 {vehicle.sellerWhatsapp ? (
-                    <Button className="flex-1" onClick={handleContact}>
-                        <WhatsappIcon /> Contactar
+                    <Button className="w-full" onClick={handleContact}>
+                        <WhatsappIcon /> Contactar al Vendedor
                     </Button>
                 ) : (
-                     <Button className="flex-1" variant="secondary" disabled>
+                     <Button className="w-full" variant="secondary" disabled>
                         Contacto no disponible
                     </Button>
                 )}
