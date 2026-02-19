@@ -11,7 +11,7 @@ import { useUser, useFirestore, useMemoFirebase, useCollection, FirestorePermiss
 import { collection, query, where, doc, writeBatch } from 'firebase/firestore';
 import { useToast } from '@/hooks/use-toast';
 import { useRouter } from 'next/navigation';
-import { Loader2, PlusCircle, Trash2, AlertCircle, Save } from 'lucide-react';
+import { Loader2, PlusCircle, Trash2, AlertCircle, Save, Info } from 'lucide-react';
 import Link from 'next/link';
 import type { Workshop, Service } from '@/lib/types';
 import { Textarea } from '@/components/ui/textarea';
@@ -22,7 +22,7 @@ const serviceSchema = z.object({
   id: z.string().optional(),
   name: z.string().min(3, 'El nombre debe tener al menos 3 caracteres.'),
   description: z.string().optional(),
-  price: z.coerce.number({ invalid_type_error: 'El precio debe ser un número.' }).positive('El precio debe ser un número positivo.'),
+  price: z.coerce.number({ invalid_type_error: 'El precio debe ser un número.' }).min(0, 'El precio no puede ser negativo.'),
 });
 
 const formSchema = z.object({
@@ -63,17 +63,21 @@ export default function EditServicesPage() {
     name: "services"
   });
 
+  // Sync services from DB to form
   useEffect(() => {
-    if (currentServices && currentServices.length > 0) {
+    if (currentServices) {
       const sanitizedServices = currentServices.map(s => ({
         id: s.id,
         name: s.name || '',
         description: s.description || '',
         price: s.price || 0,
       }));
-      replace(sanitizedServices);
+      // Only replace if the form hasn't been edited or to initialize
+      if (form.getValues('services').length === 0 && sanitizedServices.length > 0) {
+        replace(sanitizedServices);
+      }
     }
-  }, [currentServices, replace]);
+  }, [currentServices, replace, form]);
 
   function onSubmit(values: z.infer<typeof formSchema>) {
     if (!user || !firestore || !workshop) {
@@ -86,8 +90,10 @@ export default function EditServicesPage() {
     const batch = writeBatch(firestore);
     const servicesColRef = collection(firestore, `workshops/${workshop.id}/services`);
     
+    // Track current form IDs to know what to keep/update
     const formIds = new Set(values.services.map(s => s.id).filter(Boolean));
 
+    // Delete services that are not in the form anymore
     currentServices?.forEach(serviceInDb => {
       if (!formIds.has(serviceInDb.id)) {
           const docRef = doc(servicesColRef, serviceInDb.id);
@@ -95,6 +101,7 @@ export default function EditServicesPage() {
       }
     });
     
+    // Add or update services from the form
     values.services.forEach(service => {
       const docRef = service.id ? doc(servicesColRef, service.id) : doc(servicesColRef);
       const { id, ...serviceData } = service; 
@@ -104,7 +111,7 @@ export default function EditServicesPage() {
     batch.commit().then(() => {
         toast({
             title: '¡Servicios Actualizados!',
-            description: 'Tu lista de servicios ha sido guardada.',
+            description: 'Tu lista de servicios ha sido guardada exitosamente.',
         });
         router.push('/dashboard');
     }).catch((err) => {
@@ -138,13 +145,17 @@ export default function EditServicesPage() {
   if (!workshop) {
      return (
       <div className="container mx-auto py-12 flex items-center justify-center">
-        <Card className="w-full max-w-lg text-center">
+        <Card className="w-full max-w-lg text-center border-dashed">
           <CardHeader>
+            <div className="mx-auto bg-primary/10 p-3 rounded-full w-fit mb-4">
+              <Info className="h-8 w-8 text-primary" />
+            </div>
             <CardTitle>No tienes un taller registrado</CardTitle>
-            <CardDescription>Para gestionar servicios, primero debes registrar un taller.</CardDescription>
+            <CardDescription>Para gestionar servicios, primero debes registrar tu taller en la plataforma.</CardDescription>
           </CardHeader>
           <CardContent className="flex flex-col gap-4">
-            <Button asChild><Link href="/dashboard/register-workshop">Registrar Taller</Link></Button>
+            <Button asChild className="h-12 text-lg"><Link href="/dashboard/register-workshop">Registrar mi Taller Ahora</Link></Button>
+            <Button variant="ghost" asChild><Link href="/dashboard">Volver al Panel</Link></Button>
           </CardContent>
         </Card>
       </div>
@@ -153,18 +164,20 @@ export default function EditServicesPage() {
   
   return (
     <div className="container mx-auto py-12 px-4">
-        <Card className="max-w-4xl mx-auto shadow-xl border-primary/20">
+        <Card className="max-w-4xl mx-auto shadow-xl border-primary/20 bg-card/50 backdrop-blur-sm">
             <CardHeader className="bg-primary/5 border-b border-primary/10">
-                <div className="flex items-center justify-between">
+                <div className="flex items-center justify-between flex-wrap gap-4">
                   <div className="space-y-1">
-                    <CardTitle className="text-2xl font-headline text-primary">Gestionar Servicios de "{workshop.name}"</CardTitle>
+                    <CardTitle className="text-2xl font-headline text-primary">Servicios de "{workshop.name}"</CardTitle>
                     <CardDescription>
-                        Define los servicios principales que ofreces. Máximo 3 por taller.
+                        Configura los servicios principales de tu taller. Máximo 3 permitidos.
                     </CardDescription>
                   </div>
-                  <Badge variant="outline" className="text-lg py-1 px-3">
-                    {fields.length} / 3
-                  </Badge>
+                  <div className="flex items-center gap-3">
+                    <Badge variant={fields.length >= 3 ? "destructive" : "secondary"} className="text-sm py-1 px-3">
+                      {fields.length} / 3 Servicios
+                    </Badge>
+                  </div>
                 </div>
             </CardHeader>
             <CardContent className="pt-8">
@@ -173,24 +186,34 @@ export default function EditServicesPage() {
                         {fields.length >= 3 && (
                             <Alert variant="default" className="border-orange-500 bg-orange-500/10 text-orange-500">
                                 <AlertCircle className="h-4 w-4" />
-                                <AlertTitle>Límite Alcanzado</AlertTitle>
+                                <AlertTitle>Capacidad Máxima</AlertTitle>
                                 <AlertDescription>
-                                    Has alcanzado el máximo de 3 servicios permitidos.
+                                    Has alcanzado el límite de 3 servicios. Elimina uno para añadir otro.
                                 </AlertDescription>
                             </Alert>
+                        )}
+
+                        {Object.keys(form.formState.errors).length > 0 && (
+                          <Alert variant="destructive">
+                            <AlertCircle className="h-4 w-4" />
+                            <AlertTitle>Error de Validación</AlertTitle>
+                            <AlertDescription>
+                              Por favor revisa los campos marcados en rojo antes de guardar.
+                            </AlertDescription>
+                          </Alert>
                         )}
                         
                         <div className="space-y-6">
                             {fields.map((field, index) => (
-                                <Card key={field.id} className="p-4 relative border-primary/10 bg-card/30 group hover:border-primary/30 transition-colors">
-                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pr-10">
+                                <Card key={field.id} className="p-6 relative border-primary/10 bg-background/40 group hover:border-primary/30 transition-all duration-300">
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pr-12">
                                         <FormField
                                             control={form.control}
                                             name={`services.${index}.name`}
                                             render={({ field }) => (
                                                 <FormItem>
-                                                <FormLabel className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Nombre del Servicio</FormLabel>
-                                                <FormControl><Input placeholder="Ej: Cambio de Aceite" {...field} value={field.value || ''} className="bg-background/50" /></FormControl>
+                                                <FormLabel className="text-xs font-bold uppercase tracking-widest text-primary/70">Nombre del Servicio</FormLabel>
+                                                <FormControl><Input placeholder="Ej: Cambio de Aceite Sintético" {...field} value={field.value || ''} /></FormControl>
                                                 <FormMessage />
                                                 </FormItem>
                                             )}
@@ -200,8 +223,8 @@ export default function EditServicesPage() {
                                             name={`services.${index}.price`}
                                             render={({ field }) => (
                                                 <FormItem>
-                                                <FormLabel className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Precio ($)</FormLabel>
-                                                <FormControl><Input type="number" step="0.01" placeholder="50.00" {...field} value={field.value || ''} className="bg-background/50" /></FormControl>
+                                                <FormLabel className="text-xs font-bold uppercase tracking-widest text-primary/70">Precio sugerido ($)</FormLabel>
+                                                <FormControl><Input type="number" step="0.01" placeholder="0.00" {...field} value={field.value ?? ''} /></FormControl>
                                                 <FormMessage />
                                                 </FormItem>
                                             )}
@@ -212,8 +235,8 @@ export default function EditServicesPage() {
                                                 name={`services.${index}.description`}
                                                 render={({ field }) => (
                                                     <FormItem>
-                                                    <FormLabel className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Descripción (Opcional)</FormLabel>
-                                                    <FormControl><Textarea rows={2} placeholder="Describe brevemente el servicio." {...field} value={field.value || ''} className="bg-background/50" /></FormControl>
+                                                    <FormLabel className="text-xs font-bold uppercase tracking-widest text-primary/70">Detalles adicionales</FormLabel>
+                                                    <FormControl><Textarea rows={2} placeholder="Explica brevemente qué incluye este servicio." {...field} value={field.value || ''} /></FormControl>
                                                     <FormMessage />
                                                     </FormItem>
                                                 )}
@@ -224,11 +247,11 @@ export default function EditServicesPage() {
                                       type="button" 
                                       variant="ghost" 
                                       size="icon" 
-                                      className="absolute top-4 right-4 text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors" 
+                                      className="absolute top-4 right-4 text-muted-foreground hover:text-destructive hover:bg-destructive/10" 
                                       onClick={() => remove(index)}
                                     >
                                         <Trash2 className="h-5 w-5" />
-                                        <span className="sr-only">Eliminar servicio</span>
+                                        <span className="sr-only">Eliminar</span>
                                     </Button>
                                 </Card>
                             ))}
@@ -238,25 +261,25 @@ export default function EditServicesPage() {
                           <Button 
                               type="button" 
                               variant="outline" 
-                              className="w-full border-dashed border-2 py-8 hover:bg-primary/5 hover:border-primary/30 transition-all"
-                              onClick={() => append({ name: '', description: '', price: 10 })}
+                              className="w-full border-dashed border-2 py-10 hover:bg-primary/5 hover:border-primary/30 transition-all group"
+                              onClick={() => append({ name: '', description: '', price: 0 })}
                           >
-                              <PlusCircle className="mr-2 h-5 w-5" />
-                              Añadir Nuevo Servicio
+                              <PlusCircle className="mr-2 h-6 w-6 group-hover:scale-110 transition-transform" />
+                              <span className="text-lg font-semibold">Añadir Nuevo Servicio</span>
                           </Button>
                         )}
                         
-                        <div className="flex flex-col sm:flex-row gap-4 pt-6 border-t">
+                        <div className="flex flex-col sm:flex-row gap-4 pt-8 border-t">
                             <Button 
                                 type="submit" 
-                                className="flex-1 h-12 text-lg font-bold" 
+                                className="flex-1 h-14 text-xl font-bold shadow-lg" 
                                 disabled={isSubmitting}
                             >
-                                {isSubmitting ? <Loader2 className="mr-2 h-5 w-5 animate-spin" /> : <Save className="mr-2 h-5 w-5" />}
-                                {isSubmitting ? 'Guardando...' : 'Guardar Todos los Cambios'}
+                                {isSubmitting ? <Loader2 className="mr-2 h-6 w-6 animate-spin" /> : <Save className="mr-2 h-6 w-6" />}
+                                {isSubmitting ? 'Guardando...' : 'Guardar Servicios'}
                             </Button>
-                            <Button variant="ghost" className="h-12" asChild>
-                                <Link href="/dashboard">Volver al Panel</Link>
+                            <Button variant="outline" className="h-14 px-8" asChild>
+                                <Link href="/dashboard">Cancelar</Link>
                             </Button>
                         </div>
                     </form>
