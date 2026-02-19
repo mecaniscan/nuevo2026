@@ -33,13 +33,14 @@ export function initializeFirebase() {
 }
 
 export function getSdks(firebaseApp: FirebaseApp) {
-  // Rely on the default bucket configured in the Firebase App options.
-  // This is the most robust way to initialize Storage on the client.
+  // Rely on the explicit bucket configured in the Firebase App options.
+  // Using the gs:// prefix ensures full connectivity with the storage service.
+  const bucketUrl = `gs://${firebaseConfig.storageBucket}`;
   return {
     firebaseApp,
     auth: getAuth(firebaseApp),
     firestore: getFirestore(firebaseApp),
-    storage: getStorage(firebaseApp)
+    storage: getStorage(firebaseApp, bucketUrl)
   };
 }
 
