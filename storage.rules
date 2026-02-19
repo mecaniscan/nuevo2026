@@ -5,26 +5,26 @@ service firebase.storage {
   match /b/{bucket}/o {
 
     // Función auxiliar para comprobar si el usuario está autenticado
-    function isAuth() {
+    function isSignedIn() {
       return request.auth != null;
     }
 
     // Función auxiliar para comprobar si el usuario es el propietario de la carpeta
     function isOwner(userId) {
-      return isAuth() && request.auth.uid == userId;
+      return isSignedIn() && request.auth.uid == userId;
     }
 
-    // Validación para subidas: archivo menor a 5MB y debe ser una imagen
+    // Validación para subidas: archivo menor a 10MB y debe ser una imagen
     function isValidImage() {
-      return request.resource.size < 5 * 1024 * 1024
-        && request.resource.contentType.matches('image/.*');
+      return request.resource.size < 10 * 1024 * 1024
+        && request.resource.contentType.startsWith('image/');
     }
 
     // Reglas para las fotos de los Talleres
     match /workshops/{userId}/{imageId} {
-      // Las fotos de los talleres son públicas para que los clientes puedan verlas
+      // Las fotos de los talleres son públicas
       allow read: if true;
-      // Solo el dueño del taller puede subir, actualizar o borrar sus fotos
+      // Solo el dueño puede gestionar sus fotos
       allow create, update: if isOwner(userId) && isValidImage();
       allow delete: if isOwner(userId);
     }
@@ -33,7 +33,7 @@ service firebase.storage {
     match /vehicles/{userId}/{imageId} {
       // Las fotos de los vehículos son públicas (necesario para el Marketplace)
       allow read: if true;
-      // Solo el dueño del vehículo puede gestionar sus fotos
+      // Solo el dueño puede gestionar sus fotos
       allow create, update: if isOwner(userId) && isValidImage();
       allow delete: if isOwner(userId);
     }

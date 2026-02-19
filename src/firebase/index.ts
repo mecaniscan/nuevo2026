@@ -1,7 +1,7 @@
 'use client';
 
 import { firebaseConfig } from '@/firebase/config';
-import { initializeApp, getApps, getApp, FirebaseApp } from 'firebase/app';
+import { initializeApp, getApps, FirebaseApp } from 'firebase/app';
 import { getAuth } from 'firebase/auth';
 import { getFirestore } from 'firebase/firestore'
 import { getStorage } from 'firebase/storage';
@@ -16,7 +16,6 @@ export function initializeFirebase() {
   if (apps.length > 0) {
     app = apps[0];
   } else {
-    // Attempt to initialize with explicit config
     app = initializeApp(firebaseConfig);
   }
 

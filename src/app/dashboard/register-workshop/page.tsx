@@ -19,7 +19,7 @@ import type { Workshop } from '@/lib/types';
 import { ref as storageRef, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { v4 as uuidv4 } from 'uuid';
 
-const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
+const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
 const ACCEPTED_IMAGE_TYPES = ["image/jpeg", "image/jpg", "image/png", "image/webp"];
 
 const workshopSchema = z.object({
@@ -32,7 +32,7 @@ const workshopSchema = z.object({
   obdScannerService: z.boolean().default(false),
   image: z.any()
     .refine((files) => !files || files.length === 0 || files.length === 1, "Solo puedes subir una foto.")
-    .refine((files) => !files || files.length === 0 || files?.[0]?.size <= MAX_FILE_SIZE, `El tamaño máximo de la imagen es 5MB.`)
+    .refine((files) => !files || files.length === 0 || files?.[0]?.size <= MAX_FILE_SIZE, `El tamaño máximo de la imagen es 10MB.`)
     .refine(
       (files) => !files || files.length === 0 || ACCEPTED_IMAGE_TYPES.includes(files?.[0]?.type),
       "Solo se aceptan formatos .jpg, .jpeg, .png y .webp."
@@ -85,7 +85,7 @@ export default function RegisterWorkshopPage() {
         throw new Error("Servicio de almacenamiento no disponible.");
     }
     const metadata = {
-      contentType: file.type,
+      contentType: file.type || 'image/jpeg',
     };
     const imageRef = storageRef(storage, `workshops/${user.uid}/${uuidv4()}`);
     const snapshot = await uploadBytes(imageRef, file, metadata);
@@ -201,7 +201,6 @@ export default function RegisterWorkshopPage() {
     );
   }
 
-
   return (
     <div className="container mx-auto py-12">
       <Card className="max-w-4xl mx-auto">
@@ -249,7 +248,7 @@ export default function RegisterWorkshopPage() {
                     <FormControl>
                       <Input type="file" accept="image/*" onChange={(e) => field.onChange(e.target.files)} />
                     </FormControl>
-                    <FormDescription>Sube una imagen principal que represente tu taller (máx 5MB).</FormDescription>
+                    <FormDescription>Sube una imagen principal que represente tu taller (máx 10MB).</FormDescription>
                     <FormMessage />
                   </FormItem>
                 )}
@@ -315,10 +314,10 @@ export default function RegisterWorkshopPage() {
                 render={({ field }) => (
                   <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
                     <div className="space-y-0.5">
-                      <FormLabel className="text-base flex items-center gap-2">
-                        <Car/> Servicio de Escáner OBD-II
+                      <FormLabel className="text-base flex items-center gap-2 text-white">
+                        <Wrench/> Servicio de Escáner OBD-II
                       </FormLabel>
-                      <FormDescription>
+                      <FormDescription className="text-white/70">
                         Marca esta casilla si tu taller ofrece servicios de diagnóstico con escáner OBD-II.
                       </FormDescription>
                     </div>
