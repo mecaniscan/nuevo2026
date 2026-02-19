@@ -1,6 +1,6 @@
 rules_version = '2';
 
-// Security rules for MecaniScan Storage
+// Security rules for MecaniScan Storage - Updated to force deployment
 service firebase.storage {
   match /b/{bucket}/o {
 

@@ -74,7 +74,8 @@ export default function RegisterWorkshopPage() {
     const metadata = {
       contentType: file.type || 'image/jpeg',
     };
-    const imageRef = storageRef(storage, `workshops/${user.uid}/${uuidv4()}`);
+    const imagePath = `workshops/${user.uid}/${uuidv4()}`;
+    const imageRef = storageRef(storage, imagePath);
     const snapshot = await uploadBytes(imageRef, file, metadata);
     const downloadURL = await getDownloadURL(snapshot.ref);
     return downloadURL;

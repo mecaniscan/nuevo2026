@@ -23,8 +23,8 @@ export function initializeFirebase() {
 }
 
 export function getSdks(firebaseApp: FirebaseApp) {
-  // Use the explicit bucket from config or fallback to the specific one for this project
-  const storageBucket = firebaseConfig.storageBucket || 'studio-3565960860-31363.firebasestorage.app';
+  // Use the explicit bucket from config with gs:// protocol for better resolution
+  const storageBucket = 'gs://studio-3565960860-31363.firebasestorage.app';
   
   return {
     firebaseApp,
