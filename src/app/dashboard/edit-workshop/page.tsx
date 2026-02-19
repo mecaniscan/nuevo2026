@@ -20,7 +20,7 @@ import { ref as storageRef, uploadBytes, getDownloadURL } from 'firebase/storage
 import { v4 as uuidv4 } from 'uuid';
 import Image from 'next/image';
 
-const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
+const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
 const ACCEPTED_IMAGE_TYPES = ["image/jpeg", "image/jpg", "image/png", "image/webp"];
 
 const workshopSchema = z.object({
@@ -33,7 +33,7 @@ const workshopSchema = z.object({
   obdScannerService: z.boolean().default(false),
   image: z.any()
     .refine((files) => !files || files.length === 0 || files?.length === 1, "Solo puedes subir una imagen.")
-    .refine((files) => !files || files.length === 0 || files?.[0]?.size <= MAX_FILE_SIZE, `El tamaño máximo es 5MB.`)
+    .refine((files) => !files || files.length === 0 || files?.[0]?.size <= MAX_FILE_SIZE, `El tamaño máximo es 10MB.`)
     .refine(
       (files) => !files || files.length === 0 || ACCEPTED_IMAGE_TYPES.includes(files?.[0]?.type),
       "Solo se aceptan formatos .jpg, .jpeg, .png y .webp."
@@ -104,7 +104,7 @@ export default function EditWorkshopPage() {
     }
     try {
         const metadata = {
-            contentType: file.type,
+            contentType: file.type || 'image/jpeg',
         };
         const imageRef = storageRef(storage, `workshops/${user.uid}/${uuidv4()}`);
         const snapshot = await uploadBytes(imageRef, file, metadata);
@@ -173,7 +173,7 @@ export default function EditWorkshopPage() {
   if (!user) {
     return (
       <div className="container mx-auto py-12 flex items-center justify-center">
-        <Card className="w-full max-w-lg">
+        <Card className="w-full max-lg">
           <CardHeader>
             <CardTitle>Acceso Restringido</CardTitle>
             <CardDescription>Debes iniciar sesión para poder editar un taller.</CardDescription>
