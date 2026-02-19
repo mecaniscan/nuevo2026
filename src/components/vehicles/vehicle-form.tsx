@@ -208,7 +208,7 @@ export function VehicleForm() {
         })
         .finally(() => setIsSubmitting(false));
     } catch (error) {
-      toast({ variant: 'destructive', title: 'Error', description: 'No se pudo procesar la solicitud.' });
+      toast({ variant: 'destructive', title: 'Error de Almacenamiento', description: 'Hubo un problema al subir las imágenes al servidor.' });
       setIsSubmitting(false);
     }
   }

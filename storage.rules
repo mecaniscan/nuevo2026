@@ -7,25 +7,27 @@ service firebase.storage {
       return request.auth != null;
     }
 
-    // Only allow authenticated users to upload images
-    // Max size of 5MB
-    // Only allow image content types
-    function canUploadImage(userId) {
-      return isAuth() && request.auth.uid == userId 
-        && request.resource.size < 5 * 1024 * 1024
+    // Common check for ownership
+    function isOwner(userId) {
+      return isAuth() && request.auth.uid == userId;
+    }
+
+    // Specific check for image uploads (size and content type)
+    function isValidImageUpload() {
+      return request.resource.size < 5 * 1024 * 1024
         && request.resource.contentType.matches('image/.*');
     }
     
-    // Workshop images can be read by anyone, but only uploaded by the owner.
+    // Workshop images can be read by anyone, but only managed by the owner.
     match /workshops/{userId}/{imageId} {
       allow read: if true;
-      allow write: if canUploadImage(userId);
+      allow write: if isOwner(userId) && (request.method == 'delete' || isValidImageUpload());
     }
 
-    // Vehicle images can be read by anyone, but only uploaded by the owner.
+    // Vehicle images can be read by anyone, but only managed by the owner.
     match /vehicles/{userId}/{imageId} {
        allow read: if true;
-       allow write: if canUploadImage(userId);
+       allow write: if isOwner(userId) && (request.method == 'delete' || isValidImageUpload());
     }
   }
 }

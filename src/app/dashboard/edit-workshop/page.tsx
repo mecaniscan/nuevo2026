@@ -99,8 +99,7 @@ export default function EditWorkshopPage() {
         const downloadURL = await getDownloadURL(snapshot.ref);
         return downloadURL;
     } catch (error) {
-        console.error("Error uploading image:", error);
-        toast({ variant: 'destructive', title: 'Error de Subida', description: 'No se pudo subir la imagen.'})
+        toast({ variant: 'destructive', title: 'Error de Subida', description: 'No se pudo subir la imagen al servidor.'})
         return null;
     }
   };
@@ -123,7 +122,6 @@ export default function EditWorkshopPage() {
         if (newImageUrl) {
           imageUrl = newImageUrl;
         } else {
-          // Halt submission if image upload fails
           setIsSubmitting(false);
           return;
         }
