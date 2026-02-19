@@ -1,6 +1,7 @@
 rules_version = '2';
 
-// Optimized storage rules for MecaniScan v1.5
+// Reglas de seguridad optimizadas para MecaniScan v1.6
+// Permite la gestión de imágenes de talleres y vehículos con validación de tipo y tamaño.
 service firebase.storage {
   match /b/{bucket}/o {
 
@@ -12,28 +13,28 @@ service firebase.storage {
       return isSignedIn() && request.auth.uid == userId;
     }
 
-    // Comprehensive image validation: max 10MB and valid MIME type
+    // Validación de imagen: tamaño máximo 10MB y tipo MIME válido.
     function isValidImage() {
       return request.resource != null 
         && request.resource.size < 10 * 1024 * 1024
         && request.resource.contentType.startsWith('image/');
     }
 
-    // Rules for Workshop assets
+    // Reglas para imágenes de Talleres
     match /workshops/{userId}/{imageId} {
       allow read: if true;
       allow create, update: if isOwner(userId) && isValidImage();
       allow delete: if isOwner(userId);
     }
 
-    // Rules for Vehicle assets
+    // Reglas para imágenes de Vehículos
     match /vehicles/{userId}/{imageId} {
       allow read: if true;
       allow create, update: if isOwner(userId) && isValidImage();
       allow delete: if isOwner(userId);
     }
     
-    // Global read access, restrictive write
+    // Acceso de lectura global por defecto, escritura denegada.
     match /{allPaths=**} {
       allow read: if true;
       allow write: if false;
