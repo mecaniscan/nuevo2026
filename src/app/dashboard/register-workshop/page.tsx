@@ -47,18 +47,6 @@ export default function RegisterWorkshopPage() {
   const router = useRouter();
   const [isSubmitting, setIsSubmitting] = React.useState(false);
   
-  // Redirect anonymous users
-  React.useEffect(() => {
-    if (!isUserLoading && user?.isAnonymous) {
-      toast({
-        title: 'Función no disponible para invitados',
-        description: 'Por favor, crea una cuenta para registrar un taller.',
-        variant: 'destructive',
-      });
-      router.push('/dashboard');
-    }
-  }, [isUserLoading, user, router, toast]);
-
   // Fetch User's Workshops
   const userWorkshopsQuery = useMemoFirebase(() => {
     if (!firestore || !user?.uid) return null;
@@ -88,6 +76,7 @@ export default function RegisterWorkshopPage() {
     const metadata = {
       contentType: file.type || 'image/jpeg',
     };
+    // Note: Folder 'workshops' is created automatically by this path
     const imageRef = storageRef(storage, `workshops/${user.uid}/${uuidv4()}`);
     const snapshot = await uploadBytes(imageRef, file, metadata);
     const downloadURL = await getDownloadURL(snapshot.ref);

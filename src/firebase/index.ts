@@ -23,7 +23,7 @@ export function initializeFirebase() {
 }
 
 export function getSdks(firebaseApp: FirebaseApp) {
-  // Ensure we use the exact bucket name for reliability
+  // Ensure we use the exact bucket name for reliability, removing protocol if present
   const bucketName = firebaseConfig.storageBucket.replace('gs://', '');
   return {
     firebaseApp,

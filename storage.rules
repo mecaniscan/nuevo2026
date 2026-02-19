@@ -1,6 +1,6 @@
 rules_version = '2';
 
-// Reglas de seguridad para MecaniScan - v1.4 optimizada para studio-3565960860-31363.firebasestorage.app
+// Reglas de seguridad para MecaniScan - Estructura de carpetas /workshops y /vehicles
 service firebase.storage {
   match /b/{bucket}/o {
 
@@ -20,21 +20,21 @@ service firebase.storage {
         && request.resource.contentType.startsWith('image/');
     }
 
-    // Reglas para las fotos de los Talleres
+    // Estructura de carpetas para Talleres: /workshops/{userId}/{imageId}
     match /workshops/{userId}/{imageId} {
       allow read: if true;
       allow create, update: if isOwner(userId) && isValidImage();
       allow delete: if isOwner(userId);
     }
 
-    // Reglas para las fotos de los Vehículos
+    // Estructura de carpetas para Vehículos: /vehicles/{userId}/{imageId}
     match /vehicles/{userId}/{imageId} {
       allow read: if true;
       allow create, update: if isOwner(userId) && isValidImage();
       allow delete: if isOwner(userId);
     }
     
-    // Regla por defecto: denegar todo lo demás
+    // Regla por defecto para otros archivos
     match /{allPaths=**} {
       allow read: if true;
       allow write: if false;
