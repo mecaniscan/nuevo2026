@@ -20,13 +20,13 @@ export function HeroSection() {
                     data-ai-hint={heroImage.imageHint}
                 />
             )}
-            <div className="absolute inset-0 bg-gradient-to-t from-background via-background/60 to-transparent" />
+            <div className="absolute inset-0 bg-gradient-to-t from-background via-background/40 to-transparent" />
             <div className="relative z-10 flex flex-col items-center justify-center h-full text-center text-foreground px-4">
-                 <div className="p-8 rounded-xl max-w-4xl">
-                    <h1 className="text-5xl font-bold tracking-tight bg-gradient-to-r from-red-600 via-orange-500 to-yellow-400 text-transparent bg-clip-text sm:text-6xl md:text-7xl lg:text-8xl font-headline shadow-text">
+                 <div className="max-w-4xl p-8 rounded-xl">
+                    <h1 className="text-5xl font-bold tracking-tight bg-gradient-to-r from-red-600 via-orange-500 to-yellow-400 text-transparent bg-clip-text sm:text-6xl md:text-7xl lg:text-8xl font-headline shadow-text drop-shadow-sm">
                         El Mejor Amigo de tu Auto
                     </h1>
-                    <p className="mt-6 max-w-2xl mx-auto text-lg text-foreground/90 md:text-xl font-medium shadow-text">
+                    <p className="mt-6 max-w-2xl mx-auto text-lg text-white md:text-xl font-medium shadow-text">
                         Registra tu taller para ofrecer servicios o registra tu auto para solicitar y agendar servicios en nuestra red de talleres, como también puedes publicar tu vehículo para la venta en nuestra tienda de Marketplace.
                     </p>
                     <div className="mt-10 flex flex-wrap justify-center gap-4">
