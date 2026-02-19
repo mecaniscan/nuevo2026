@@ -2,9 +2,9 @@
   "placeholderImages": [
     {
       "id": "hero-image",
-      "description": "Close up of a Ferrari engine.",
-      "imageUrl": "https://images.unsplash.com/photo-1614922283949-85d56d5a1532?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwxfHxmZXJyYXJpJTIwZW5naW5lfGVufDB8fHx8MTc2NjM4MzQ3N3ww&ixlib=rb-4.1.0&q=80&w=1080",
-      "imageHint": "ferrari engine"
+      "description": "A stunning red Ferrari sports car parked in a modern setting.",
+      "imageUrl": "https://images.unsplash.com/photo-1592198084033-aade902d1aae?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwxfHxmZXJyYXJpfGVufDB8fHx8MTc2NjM4MzQ3N3ww&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "red ferrari"
     },
     {
       "id": "login-background",
