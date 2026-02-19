@@ -299,7 +299,7 @@ export function VehicleForm() {
                                     <div className="p-1">
                                         <Card>
                                         <CardContent className="flex aspect-video items-center justify-center p-0 relative overflow-hidden rounded-md">
-                                            <Image src={src} alt={`Img ${index + 1}`} fill className="object-cover"/>
+                                            <Image src={src} alt={`Img ${index + 1}`} fill className="object-cover" />
                                         </CardContent>
                                         </Card>
                                     </div>
