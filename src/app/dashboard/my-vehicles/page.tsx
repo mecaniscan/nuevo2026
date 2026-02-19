@@ -5,7 +5,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { useUser, useFirestore, useMemoFirebase, FirestorePermissionError, errorEmitter, useCollection } from '@/firebase';
 import { collection, query, orderBy, doc, writeBatch } from 'firebase/firestore';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2, PlusCircle, Car, Trash2, Pencil, Briefcase, BadgePercent, FileText } from 'lucide-react';
+import { Loader2, PlusCircle, Car, Trash2, Pencil, Briefcase, BadgePercent, FileText, Search } from 'lucide-react';
 import Link from 'next/link';
 import type { Vehicle } from '@/lib/types';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -120,6 +120,7 @@ export default function MyVehiclesPage() {
         <Card>
             <CardHeader>
                 <CardTitle>Mis Vehículos Registrados</CardTitle>
+                <CardDescription>Para validar la autenticidad de un vehículo en venta, copie el número de certificado y úselo en el portal de validación de la página de inicio.</CardDescription>
             </CardHeader>
             <CardContent>
                 {isLoading ? (
@@ -130,9 +131,8 @@ export default function MyVehiclesPage() {
                             <TableRow>
                                 <TableHead>Vehículo</TableHead>
                                 <TableHead>Año</TableHead>
-                                <TableHead>Placa</TableHead>
                                 <TableHead>Estado</TableHead>
-                                <TableHead>Kilometraje</TableHead>
+                                <TableHead>Certificado</TableHead>
                                 <TableHead className="text-right">Acciones</TableHead>
                             </TableRow>
                         </TableHeader>
@@ -146,22 +146,25 @@ export default function MyVehiclesPage() {
                                                     <Image src={vehicle.imageUrls[0]} alt={`${vehicle.brand} ${vehicle.model}`} fill className="object-cover" />
                                                 ) : <Car/>}
                                             </div>
-                                            {vehicle.brand} {vehicle.model}
+                                            <div className="flex flex-col">
+                                                <span>{vehicle.brand} {vehicle.model}</span>
+                                                <span className="text-xs text-muted-foreground">{vehicle.licensePlate}</span>
+                                            </div>
                                         </TableCell>
                                         <TableCell>{vehicle.year}</TableCell>
-                                        <TableCell>{vehicle.licensePlate}</TableCell>
                                         <TableCell>
                                           {vehicle.isForSale ? (
-                                            <Badge><BadgePercent className="mr-1 h-3 w-3"/> A la venta</Badge>
+                                            <Badge><BadgePercent className="mr-1 h-3 w-3"/> Venta</Badge>
                                           ) : (
                                             <Badge variant="secondary">Personal</Badge>
                                           )}
                                         </TableCell>
-                                        <TableCell>{vehicle.currentMileage?.toLocaleString()} km</TableCell>
+                                        <TableCell>
+                                            <span className="text-[10px] font-mono break-all max-w-[120px] block leading-tight text-muted-foreground">
+                                                {vehicle.certificateNumber}
+                                            </span>
+                                        </TableCell>
                                         <TableCell className="text-right flex justify-end gap-1">
-                                            <Button variant="ghost" size="icon" className="text-primary hover:bg-primary/10" asChild title="Ver Certificado">
-                                                <Link href={`/dashboard/my-vehicles/${vehicle.id}/certificate`}><FileText className="h-4 w-4" /></Link>
-                                            </Button>
                                             <Button variant="ghost" size="icon" className="text-primary hover:bg-primary/10" asChild title="Editar">
                                                 <Link href={`/dashboard/register-vehicle?edit=${vehicle.id}`}><Pencil className="h-4 w-4" /></Link>
                                             </Button>
@@ -195,7 +198,7 @@ export default function MyVehiclesPage() {
                                 ))
                             ) : (
                                 <TableRow>
-                                    <TableCell colSpan={6} className="text-center h-24">
+                                    <TableCell colSpan={5} className="text-center h-24">
                                         No has registrado ningún vehículo todavía.
                                     </TableCell>
                                 </TableRow>
