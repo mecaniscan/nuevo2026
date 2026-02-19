@@ -228,7 +228,7 @@ export default function EditWorkshopPage() {
                   <FormItem>
                     <FormLabel>Nombre del Taller</FormLabel>
                     <FormControl>
-                      <Input placeholder="Ej: Taller Mecánico 'El Rápido'" {...field} value={field.value || ''} />
+                      <Input placeholder="Ej: Taller Mecánico 'El Rápido'" {...field} value={field.value ?? ''} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -241,7 +241,7 @@ export default function EditWorkshopPage() {
                   <FormItem>
                     <FormLabel>Descripción del Taller</FormLabel>
                     <FormControl>
-                      <Textarea placeholder="Describe los servicios que ofreces, tu especialidad, etc." {...field} value={field.value || ''} />
+                      <Textarea placeholder="Describe los servicios que ofreces, tu especialidad, etc." {...field} value={field.value ?? ''} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -273,7 +273,7 @@ export default function EditWorkshopPage() {
                   <FormItem>
                     <FormLabel>Dirección</FormLabel>
                     <FormControl>
-                      <Input placeholder="Calle Falsa 123, Springfield" {...field} value={field.value || ''} />
+                      <Input placeholder="Calle Falsa 123, Springfield" {...field} value={field.value ?? ''} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -287,7 +287,7 @@ export default function EditWorkshopPage() {
                     <FormItem>
                       <FormLabel>Número de Contacto</FormLabel>
                       <FormControl>
-                        <Input type="tel" placeholder="+54 11 1234-5678" {...field} value={field.value || ''} />
+                        <Input type="tel" placeholder="+54 11 1234-5678" {...field} value={field.value ?? ''} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -300,7 +300,7 @@ export default function EditWorkshopPage() {
                     <FormItem>
                       <FormLabel>Número de WhatsApp (Opcional)</FormLabel>
                       <FormControl>
-                        <Input type="tel" placeholder="+54 9 11 1234-5678" {...field} value={field.value || ''} />
+                        <Input type="tel" placeholder="+54 9 11 1234-5678" {...field} value={field.value ?? ''} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -313,7 +313,7 @@ export default function EditWorkshopPage() {
                     <FormItem>
                       <FormLabel>Correo Electrónico de Contacto</FormLabel>
                       <FormControl>
-                        <Input type="email" placeholder="contacto@tallerelrapido.com" {...field} value={field.value || ''} />
+                        <Input type="email" placeholder="contacto@tallerelrapido.com" {...field} value={field.value ?? ''} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
