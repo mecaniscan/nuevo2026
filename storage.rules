@@ -1,35 +1,46 @@
-
 rules_version = '2';
 
-// Sincronización de reglas para MecaniScan
+// Reglas de seguridad optimizadas para MecaniScan
 service firebase.storage {
   match /b/{bucket}/o {
 
+    // Función auxiliar para comprobar si el usuario está autenticado
     function isAuth() {
       return request.auth != null;
     }
 
-    // Comprobación de propiedad basada en el UID del usuario
+    // Función auxiliar para comprobar si el usuario es el propietario de la carpeta
     function isOwner(userId) {
       return isAuth() && request.auth.uid == userId;
     }
 
-    // Validación de subida: tamaño menor a 5MB y tipo de contenido imagen
-    function isValidImageUpload() {
+    // Validación para subidas: archivo menor a 5MB y debe ser una imagen
+    function isValidImage() {
       return request.resource.size < 5 * 1024 * 1024
         && request.resource.contentType.matches('image/.*');
     }
-    
-    // Las imágenes de talleres son públicas para lectura, pero solo el dueño puede gestionarlas
+
+    // Reglas para las fotos de los Talleres
     match /workshops/{userId}/{imageId} {
+      // Las fotos de los talleres son públicas para que los clientes puedan verlas
       allow read: if true;
-      allow write: if isOwner(userId) && (request.method == 'delete' || isValidImageUpload());
+      // Solo el dueño del taller puede subir, actualizar o borrar sus fotos
+      allow create, update: if isOwner(userId) && isValidImage();
+      allow delete: if isOwner(userId);
     }
 
-    // Las imágenes de vehículos son públicas para lectura, pero solo el dueño puede gestionarlas
+    // Reglas para las fotos de los Vehículos
     match /vehicles/{userId}/{imageId} {
-       allow read: if true;
-       allow write: if isOwner(userId) && (request.method == 'delete' || isValidImageUpload());
+      // Las fotos de los vehículos son públicas (necesario para el Marketplace)
+      allow read: if true;
+      // Solo el dueño del vehículo puede gestionar sus fotos
+      allow create, update: if isOwner(userId) && isValidImage();
+      allow delete: if isOwner(userId);
+    }
+    
+    // Regla por defecto: denegar todo lo demás
+    match /{allPaths=**} {
+      allow read, write: if false;
     }
   }
 }
