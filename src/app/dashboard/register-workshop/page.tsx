@@ -71,7 +71,6 @@ export default function RegisterWorkshopPage() {
     if (!storage || !user) {
         throw new Error("Servicio de almacenamiento no disponible.");
     }
-    // Metadatos cruciales para cumplir con las Storage Rules
     const metadata = {
       contentType: file.type || 'image/jpeg',
     };
