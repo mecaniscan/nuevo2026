@@ -11,31 +11,27 @@ import { getStorage } from 'firebase/storage';
  * Initializes Firebase with a defensive strategy for SSR and Build time.
  */
 export function initializeFirebase() {
-  if (typeof window === 'undefined') {
-    // During SSR/Build, we always use the config object to be safe
-    const app = getApps().length ? getApp() : initializeApp(firebaseConfig);
-    return getSdks(app);
+  const apps = getApps();
+  let app: FirebaseApp;
+
+  if (apps.length > 0) {
+    app = apps[0];
+  } else {
+    // Attempt to initialize with explicit config to ensure all services (like Storage)
+    // have the correct bucket information from the start.
+    app = initializeApp(firebaseConfig);
   }
 
-  if (!getApps().length) {
-    let firebaseApp;
-    try {
-      // Attempt automatic initialization (App Hosting env vars)
-      firebaseApp = initializeApp();
-    } catch (e) {
-      // Fallback to explicit config
-      firebaseApp = initializeApp(firebaseConfig);
-    }
-    return getSdks(firebaseApp);
-  }
-
-  return getSdks(getApp());
+  return getSdks(app);
 }
 
 export function getSdks(firebaseApp: FirebaseApp) {
-  // Rely on the explicit bucket configured in the Firebase App options.
-  // Using the gs:// prefix ensures full connectivity with the storage service.
-  const bucketUrl = `gs://${firebaseConfig.storageBucket}`;
+  // Ensure the storage bucket URL is correctly formatted with the gs:// prefix.
+  // This is critical for connectivity in certain cloud environments.
+  const bucketUrl = firebaseConfig.storageBucket.startsWith('gs://') 
+    ? firebaseConfig.storageBucket 
+    : `gs://${firebaseConfig.storageBucket}`;
+
   return {
     firebaseApp,
     auth: getAuth(firebaseApp),

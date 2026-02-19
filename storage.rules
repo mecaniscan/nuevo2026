@@ -1,6 +1,7 @@
 
 rules_version = '2';
 
+// Sincronización de reglas para MecaniScan
 service firebase.storage {
   match /b/{bucket}/o {
 
@@ -8,24 +9,24 @@ service firebase.storage {
       return request.auth != null;
     }
 
-    // Common check for ownership
+    // Comprobación de propiedad basada en el UID del usuario
     function isOwner(userId) {
       return isAuth() && request.auth.uid == userId;
     }
 
-    // Specific check for image uploads (size and content type)
+    // Validación de subida: tamaño menor a 5MB y tipo de contenido imagen
     function isValidImageUpload() {
       return request.resource.size < 5 * 1024 * 1024
         && request.resource.contentType.matches('image/.*');
     }
     
-    // Workshop images can be read by anyone, but only managed by the owner.
+    // Las imágenes de talleres son públicas para lectura, pero solo el dueño puede gestionarlas
     match /workshops/{userId}/{imageId} {
       allow read: if true;
       allow write: if isOwner(userId) && (request.method == 'delete' || isValidImageUpload());
     }
 
-    // Vehicle images can be read by anyone, but only managed by the owner.
+    // Las imágenes de vehículos son públicas para lectura, pero solo el dueño puede gestionarlas
     match /vehicles/{userId}/{imageId} {
        allow read: if true;
        allow write: if isOwner(userId) && (request.method == 'delete' || isValidImageUpload());

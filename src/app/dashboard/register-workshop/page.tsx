@@ -85,8 +85,12 @@ export default function RegisterWorkshopPage() {
     if (!storage || !user) {
         throw new Error("Servicio de almacenamiento no disponible.");
     }
+    // Añadimos metadatos para asegurar que el tipo de contenido se detecte correctamente en Storage
+    const metadata = {
+      contentType: file.type,
+    };
     const imageRef = storageRef(storage, `workshops/${user.uid}/${uuidv4()}`);
-    const snapshot = await uploadBytes(imageRef, file);
+    const snapshot = await uploadBytes(imageRef, file, metadata);
     const downloadURL = await getDownloadURL(snapshot.ref);
     return downloadURL;
   };
@@ -150,7 +154,7 @@ export default function RegisterWorkshopPage() {
         });
 
     } catch (error: any) {
-        toast({ variant: 'destructive', title: 'Error de subida', description: error.message || 'No se pudo subir la imagen del taller.' });
+        toast({ variant: 'destructive', title: 'Error de almacenamiento', description: error.message || 'No se pudo subir la imagen del taller.' });
         setIsSubmitting(false);
     }
   }
@@ -245,7 +249,7 @@ export default function RegisterWorkshopPage() {
                     <FormControl>
                       <Input type="file" accept="image/*" onChange={(e) => field.onChange(e.target.files)} />
                     </FormControl>
-                    <FormDescription>Sube una imagen principal que represente tu taller.</FormDescription>
+                    <FormDescription>Sube una imagen principal que represente tu taller (máx 5MB).</FormDescription>
                     <FormMessage />
                   </FormItem>
                 )}
