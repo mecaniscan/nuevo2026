@@ -8,7 +8,7 @@ import { getStorage } from 'firebase/storage';
 
 /**
  * Initializes Firebase with a defensive strategy for Client-side usage.
- * Explicitly uses the gs:// protocol for the storage bucket as required.
+ * Explicitly uses the gs:// protocol for the storage bucket as required for Studio.
  */
 export function initializeFirebase() {
   const apps = getApps();
@@ -25,10 +25,11 @@ export function initializeFirebase() {
 
 /**
  * Exports core SDK services.
- * Prepend 'gs://' to ensure proper bucket resolution in all environments.
+ * Prepend 'gs://' to ensure proper bucket resolution in Studio environments.
  */
 export function getSdks(firebaseApp: FirebaseApp) {
-  const rawBucket = firebaseConfig.storageBucket;
+  // Ensure we use the gs:// protocol for the bucket name
+  const rawBucket = firebaseConfig.storageBucket || 'studio-3565960860-31363.firebasestorage.app';
   const storageBucket = rawBucket.startsWith('gs://') ? rawBucket : `gs://${rawBucket}`;
   
   return {

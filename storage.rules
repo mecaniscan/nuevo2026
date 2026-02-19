@@ -1,22 +1,23 @@
 rules_version = '2';
 
-// Reglas de seguridad simplificadas para garantizar acceso por UID.
+// Reglas de seguridad para Firebase Storage.
+// Permite lectura pública y escritura solo a los propietarios de la carpeta (basado en UID).
 service firebase.storage {
   match /b/{bucket}/o {
 
-    // Regla para imágenes de talleres
+    // Regla para imágenes de talleres: Solo el dueño puede subir a su propia carpeta.
     match /workshops/{userId}/{allPaths=**} {
       allow read: if true;
       allow write: if request.auth != null && request.auth.uid == userId;
     }
 
-    // Regla para imágenes de vehículos
+    // Regla para imágenes de vehículos: Solo el dueño puede subir a su propia carpeta.
     match /vehicles/{userId}/{allPaths=**} {
       allow read: if true;
       allow write: if request.auth != null && request.auth.uid == userId;
     }
     
-    // Lectura pública por defecto, escritura bloqueada para otras rutas.
+    // Lectura pública por defecto para cualquier otro recurso, pero escritura denegada.
     match /{allPaths=**} {
       allow read: if true;
       allow write: if false;

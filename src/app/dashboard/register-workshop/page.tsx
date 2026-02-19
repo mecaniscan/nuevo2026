@@ -74,6 +74,7 @@ export default function RegisterWorkshopPage() {
     const metadata = {
       contentType: file.type || 'image/jpeg',
     };
+    // Ensure the path matches workshops/{uid}/{filename}
     const imagePath = `workshops/${user.uid}/${uuidv4()}`;
     const imageRef = storageRef(storage, imagePath);
     const snapshot = await uploadBytes(imageRef, file, metadata);
@@ -141,7 +142,11 @@ export default function RegisterWorkshopPage() {
         });
 
     } catch (error: any) {
-        toast({ variant: 'destructive', title: 'Error de almacenamiento', description: error.message || 'No se pudo subir la imagen del taller.' });
+        toast({ 
+            variant: 'destructive', 
+            title: 'Error de subida', 
+            description: error.message || 'No se pudo subir la imagen del taller por problemas de permisos.' 
+        });
         setIsSubmitting(false);
     }
   }
