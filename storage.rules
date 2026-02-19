@@ -1,40 +1,28 @@
 rules_version = '2';
 
-// Reglas de seguridad para MecaniScan v1.7
-// Permite la gestión de imágenes de talleres y vehículos validando el tipo de archivo y la propiedad.
+// Reglas de seguridad para MecaniScan v1.8
+// Permite la gestión de imágenes de talleres y vehículos validando la propiedad del usuario.
 service firebase.storage {
   match /b/{bucket}/o {
 
-    function isSignedIn() {
-      return request.auth != null;
-    }
-
+    // Helper para verificar si el usuario es el propietario de la ruta
     function isOwner(userId) {
-      return isSignedIn() && request.auth.uid == userId;
+      return request.auth != null && request.auth.uid == userId;
     }
 
-    // Validación de imagen: tamaño máximo 10MB y tipo MIME de imagen válido.
-    function isValidImage() {
-      return request.resource != null 
-        && request.resource.size < 10 * 1024 * 1024
-        && request.resource.contentType.startsWith('image/');
-    }
-
-    // Rutas para imágenes de Talleres: Lectura pública, escritura privada.
+    // Rutas para imágenes de Talleres: Lectura pública, escritura privada para el propietario.
     match /workshops/{userId}/{imageId} {
       allow read: if true;
-      allow create, update: if isOwner(userId) && isValidImage();
-      allow delete: if isOwner(userId);
+      allow write: if isOwner(userId);
     }
 
-    // Rutas para imágenes de Vehículos: Lectura pública, escritura privada.
+    // Rutas para imágenes de Vehículos: Lectura pública, escritura privada para el propietario.
     match /vehicles/{userId}/{imageId} {
       allow read: if true;
-      allow create, update: if isOwner(userId) && isValidImage();
-      allow delete: if isOwner(userId);
+      allow write: if isOwner(userId);
     }
     
-    // Bloqueo por defecto para cualquier otra ruta no especificada.
+    // Bloqueo por defecto para cualquier otra ruta de escritura no especificada.
     match /{allPaths=**} {
       allow read: if true;
       allow write: if false;

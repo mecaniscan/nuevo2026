@@ -24,11 +24,10 @@ export function initializeFirebase() {
 
 /**
  * Exports core SDK services.
- * Sincronización exacta con el bucket del proyecto utilizando el protocolo gs://
- * para asegurar una resolución estable en el entorno de Firebase Studio.
+ * Utiliza el bucket configurado dinámicamente desde firebaseConfig.
  */
 export function getSdks(firebaseApp: FirebaseApp) {
-  const storageBucket = 'gs://studio-3565960860-31363.firebasestorage.app';
+  const storageBucket = firebaseConfig.storageBucket;
   
   return {
     firebaseApp,
