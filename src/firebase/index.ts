@@ -24,10 +24,9 @@ export function initializeFirebase() {
 }
 
 export function getSdks(firebaseApp: FirebaseApp) {
-  // Use the default bucket from config or a gs:// prefixed one if necessary
-  const storageBucket = firebaseConfig.storageBucket.startsWith('gs://')
-    ? firebaseConfig.storageBucket
-    : `gs://${firebaseConfig.storageBucket}`;
+  // Use the specific bucket provided by the user
+  const bucketName = "studio-3565960860-31363.firebasestorage.app";
+  const storageBucket = `gs://${bucketName}`;
 
   return {
     firebaseApp,

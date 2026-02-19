@@ -1,6 +1,6 @@
 rules_version = '2';
 
-// Reglas de seguridad optimizadas para MecaniScan
+// Reglas de seguridad para MecaniScan
 service firebase.storage {
   match /b/{bucket}/o {
 

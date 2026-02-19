@@ -46,7 +46,7 @@ export default function EditWorkshopPage() {
   const storage = useStorage();
   const { toast } = useToast();
   const router = useRouter();
-  const [isSubmitting, setIsSubmitting] = React.useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   // Redirect anonymous users
   useEffect(() => {
@@ -103,8 +103,11 @@ export default function EditWorkshopPage() {
         return null;
     }
     try {
+        const metadata = {
+            contentType: file.type,
+        };
         const imageRef = storageRef(storage, `workshops/${user.uid}/${uuidv4()}`);
-        const snapshot = await uploadBytes(imageRef, file);
+        const snapshot = await uploadBytes(imageRef, file, metadata);
         const downloadURL = await getDownloadURL(snapshot.ref);
         return downloadURL;
     } catch (error) {
@@ -324,7 +327,7 @@ export default function EditWorkshopPage() {
                   <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
                     <div className="space-y-0.5">
                       <FormLabel className="text-base flex items-center gap-2">
-                        <Car /> Servicio de Escáner OBD-II
+                        <Wrench /> Servicio de Escáner OBD-II
                       </FormLabel>
                       <FormDescription>
                         Marca esta casilla si tu taller ofrece servicios de diagnóstico con escáner OBD-II.
