@@ -2,9 +2,9 @@
   "placeholderImages": [
     {
       "id": "hero-image",
-      "description": "A sleek red Ferrari parked on a city street at night under glowing streetlights.",
-      "imageUrl": "https://images.unsplash.com/photo-1614162692292-7ac56d7f7f1e?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwxfHxmZXJyYXJpJTIwbmlnaHR8ZW58MHx8fHwxNzY2NDYzODUyfDA&ixlib=rb-4.1.0&q=80&w=1080",
-      "imageHint": "ferrari night"
+      "description": "A sleek black Lamborghini parked on a modern driveway at dusk with glowing headlights.",
+      "imageUrl": "https://images.unsplash.com/photo-1657107154933-0822c6695f6d?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwzfHxibGFjayUyMGxhbWJvcmdoaW5pfGVufDB8fHx8MTc3MTUzODQwM3ww&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "black lamborghini"
     },
     {
       "id": "login-background",
