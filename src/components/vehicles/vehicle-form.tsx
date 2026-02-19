@@ -59,7 +59,7 @@ export function VehicleForm() {
   const { data: userData, isLoading: isUserDataLoading } = useDoc<User>(userDocRef);
   
   const vehicleSchema = useMemo(() => {
-    const year = currentYear || 2025;
+    const year = currentYear || new Date().getFullYear();
     return z.object({
       type: z.string().optional(),
       brand: z.string({ required_error: 'La marca es obligatoria.' }).min(1, 'La marca es obligatoria.'),
@@ -100,6 +100,20 @@ export function VehicleForm() {
   const form = useForm<z.infer<typeof vehicleSchema>>({
     resolver: zodResolver(vehicleSchema),
     mode: 'onChange',
+    defaultValues: {
+      type: '',
+      brand: '',
+      model: '',
+      year: new Date().getFullYear(),
+      vin: '',
+      licensePlate: '',
+      price: null,
+      currentMileage: 0,
+      country: '',
+      isForSale: false,
+      images: undefined,
+      hasExistingImages: false,
+    },
   });
   
   const { watch, reset } = form;
@@ -110,26 +124,18 @@ export function VehicleForm() {
 
     if (editingVehicle) {
       reset({
-        ...editingVehicle,
+        type: editingVehicle.type || '',
+        brand: editingVehicle.brand || '',
+        model: editingVehicle.model || '',
         year: editingVehicle.year || currentYear,
+        vin: editingVehicle.vin || '',
+        licensePlate: editingVehicle.licensePlate || '',
         price: editingVehicle.price ?? null,
+        currentMileage: editingVehicle.currentMileage || 0,
+        country: editingVehicle.country || '',
+        isForSale: editingVehicle.isForSale || false,
         images: undefined,
         hasExistingImages: !!(editingVehicle.imageUrls && editingVehicle.imageUrls.length > 0)
-      });
-    } else {
-      reset({
-        type: '',
-        brand: '',
-        model: '',
-        year: currentYear,
-        vin: '',
-        licensePlate: '',
-        price: null,
-        currentMileage: 0,
-        country: '',
-        isForSale: false,
-        images: undefined,
-        hasExistingImages: false,
       });
     }
   }, [editingVehicle, reset, currentYear, isMounted]);
@@ -255,14 +261,14 @@ export function VehicleForm() {
 
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 <FormField control={form.control} name="brand" render={({ field }) => (<FormItem><FormLabel>Marca</FormLabel><Select onValueChange={field.onChange} value={field.value}><FormControl><SelectTrigger className="bg-transparent text-white"><SelectValue placeholder="Marca" /></SelectTrigger></FormControl><SelectContent>{carBrands.map(b => <SelectItem key={b} value={b}>{b}</SelectItem>)}</SelectContent></Select><FormMessage /></FormItem>)} />
-                <FormField control={form.control} name="model" render={({ field }) => (<FormItem><FormLabel>Modelo</FormLabel><FormControl><Input placeholder="Ej: Corolla" {...field} className="bg-transparent text-white" /></FormControl><FormMessage /></FormItem>)} />
-                <FormField control={form.control} name="type" render={({ field }) => (<FormItem><FormLabel>Tipo</FormLabel><FormControl><Input placeholder="Ej: Sedan" {...field} className="bg-transparent text-white" /></FormControl><FormMessage /></FormItem>)} />
-                <FormField control={form.control} name="year" render={({ field }) => (<FormItem><FormLabel>Año</FormLabel><FormControl><Input type="number" {...field} className="bg-transparent text-white" /></FormControl><FormMessage /></FormItem>)} />
-                <FormField control={form.control} name="currentMileage" render={({ field }) => (<FormItem><FormLabel>Km</FormLabel><FormControl><Input type="number" {...field} className="bg-transparent text-white" /></FormControl><FormMessage /></FormItem>)} />
-                <FormField control={form.control} name="licensePlate" render={({ field }) => (<FormItem><FormLabel>Placa</FormLabel><FormControl><Input {...field} className="bg-transparent text-white" /></FormControl><FormMessage /></FormItem>)} />
+                <FormField control={form.control} name="model" render={({ field }) => (<FormItem><FormLabel>Modelo</FormLabel><FormControl><Input placeholder="Ej: Corolla" {...field} value={field.value ?? ''} className="bg-transparent text-white" /></FormControl><FormMessage /></FormItem>)} />
+                <FormField control={form.control} name="type" render={({ field }) => (<FormItem><FormLabel>Tipo</FormLabel><FormControl><Input placeholder="Ej: Sedan" {...field} value={field.value ?? ''} className="bg-transparent text-white" /></FormControl><FormMessage /></FormItem>)} />
+                <FormField control={form.control} name="year" render={({ field }) => (<FormItem><FormLabel>Año</FormLabel><FormControl><Input type="number" {...field} value={field.value ?? ''} className="bg-transparent text-white" /></FormControl><FormMessage /></FormItem>)} />
+                <FormField control={form.control} name="currentMileage" render={({ field }) => (<FormItem><FormLabel>Km</FormLabel><FormControl><Input type="number" {...field} value={field.value ?? ''} className="bg-transparent text-white" /></FormControl><FormMessage /></FormItem>)} />
+                <FormField control={form.control} name="licensePlate" render={({ field }) => (<FormItem><FormLabel>Placa</FormLabel><FormControl><Input {...field} value={field.value ?? ''} className="bg-transparent text-white" /></FormControl><FormMessage /></FormItem>)} />
                 <FormField control={form.control} name="country" render={({ field }) => (<FormItem><FormLabel>País</FormLabel><Select onValueChange={field.onChange} value={field.value}><FormControl><SelectTrigger className="bg-transparent text-white"><SelectValue placeholder="País" /></SelectTrigger></FormControl><SelectContent>{countries.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}</SelectContent></Select><FormMessage /></FormItem>)} />
                 <div className="lg:col-span-2">
-                    <FormField control={form.control} name="vin" render={({ field }) => (<FormItem><FormLabel>VIN</FormLabel><FormControl><Input {...field} className="bg-transparent text-white"/></FormControl><FormMessage /></FormItem>)} />
+                    <FormField control={form.control} name="vin" render={({ field }) => (<FormItem><FormLabel>VIN</FormLabel><FormControl><Input {...field} value={field.value ?? ''} className="bg-transparent text-white"/></FormControl><FormMessage /></FormItem>)} />
                 </div>
             
               {isForSale && (
