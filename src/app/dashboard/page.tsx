@@ -231,7 +231,7 @@ export default function DashboardPage() {
 
         <div className="lg:col-span-2">
              <ActionButton 
-                href="/dashboard/my-vehicles"
+                href="/dashboard/certificates"
                 icon={<FileCheck className="h-8 w-8 text-primary"/>}
                 title="Certificados Digitales"
                 description="Visualiza e imprime tus certificados de venta."
