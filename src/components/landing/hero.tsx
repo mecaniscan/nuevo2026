@@ -22,7 +22,7 @@ export function HeroSection() {
             <div className="absolute inset-0 bg-gradient-to-t from-background via-background/60 to-transparent" />
             <div className="relative z-10 flex flex-col items-center justify-center h-full text-center text-foreground px-4">
                  <div className="bg-black/30 backdrop-blur-sm p-8 rounded-xl border border-white/10">
-                    <h1 className="text-4xl font-bold tracking-tight text-primary sm:text-5xl md:text-6xl lg:text-7xl font-headline">
+                    <h1 className="text-4xl font-bold tracking-tight text-slate-200 sm:text-5xl md:text-6xl lg:text-7xl font-headline">
                         El Mejor Amigo de tu Auto
                     </h1>
                     <p className="mt-4 max-w-2xl text-base text-foreground/80 md:text-lg">
