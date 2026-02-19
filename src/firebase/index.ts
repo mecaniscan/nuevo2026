@@ -7,7 +7,7 @@ import { getFirestore } from 'firebase/firestore'
 import { getStorage } from 'firebase/storage';
 
 /**
- * Initializes Firebase with a defensive strategy for SSR and Build time.
+ * Initializes Firebase with a defensive strategy for Client-side usage.
  */
 export function initializeFirebase() {
   const apps = getApps();
@@ -22,9 +22,13 @@ export function initializeFirebase() {
   return getSdks(app);
 }
 
+/**
+ * Exports core SDK services.
+ * Specifically configures Storage with the project's unique bucket.
+ */
 export function getSdks(firebaseApp: FirebaseApp) {
   // Sincronización exacta con el bucket del proyecto para evitar errores de resolución.
-  // Se utiliza el protocolo gs:// para una resolución de red más estable.
+  // Se utiliza el protocolo gs:// para una resolución de red más estable en Firebase Studio.
   const storageBucket = 'gs://studio-3565960860-31363.firebasestorage.app';
   
   return {
