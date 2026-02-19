@@ -143,7 +143,8 @@ export function VehicleForm() {
   const uploadImages = async (files: FileList): Promise<string[]> => {
     if (!storage || !user) throw new Error("Servicio de almacenamiento no disponible.");
     const uploadPromises = Array.from(files).map(file => {
-        const metadata = { contentType: file.type };
+        // EXPLICIT METADATA is required for Firebase Storage Rules
+        const metadata = { contentType: file.type || 'image/jpeg' };
         const imageRef = storageRef(storage, `vehicles/${user.uid}/${uuidv4()}`);
         return uploadBytes(imageRef, file, metadata).then(snapshot => getDownloadURL(snapshot.ref));
     });
@@ -242,10 +243,10 @@ export function VehicleForm() {
                   render={({ field }) => (
                     <FormItem className="flex flex-row items-center justify-between rounded-lg border border-white/30 p-4">
                       <div className="space-y-0.5">
-                        <FormLabel className="text-base flex items-center gap-2 text-white">
+                        <FormLabel className="text-base flex items-center gap-2">
                           <BadgePercent /> Poner a la Venta
                         </FormLabel>
-                        <FormDescription className="text-white/70">
+                        <FormDescription>
                           Marca esta casilla para listar este vehículo en el Marketplace.
                         </FormDescription>
                       </div>
@@ -261,20 +262,20 @@ export function VehicleForm() {
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                <FormField control={form.control} name="brand" render={({ field }) => (<FormItem><FormLabel>Marca</FormLabel><Select onValueChange={field.onChange} value={field.value || ''}><FormControl><SelectTrigger className="bg-transparent text-white"><SelectValue placeholder="Marca" /></SelectTrigger></FormControl><SelectContent>{carBrands.map(b => <SelectItem key={b} value={b}>{b}</SelectItem>)}</SelectContent></Select><FormMessage /></FormItem>)} />
-                <FormField control={form.control} name="model" render={({ field }) => (<FormItem><FormLabel>Modelo</FormLabel><FormControl><Input placeholder="Ej: Corolla" {...field} value={field.value || ''} className="bg-transparent text-white" /></FormControl><FormMessage /></FormItem>)} />
-                <FormField control={form.control} name="type" render={({ field }) => (<FormItem><FormLabel>Tipo</FormLabel><FormControl><Input placeholder="Ej: Sedan" {...field} value={field.value || ''} className="bg-transparent text-white" /></FormControl><FormMessage /></FormItem>)} />
-                <FormField control={form.control} name="year" render={({ field }) => (<FormItem><FormLabel>Año</FormLabel><FormControl><Input type="number" {...field} value={field.value || ''} className="bg-transparent text-white" /></FormControl><FormMessage /></FormItem>)} />
-                <FormField control={form.control} name="currentMileage" render={({ field }) => (<FormItem><FormLabel>Km</FormLabel><FormControl><Input type="number" {...field} value={field.value || ''} className="bg-transparent text-white" /></FormControl><FormMessage /></FormItem>)} />
-                <FormField control={form.control} name="licensePlate" render={({ field }) => (<FormItem><FormLabel>Placa</FormLabel><FormControl><Input {...field} value={field.value || ''} className="bg-transparent text-white" /></FormControl><FormMessage /></FormItem>)} />
-                <FormField control={form.control} name="country" render={({ field }) => (<FormItem><FormLabel>País</FormLabel><Select onValueChange={field.onChange} value={field.value || ''}><FormControl><SelectTrigger className="bg-transparent text-white"><SelectValue placeholder="País" /></SelectTrigger></FormControl><SelectContent>{countries.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}</SelectContent></Select><FormMessage /></FormItem>)} />
+                <FormField control={form.control} name="brand" render={({ field }) => (<FormItem><FormLabel>Marca</FormLabel><Select onValueChange={field.onChange} value={field.value || ''}><FormControl><SelectTrigger><SelectValue placeholder="Marca" /></SelectTrigger></FormControl><SelectContent>{carBrands.map(b => <SelectItem key={b} value={b}>{b}</SelectItem>)}</SelectContent></Select><FormMessage /></FormItem>)} />
+                <FormField control={form.control} name="model" render={({ field }) => (<FormItem><FormLabel>Modelo</FormLabel><FormControl><Input placeholder="Ej: Corolla" {...field} value={field.value || ''} /></FormControl><FormMessage /></FormItem>)} />
+                <FormField control={form.control} name="type" render={({ field }) => (<FormItem><FormLabel>Tipo</FormLabel><FormControl><Input placeholder="Ej: Sedan" {...field} value={field.value || ''} /></FormControl><FormMessage /></FormItem>)} />
+                <FormField control={form.control} name="year" render={({ field }) => (<FormItem><FormLabel>Año</FormLabel><FormControl><Input type="number" {...field} value={field.value || ''} /></FormControl><FormMessage /></FormItem>)} />
+                <FormField control={form.control} name="currentMileage" render={({ field }) => (<FormItem><FormLabel>Km</FormLabel><FormControl><Input type="number" {...field} value={field.value || ''} /></FormControl><FormMessage /></FormItem>)} />
+                <FormField control={form.control} name="licensePlate" render={({ field }) => (<FormItem><FormLabel>Placa</FormLabel><FormControl><Input {...field} value={field.value || ''} /></FormControl><FormMessage /></FormItem>)} />
+                <FormField control={form.control} name="country" render={({ field }) => (<FormItem><FormLabel>País</FormLabel><Select onValueChange={field.onChange} value={field.value || ''}><FormControl><SelectTrigger><SelectValue placeholder="País" /></SelectTrigger></FormControl><SelectContent>{countries.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}</SelectContent></Select><FormMessage /></FormItem>)} />
                 <div className="lg:col-span-2">
-                    <FormField control={form.control} name="vin" render={({ field }) => (<FormItem><FormLabel>VIN</FormLabel><FormControl><Input {...field} value={field.value || ''} className="bg-transparent text-white"/></FormControl><FormMessage /></FormItem>)} />
+                    <FormField control={form.control} name="vin" render={({ field }) => (<FormItem><FormLabel>VIN</FormLabel><FormControl><Input {...field} value={field.value || ''}/></FormControl><FormMessage /></FormItem>)} />
                 </div>
             
               {isForSale && (
                 <div className="lg:col-span-3 grid grid-cols-1 md:grid-cols-2 gap-6 items-start">
-                    <FormField control={form.control} name="price" render={({ field }) => (<FormItem><FormLabel>Precio ($)</FormLabel><FormControl><Input type="number" step="0.01" {...field} value={field.value ?? ''} className="bg-transparent text-white" /></FormControl><FormMessage /></FormItem>)} />
+                    <FormField control={form.control} name="price" render={({ field }) => (<FormItem><FormLabel>Precio ($)</FormLabel><FormControl><Input type="number" step="0.01" {...field} value={field.value ?? ''} /></FormControl><FormMessage /></FormItem>)} />
                     <div className='space-y-2'>
                       <FormField
                         control={form.control}
@@ -283,9 +284,9 @@ export function VehicleForm() {
                             <FormItem>
                             <FormLabel>Fotos (máx 3)</FormLabel>
                             <FormControl>
-                                <Input type="file" accept="image/*" multiple onChange={(e) => onChange(e.target.files)} className="bg-transparent text-white" />
+                                <Input type="file" accept="image/*" multiple onChange={(e) => onChange(e.target.files)} />
                             </FormControl>
-                            <FormMessage className='text-red-400' />
+                            <FormMessage />
                             </FormItem>
                         )}
                         />
@@ -315,7 +316,7 @@ export function VehicleForm() {
               )}
             </div>
 
-            <div className="flex flex-col gap-4 pt-6 border-t border-white/20">
+            <div className="flex flex-col gap-4 pt-6 border-t">
               <Button type="submit" disabled={isSubmitting}>
                 {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                 {editId ? 'Guardar Cambios' : 'Guardar Vehículo'}

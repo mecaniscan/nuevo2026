@@ -84,6 +84,7 @@ export default function RegisterWorkshopPage() {
     if (!storage || !user) {
         throw new Error("Servicio de almacenamiento no disponible.");
     }
+    // EXPLICIT METADATA is required for Firebase Storage Rules
     const metadata = {
       contentType: file.type || 'image/jpeg',
     };
@@ -314,10 +315,10 @@ export default function RegisterWorkshopPage() {
                 render={({ field }) => (
                   <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
                     <div className="space-y-0.5">
-                      <FormLabel className="text-base flex items-center gap-2 text-white">
+                      <FormLabel className="text-base flex items-center gap-2">
                         <Wrench/> Servicio de Escáner OBD-II
                       </FormLabel>
-                      <FormDescription className="text-white/70">
+                      <FormDescription>
                         Marca esta casilla si tu taller ofrece servicios de diagnóstico con escáner OBD-II.
                       </FormDescription>
                     </div>

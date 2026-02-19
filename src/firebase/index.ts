@@ -23,7 +23,7 @@ export function initializeFirebase() {
 }
 
 export function getSdks(firebaseApp: FirebaseApp) {
-  // Use the specific bucket provided by the user
+  // Use the specific bucket provided by the user with the required gs:// protocol
   const bucketName = "studio-3565960860-31363.firebasestorage.app";
   const storageBucket = `gs://${bucketName}`;
 
