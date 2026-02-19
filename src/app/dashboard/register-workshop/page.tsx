@@ -1,4 +1,3 @@
-
 'use client';
 import * as React from 'react';
 import { useForm } from 'react-hook-form';
@@ -32,12 +31,12 @@ const workshopSchema = z.object({
   email: z.string().email('El correo electrónico no es válido.'),
   obdScannerService: z.boolean().default(false),
   image: z.any()
-    .refine((files) => files?.length == 1, "Debes subir una foto del taller.")
-    .refine((files) => files?.[0]?.size <= MAX_FILE_SIZE, `El tamaño máximo de la imagen es 5MB.`)
+    .refine((files) => !files || files.length === 0 || files.length === 1, "Solo puedes subir una foto.")
+    .refine((files) => !files || files.length === 0 || files?.[0]?.size <= MAX_FILE_SIZE, `El tamaño máximo de la imagen es 5MB.`)
     .refine(
-      (files) => ACCEPTED_IMAGE_TYPES.includes(files?.[0]?.type),
+      (files) => !files || files.length === 0 || ACCEPTED_IMAGE_TYPES.includes(files?.[0]?.type),
       "Solo se aceptan formatos .jpg, .jpeg, .png y .webp."
-    ),
+    ).optional(),
 });
 
 export default function RegisterWorkshopPage() {
@@ -85,7 +84,6 @@ export default function RegisterWorkshopPage() {
     if (!storage || !user) {
         throw new Error("Servicio de almacenamiento no disponible.");
     }
-    // Añadimos metadatos para asegurar que el tipo de contenido se detecte correctamente en Storage
     const metadata = {
       contentType: file.type,
     };
@@ -117,10 +115,12 @@ export default function RegisterWorkshopPage() {
     setIsSubmitting(true);
     
     try {
-      const imageUrl = await uploadImage(values.image[0]);
+      let imageUrl = '';
+      if (values.image && values.image.length > 0) {
+        imageUrl = await uploadImage(values.image[0]);
+      }
       
       const workshopRef = doc(collection(firestore, 'workshops'));
-      
       const { image, ...dataToSave } = values;
 
       const workshopData = {
@@ -208,7 +208,7 @@ export default function RegisterWorkshopPage() {
         <CardHeader>
           <CardTitle className="text-2xl font-headline text-primary">Registra tu Taller</CardTitle>
           <CardDescription>
-            Completa el siguiente formulario para añadir tu taller a MecaniScan y llegar a más clientes.
+            Completa el siguiente formulario para añadir tu taller a MecaniScan y llegar a más clientes. La foto es opcional.
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -245,7 +245,7 @@ export default function RegisterWorkshopPage() {
                 name="image"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Foto del Taller</FormLabel>
+                    <FormLabel>Foto del Taller (Opcional)</FormLabel>
                     <FormControl>
                       <Input type="file" accept="image/*" onChange={(e) => field.onChange(e.target.files)} />
                     </FormControl>
