@@ -12,7 +12,7 @@ import { useUser, useFirestore, useMemoFirebase, useStorage, FirestorePermission
 import { collection, query, where, doc, setDoc } from 'firebase/firestore';
 import { useToast } from '@/hooks/use-toast';
 import { useRouter } from 'next/navigation';
-import { Loader2, Car, Wrench } from 'lucide-react';
+import { Loader2, Building, Wrench } from 'lucide-react';
 import { Switch } from '@/components/ui/switch';
 import Link from 'next/link';
 import type { Workshop } from '@/lib/types';
@@ -84,7 +84,7 @@ export default function RegisterWorkshopPage() {
     if (!storage || !user) {
         throw new Error("Servicio de almacenamiento no disponible.");
     }
-    // EXPLICIT METADATA is required for Firebase Storage Rules
+    // Explicit metadata for Storage Rules validation
     const metadata = {
       contentType: file.type || 'image/jpeg',
     };

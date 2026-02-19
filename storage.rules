@@ -1,7 +1,6 @@
-
 rules_version = '2';
 
-// Reglas de seguridad para MecaniScan - v1.3 optimizada para gs://studio-3565960860-31363.firebasestorage.app
+// Reglas de seguridad para MecaniScan - v1.4 optimizada para studio-3565960860-31363.firebasestorage.app
 service firebase.storage {
   match /b/{bucket}/o {
 
@@ -37,7 +36,8 @@ service firebase.storage {
     
     // Regla por defecto: denegar todo lo demás
     match /{allPaths=**} {
-      allow read, write: if false;
+      allow read: if true;
+      allow write: if false;
     }
   }
 }
