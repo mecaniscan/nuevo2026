@@ -76,6 +76,7 @@ export default function OilChangesPage() {
   const form = useForm<z.infer<typeof oilChangeSchema>>({
     resolver: zodResolver(oilChangeSchema),
     defaultValues: {
+      vehicleId: '',
       oilType: '',
       oilPrice: 0,
       mileage: 0,
@@ -118,7 +119,13 @@ export default function OilChangesPage() {
                 title: '¡Registro Añadido!',
                 description: 'El cambio de aceite ha sido guardado en tu historial.',
             });
-            form.reset();
+            form.reset({
+              vehicleId: '',
+              oilType: '',
+              oilPrice: 0,
+              mileage: 0,
+              nextChangeMileage: 0,
+            });
         })
         .catch(() => {
             errorEmitter.emit('permission-error', new FirestorePermissionError({
@@ -159,7 +166,7 @@ export default function OilChangesPage() {
   const formatDate = (dateValue: string | Timestamp | undefined) => {
     if (!dateValue) return 'Pendiente';
     try {
-        const date = (dateValue as Timestamp)?.toDate ? (dateValue as Timestamp).toDate() : new Date(dateValue);
+        const date = (dateValue as Timestamp)?.toDate ? (dateValue as Timestamp).toDate() : new Date(dateValue as string);
         if(isNaN(date.getTime())) throw new Error('Invalid date');
         return format(date, 'dd MMM yyyy', { locale: es });
     } catch(e) {
@@ -220,7 +227,7 @@ export default function OilChangesPage() {
                       render={({ field }) => (
                         <FormItem>
                           <FormLabel>Vehículo</FormLabel>
-                          <Select onValueChange={field.onChange} defaultValue={field.value} disabled={!vehicles || vehicles.length === 0}>
+                          <Select onValueChange={field.onChange} value={field.value || ''} disabled={!vehicles || vehicles.length === 0}>
                             <FormControl>
                               <SelectTrigger>
                                 <SelectValue placeholder={!vehicles || vehicles.length === 0 ? "Primero registra un vehículo" : "Selecciona un vehículo"} />
@@ -244,7 +251,7 @@ export default function OilChangesPage() {
                     render={({ field }) => (
                       <FormItem>
                         <FormLabel>Tipo de Aceite</FormLabel>
-                        <FormControl><Input placeholder="Ej: 10W-40 Sintético" {...field} /></FormControl>
+                        <FormControl><Input placeholder="Ej: 10W-40 Sintético" {...field} value={field.value || ''} /></FormControl>
                         <FormMessage />
                       </FormItem>
                     )}
@@ -255,7 +262,7 @@ export default function OilChangesPage() {
                     render={({ field }) => (
                       <FormItem>
                         <FormLabel>Precio del Aceite ($)</FormLabel>
-                        <FormControl><Input type="number" step="0.01" placeholder="75.00" {...field} /></FormControl>
+                        <FormControl><Input type="number" step="0.01" placeholder="75.00" {...field} value={field.value || ''} /></FormControl>
                         <FormMessage />
                       </FormItem>
                     )}
@@ -266,7 +273,7 @@ export default function OilChangesPage() {
                     render={({ field }) => (
                       <FormItem>
                         <FormLabel>Kilometraje Actual (km)</FormLabel>
-                        <FormControl><Input type="number" placeholder="150000" {...field} /></FormControl>
+                        <FormControl><Input type="number" placeholder="150000" {...field} value={field.value || ''} /></FormControl>
                         <FormMessage />
                       </FormItem>
                     )}
@@ -277,7 +284,7 @@ export default function OilChangesPage() {
                     render={({ field }) => (
                       <FormItem>
                         <FormLabel>Próximo Cambio (km)</FormLabel>
-                        <FormControl><Input type="number" placeholder="160000" {...field} /></FormControl>
+                        <FormControl><Input type="number" placeholder="160000" {...field} value={field.value || ''} /></FormControl>
                         <FormMessage />
                       </FormItem>
                     )}

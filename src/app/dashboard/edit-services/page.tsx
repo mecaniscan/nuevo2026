@@ -68,7 +68,14 @@ export default function EditServicesPage() {
 
   useEffect(() => {
     if (currentServices) {
-      replace(currentServices);
+      // Ensure all fields are defined to prevent uncontrolled component warnings
+      const sanitizedServices = currentServices.map(s => ({
+        id: s.id,
+        name: s.name || '',
+        description: s.description || '',
+        price: s.price || 0,
+      }));
+      replace(sanitizedServices);
     }
   }, [currentServices, replace]);
 
@@ -170,7 +177,7 @@ export default function EditServicesPage() {
                                             render={({ field }) => (
                                                 <FormItem>
                                                 <FormLabel>Nombre del Servicio</FormLabel>
-                                                <FormControl><Input placeholder="Ej: Cambio de Aceite" {...field} /></FormControl>
+                                                <FormControl><Input placeholder="Ej: Cambio de Aceite" {...field} value={field.value || ''} /></FormControl>
                                                 <FormMessage />
                                                 </FormItem>
                                             )}
@@ -181,7 +188,7 @@ export default function EditServicesPage() {
                                             render={({ field }) => (
                                                 <FormItem>
                                                 <FormLabel>Precio ($)</FormLabel>
-                                                <FormControl><Input type="number" step="0.01" placeholder="50.00" {...field} /></FormControl>
+                                                <FormControl><Input type="number" step="0.01" placeholder="50.00" {...field} value={field.value || ''} /></FormControl>
                                                 <FormMessage />
                                                 </FormItem>
                                             )}
@@ -193,7 +200,7 @@ export default function EditServicesPage() {
                                                 render={({ field }) => (
                                                     <FormItem>
                                                     <FormLabel>Descripción (Opcional)</FormLabel>
-                                                    <FormControl><Textarea rows={2} placeholder="Describe brevemente el servicio." {...field} /></FormControl>
+                                                    <FormControl><Textarea rows={2} placeholder="Describe brevemente el servicio." {...field} value={field.value || ''} /></FormControl>
                                                     <FormMessage />
                                                     </FormItem>
                                                 )}

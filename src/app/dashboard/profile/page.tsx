@@ -62,18 +62,18 @@ export default function ProfilePage() {
   useEffect(() => {
     if (userData) {
       form.reset({
-        ...userData,
-        email: user?.email || userData.email, // Prefer email from auth object
+        firstName: userData.firstName || '',
+        lastName: userData.lastName || '',
+        email: user?.email || userData.email || '',
         whatsappNumber: userData.whatsappNumber || '',
       });
     } else if (user && !isUserDataLoading) {
-      // Pre-fill from auth object if firestore doc is not there yet
       const [firstName, lastName] = user.displayName?.split(' ') || ['', ''];
       form.reset({
-        firstName,
-        lastName,
+        firstName: firstName || '',
+        lastName: lastName || '',
         email: user.email || '',
-        whatsappNumber: '', // Auth object doesn't have whatsapp
+        whatsappNumber: '',
       });
     }
   }, [userData, user, isUserDataLoading, form]);
@@ -90,7 +90,6 @@ export default function ProfilePage() {
 
     setIsSubmitting(true);
     
-    // We create a combined promise for both Firestore and Auth updates.
     const userRef = doc(firestore, 'users', user.uid);
     const { email, ...dataToUpdate } = values;
     const newDisplayName = `${values.firstName} ${values.lastName}`;
@@ -162,7 +161,7 @@ export default function ProfilePage() {
                     <FormItem>
                       <FormLabel>Nombre</FormLabel>
                       <FormControl>
-                        <Input placeholder="Tu nombre" {...field} />
+                        <Input placeholder="Tu nombre" {...field} value={field.value || ''} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -175,7 +174,7 @@ export default function ProfilePage() {
                     <FormItem>
                       <FormLabel>Apellido</FormLabel>
                       <FormControl>
-                        <Input placeholder="Tu apellido" {...field} />
+                        <Input placeholder="Tu apellido" {...field} value={field.value || ''} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -189,7 +188,7 @@ export default function ProfilePage() {
                     <FormItem>
                       <FormLabel>Correo Electrónico</FormLabel>
                       <FormControl>
-                        <Input type="email" {...field} readOnly disabled className="cursor-not-allowed bg-muted/50" />
+                        <Input type="email" {...field} value={field.value || ''} readOnly disabled className="cursor-not-allowed bg-muted/50" />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -202,7 +201,7 @@ export default function ProfilePage() {
                       <FormItem>
                       <FormLabel>WhatsApp (Opcional)</FormLabel>
                       <FormControl>
-                          <Input type="tel" placeholder="+54 9 11 1234-5678" {...field} />
+                          <Input type="tel" placeholder="+54 9 11 1234-5678" {...field} value={field.value || ''} />
                       </FormControl>
                       <FormMessage />
                       </FormItem>
