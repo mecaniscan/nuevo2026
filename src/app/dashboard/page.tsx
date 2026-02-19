@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
-import { useUser, useFirestore, useMemoFirebase, useCollection, useAuth } from '@/firebase';
+import { useUser, useFirestore, useMemoFirebase, useCollection, useAuth, errorEmitter, FirestorePermissionError } from '@/firebase';
 import { collection, query, where, doc, getDocs, writeBatch } from 'firebase/firestore';
 import type { Workshop } from '@/lib/types';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -24,7 +24,6 @@ import { signOut } from 'firebase/auth';
 import { cn } from '@/lib/utils';
 import { useRouter } from 'next/navigation';
 
-// Componente de acción extraído para evitar recreación innecesaria y errores de build
 const ActionButton = ({ href, icon, title, description, disabled = false }: { href: string; icon: React.ReactNode; title: string; description: string, disabled?: boolean }) => (
   <Link href={!disabled ? href : '#'} className={cn("group block", disabled && "pointer-events-none opacity-50")}>
       <Card className="h-full transition-all duration-300 hover:border-primary hover:shadow-xl hover:-translate-y-1">
@@ -49,7 +48,6 @@ export default function DashboardPage() {
   const { toast } = useToast();
   const router = useRouter();
 
-  // --- Data Fetching ---
   const userWorkshopsQuery = useMemoFirebase(() => {
     if (!firestore || !user?.uid) return null;
     return query(collection(firestore, 'workshops'), where('ownerId', '==', user.uid));
@@ -57,7 +55,6 @@ export default function DashboardPage() {
 
   const { data: workshops, isLoading: isWorkshopsLoading } = useCollection<Workshop>(userWorkshopsQuery);
     
-  // --- Event Handlers ---
   const handleLogout = () => {
     if (auth) {
       signOut(auth);
@@ -66,14 +63,21 @@ export default function DashboardPage() {
 
   const deleteCollection = async (colPath: string) => {
     if (!firestore) return;
-    const colRef = collection(firestore, colPath);
-    const snapshot = await getDocs(colRef);
-    if (snapshot.empty) return;
-    const batch = writeBatch(firestore);
-    snapshot.docs.forEach(doc => {
-        batch.delete(doc.ref);
-    });
-    await batch.commit();
+    try {
+        const colRef = collection(firestore, colPath);
+        const snapshot = await getDocs(colRef);
+        if (snapshot.empty) return;
+        const batch = writeBatch(firestore);
+        snapshot.docs.forEach(doc => {
+            batch.delete(doc.ref);
+        });
+        await batch.commit();
+    } catch (e) {
+        errorEmitter.emit('permission-error', new FirestorePermissionError({
+            path: colPath,
+            operation: 'delete'
+        }));
+    }
   };
 
   const handleDeleteAccount = async () => {
@@ -111,25 +115,29 @@ export default function DashboardPage() {
         appointmentsSnapshot.forEach(doc => batch.delete(doc.ref));
 
         batch.delete(doc(firestore, 'users', userId));
-        await batch.commit();
         
-        try {
-            await user.delete();
-            toast({ title: 'Cuenta Eliminada', description: 'Tu cuenta ha sido eliminada permanentemente.' });
-        } catch (authError: any) {
-             if (authError.code === 'auth/requires-recent-login') {
-                toast({
-                    variant: 'destructive',
-                    title: 'Se requiere re-autenticación',
-                    description: 'Debes volver a iniciar sesión para poder eliminar tu cuenta.',
-                    duration: 9000,
-                });
-             } else {
-                 throw authError;
-             }
-        }
+        batch.commit().then(async () => {
+            try {
+                await user.delete();
+                toast({ title: 'Cuenta Eliminada', description: 'Tu cuenta ha sido eliminada permanentemente.' });
+            } catch (authError: any) {
+                 if (authError.code === 'auth/requires-recent-login') {
+                    toast({
+                        variant: 'destructive',
+                        title: 'Se requiere re-autenticación',
+                        description: 'Debes volver a iniciar sesión para poder eliminar tu cuenta.',
+                    });
+                 }
+            }
+        }).catch(() => {
+            errorEmitter.emit('permission-error', new FirestorePermissionError({
+                path: `users/${userId}`,
+                operation: 'delete'
+            }));
+        });
+        
     } catch (error) {
-        toast({ variant: 'destructive', title: 'Error', description: 'Ocurrió un error al eliminar los datos.' });
+        toast({ variant: 'destructive', title: 'Error', description: 'Ocurrió un error al procesar la solicitud.' });
     }
   };
 

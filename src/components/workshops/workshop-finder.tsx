@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useState, useMemo, useEffect } from 'react';
@@ -7,7 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { Search, Loader2 } from 'lucide-react';
-import { useCollection, useFirestore, useMemoFirebase } from '@/firebase';
+import { useCollection, useFirestore, useMemoFirebase, errorEmitter, FirestorePermissionError } from '@/firebase';
 import { collection, query, where, getDocs } from 'firebase/firestore';
 import type { Workshop, Service } from '@/lib/types';
 import React from 'react';
@@ -17,7 +16,6 @@ export function WorkshopFinder() {
   const [showObdOnly, setShowObdOnly] = useState(false);
   const firestore = useFirestore();
 
-  // Fetch Workshops
   const workshopsCollection = useMemoFirebase(() => {
     if (!firestore) return null;
     return collection(firestore, 'workshops');
@@ -48,7 +46,6 @@ export function WorkshopFinder() {
         const servicesMap = new Map<string, Service[]>();
         
         try {
-            // Fetch services in parallel for all workshops to improve performance
             const servicePromises = workshops.map(async (workshop) => {
                 const servicesColRef = collection(firestore, `workshops/${workshop.id}/services`);
                 const servicesSnapshot = await getDocs(servicesColRef);
@@ -63,7 +60,13 @@ export function WorkshopFinder() {
                 setAllServices(servicesMap);
             }
         } catch (error) {
-            console.error("Error fetching services for workshops:", error);
+            // Silently handle list error or emit if specific to permissions
+            if (isMounted) {
+                 errorEmitter.emit('permission-error', new FirestorePermissionError({
+                    path: 'workshops/*/services',
+                    operation: 'list'
+                }));
+            }
         } finally {
             if (isMounted) setAreServicesLoading(false);
         }
