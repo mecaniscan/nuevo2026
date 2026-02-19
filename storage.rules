@@ -1,6 +1,7 @@
+
 rules_version = '2';
 
-// Reglas de seguridad para MecaniScan - Sincronizadas para bucket gs://studio-3565960860-31363.firebasestorage.app
+// Reglas de seguridad para MecaniScan - v1.3 optimizada para gs://studio-3565960860-31363.firebasestorage.app
 service firebase.storage {
   match /b/{bucket}/o {
 
@@ -14,7 +15,7 @@ service firebase.storage {
       return isSignedIn() && request.auth.uid == userId;
     }
 
-    // Validación para subidas: archivo menor a 10MB y debe ser una imagen con metadatos válidos
+    // Validación para subidas: archivo menor a 10MB y debe ser una imagen
     function isValidImage() {
       return request.resource.size < 10 * 1024 * 1024
         && request.resource.contentType.startsWith('image/');
@@ -22,19 +23,14 @@ service firebase.storage {
 
     // Reglas para las fotos de los Talleres
     match /workshops/{userId}/{imageId} {
-      // Las fotos de los talleres son públicas para que todos puedan verlas
       allow read: if true;
-      // Solo el dueño puede subir o actualizar sus fotos
       allow create, update: if isOwner(userId) && isValidImage();
-      // Solo el dueño puede borrar sus fotos
       allow delete: if isOwner(userId);
     }
 
     // Reglas para las fotos de los Vehículos
     match /vehicles/{userId}/{imageId} {
-      // Las fotos de los vehículos son públicas (necesario para el Marketplace)
       allow read: if true;
-      // Solo el dueño puede gestionar sus fotos
       allow create, update: if isOwner(userId) && isValidImage();
       allow delete: if isOwner(userId);
     }

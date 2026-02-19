@@ -1,3 +1,4 @@
+
 'use client';
 
 import { firebaseConfig } from '@/firebase/config';
@@ -23,15 +24,12 @@ export function initializeFirebase() {
 }
 
 export function getSdks(firebaseApp: FirebaseApp) {
-  // Use the specific bucket provided by the user with the required gs:// protocol
-  const bucketName = "studio-3565960860-31363.firebasestorage.app";
-  const storageBucket = `gs://${bucketName}`;
-
+  // Use the storage bucket from the config which now includes the gs:// protocol
   return {
     firebaseApp,
     auth: getAuth(firebaseApp),
     firestore: getFirestore(firebaseApp),
-    storage: getStorage(firebaseApp, storageBucket)
+    storage: getStorage(firebaseApp, firebaseConfig.storageBucket)
   };
 }
 
