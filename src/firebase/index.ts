@@ -1,4 +1,3 @@
-
 'use client';
 
 import { firebaseConfig } from '@/firebase/config';
@@ -17,8 +16,7 @@ export function initializeFirebase() {
   if (apps.length > 0) {
     app = apps[0];
   } else {
-    // Attempt to initialize with explicit config to ensure all services (like Storage)
-    // have the correct bucket information from the start.
+    // Attempt to initialize with explicit config
     app = initializeApp(firebaseConfig);
   }
 
@@ -26,17 +24,16 @@ export function initializeFirebase() {
 }
 
 export function getSdks(firebaseApp: FirebaseApp) {
-  // Ensure the storage bucket URL is correctly formatted with the gs:// prefix.
-  // This is critical for connectivity in certain cloud environments.
-  const bucketUrl = firebaseConfig.storageBucket.startsWith('gs://') 
-    ? firebaseConfig.storageBucket 
+  // Use the default bucket from config or a gs:// prefixed one if necessary
+  const storageBucket = firebaseConfig.storageBucket.startsWith('gs://')
+    ? firebaseConfig.storageBucket
     : `gs://${firebaseConfig.storageBucket}`;
 
   return {
     firebaseApp,
     auth: getAuth(firebaseApp),
     firestore: getFirestore(firebaseApp),
-    storage: getStorage(firebaseApp, bucketUrl)
+    storage: getStorage(firebaseApp, storageBucket)
   };
 }
 

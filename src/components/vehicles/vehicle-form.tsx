@@ -141,10 +141,11 @@ export function VehicleForm() {
   }, [editingVehicle, reset, currentYear, isMounted]);
 
   const uploadImages = async (files: FileList): Promise<string[]> => {
-    if (!storage || !user) throw new Error("Storage service not available.");
+    if (!storage || !user) throw new Error("Servicio de almacenamiento no disponible.");
     const uploadPromises = Array.from(files).map(file => {
+        const metadata = { contentType: file.type };
         const imageRef = storageRef(storage, `vehicles/${user.uid}/${uuidv4()}`);
-        return uploadBytes(imageRef, file).then(snapshot => getDownloadURL(snapshot.ref));
+        return uploadBytes(imageRef, file, metadata).then(snapshot => getDownloadURL(snapshot.ref));
     });
     return Promise.all(uploadPromises);
   };
@@ -213,8 +214,8 @@ export function VehicleForm() {
           }));
         })
         .finally(() => setIsSubmitting(false));
-    } catch (error) {
-      toast({ variant: 'destructive', title: 'Error de Almacenamiento', description: 'Hubo un problema al subir las imágenes al servidor.' });
+    } catch (error: any) {
+      toast({ variant: 'destructive', title: 'Error de Almacenamiento', description: error.message || 'Hubo un problema al subir las imágenes al servidor.' });
       setIsSubmitting(false);
     }
   }
