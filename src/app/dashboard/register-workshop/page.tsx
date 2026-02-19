@@ -47,7 +47,6 @@ export default function RegisterWorkshopPage() {
   const router = useRouter();
   const [isSubmitting, setIsSubmitting] = React.useState(false);
   
-  // Fetch User's Workshops
   const userWorkshopsQuery = useMemoFirebase(() => {
     if (!firestore || !user?.uid) return null;
     return query(collection(firestore, 'workshops'), where('ownerId', '==', user.uid));
@@ -72,11 +71,9 @@ export default function RegisterWorkshopPage() {
     if (!storage || !user) {
         throw new Error("Servicio de almacenamiento no disponible.");
     }
-    // Explicit metadata for Storage Rules validation
     const metadata = {
       contentType: file.type || 'image/jpeg',
     };
-    // Note: Folder 'workshops' is created automatically by this path
     const imageRef = storageRef(storage, `workshops/${user.uid}/${uuidv4()}`);
     const snapshot = await uploadBytes(imageRef, file, metadata);
     const downloadURL = await getDownloadURL(snapshot.ref);
@@ -173,31 +170,13 @@ export default function RegisterWorkshopPage() {
     );
   }
 
-  if (workshops && workshops.length > 0) {
-     return (
-      <div className="container mx-auto py-12 flex items-center justify-center">
-        <Card className="w-full max-w-lg text-center">
-          <CardHeader>
-            <CardTitle>Ya tienes un taller registrado</CardTitle>
-            <CardDescription>Solo puedes registrar un taller por cuenta. Puedes gestionar tu taller existente desde el panel de control.</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <Button asChild>
-              <Link href="/dashboard">Ir al Panel de Control</Link>
-            </Button>
-          </CardContent>
-        </Card>
-      </div>
-    );
-  }
-
   return (
     <div className="container mx-auto py-12">
       <Card className="max-w-4xl mx-auto">
         <CardHeader>
           <CardTitle className="text-2xl font-headline text-primary">Registra tu Taller</CardTitle>
           <CardDescription>
-            Completa el siguiente formulario para añadir tu taller a MecaniScan y llegar a más clientes. La foto es opcional.
+            Completa el siguiente formulario para añadir tu taller a MecaniScan. La foto es opcional.
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -232,11 +211,11 @@ export default function RegisterWorkshopPage() {
                <FormField
                 control={form.control}
                 name="image"
-                render={({ field }) => (
+                render={({ field: { onChange } }) => (
                   <FormItem>
                     <FormLabel>Foto del Taller (Opcional)</FormLabel>
                     <FormControl>
-                      <Input type="file" accept="image/*" onChange={(e) => field.onChange(e.target.files)} />
+                      <Input type="file" accept="image/*" onChange={(e) => onChange(e.target.files)} />
                     </FormControl>
                     <FormDescription>Sube una imagen principal que represente tu taller (máx 10MB).</FormDescription>
                     <FormMessage />

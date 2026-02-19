@@ -23,16 +23,14 @@ export function initializeFirebase() {
 }
 
 export function getSdks(firebaseApp: FirebaseApp) {
-  // Ensure we use the exact bucket name for reliability
-  // We handle both direct domain and gs:// protocol strings
-  const rawBucket = firebaseConfig.storageBucket || 'studio-3565960860-31363.firebasestorage.app';
-  const bucketName = rawBucket.replace('gs://', '');
+  // Use the explicit bucket from config or fallback to the specific one for this project
+  const storageBucket = firebaseConfig.storageBucket || 'studio-3565960860-31363.firebasestorage.app';
   
   return {
     firebaseApp,
     auth: getAuth(firebaseApp),
     firestore: getFirestore(firebaseApp),
-    storage: getStorage(firebaseApp, bucketName)
+    storage: getStorage(firebaseApp, storageBucket)
   };
 }
 

@@ -107,7 +107,7 @@ export function VehicleForm() {
       year: new Date().getFullYear(),
       vin: '',
       licensePlate: '',
-      price: null,
+      price: 0,
       currentMileage: 0,
       country: '',
       isForSale: false,
@@ -130,7 +130,7 @@ export function VehicleForm() {
         year: editingVehicle.year || currentYear,
         vin: editingVehicle.vin || '',
         licensePlate: editingVehicle.licensePlate || '',
-        price: editingVehicle.price ?? null,
+        price: editingVehicle.price ?? 0,
         currentMileage: editingVehicle.currentMileage || 0,
         country: editingVehicle.country || '',
         isForSale: editingVehicle.isForSale || false,
@@ -144,7 +144,6 @@ export function VehicleForm() {
     if (!storage || !user) throw new Error("Servicio de almacenamiento no disponible.");
     const uploadPromises = Array.from(files).map(file => {
         const metadata = { contentType: file.type || 'image/jpeg' };
-        // Note: Folder 'vehicles' is created automatically by this path
         const imageRef = storageRef(storage, `vehicles/${user.uid}/${uuidv4()}`);
         return uploadBytes(imageRef, file, metadata).then(snapshot => getDownloadURL(snapshot.ref));
     });
