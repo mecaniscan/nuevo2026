@@ -21,10 +21,10 @@ const serviceSchema = z.object({
   id: z.string().optional(),
   name: z.string().min(3, 'El nombre debe tener al menos 3 caracteres.'),
   description: z.string().optional(),
-  price: z.preprocess(
-    (a) => parseFloat(z.string().parse(a)),
-    z.number().positive('El precio debe ser un número positivo.')
-  ),
+  price: z.union([z.string(), z.number()]).transform((val) => {
+    const num = typeof val === 'string' ? parseFloat(val) : val;
+    return isNaN(num) ? 0 : num;
+  }).pipe(z.number().positive('El precio debe ser un número positivo.')),
 });
 
 const formSchema = z.object({
@@ -66,7 +66,7 @@ export default function EditServicesPage() {
   });
 
   useEffect(() => {
-    if (currentServices) {
+    if (currentServices && currentServices.length > 0) {
       const sanitizedServices = currentServices.map(s => ({
         id: s.id,
         name: s.name || '',
@@ -109,7 +109,8 @@ export default function EditServicesPage() {
             description: 'Tu lista de servicios ha sido guardada.',
         });
         router.push('/dashboard');
-    }).catch(() => {
+    }).catch((err) => {
+        console.error("Error saving services:", err);
         errorEmitter.emit('permission-error', new FirestorePermissionError({
             path: `workshops/${workshop.id}/services`,
             operation: 'write',
@@ -227,7 +228,7 @@ export default function EditServicesPage() {
                             type="button" 
                             variant="outline" 
                             disabled={fields.length >= 3}
-                            onClick={() => append({ name: '', description: '', price: 0 })}
+                            onClick={() => append({ name: '', description: '', price: 10 })}
                         >
                             <PlusCircle className="mr-2 h-4 w-4" />
                             {fields.length >= 3 ? 'Límite de Servicios Alcanzado' : 'Añadir Nuevo Servicio'}
