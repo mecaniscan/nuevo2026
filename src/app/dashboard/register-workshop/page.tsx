@@ -71,6 +71,7 @@ export default function RegisterWorkshopPage() {
     if (!storage || !user) {
         throw new Error("Servicio de almacenamiento no disponible.");
     }
+    // Metadatos cruciales para cumplir con las Storage Rules
     const metadata = {
       contentType: file.type || 'image/jpeg',
     };
@@ -130,7 +131,7 @@ export default function RegisterWorkshopPage() {
             });
             router.push('/dashboard/edit-services');
         })
-        .catch(() => {
+        .catch((e: any) => {
             errorEmitter.emit('permission-error', new FirestorePermissionError({
                 path: workshopRef.path,
                 operation: 'create',
