@@ -86,7 +86,7 @@ export default function LoginPage() {
             />
        )}
        <div className="absolute inset-0 z-10 bg-black/60 backdrop-blur-sm" />
-      <Card className="z-20 w-full max-w-md shadow-2xl bg-black/20 border-white/20 text-white">
+      <Card className="z-20 w-full max-md shadow-2xl bg-black/20 border-white/20 text-white">
         <CardHeader className="text-center">
           <CardTitle className="text-3xl font-headline text-primary">Bienvenido de Nuevo</CardTitle>
           <CardDescription className="text-white/80">Inicia sesión para acceder a tu panel.</CardDescription>

@@ -23,7 +23,7 @@ export function initializeFirebase() {
 }
 
 export function getSdks(firebaseApp: FirebaseApp) {
-  // Explicitly using the gs:// protocol for reliable cloud resolution
+  // Explicitly using the gs:// protocol with the project's storage bucket
   const storageBucket = 'gs://studio-3565960860-31363.firebasestorage.app';
   
   return {
