@@ -11,10 +11,11 @@ import { useUser, useFirestore, useMemoFirebase, useCollection, FirestorePermiss
 import { collection, query, where, doc, writeBatch } from 'firebase/firestore';
 import { useToast } from '@/hooks/use-toast';
 import { useRouter } from 'next/navigation';
-import { Loader2, PlusCircle, Trash2 } from 'lucide-react';
+import { Loader2, PlusCircle, Trash2, AlertCircle } from 'lucide-react';
 import Link from 'next/link';
 import type { Workshop, Service } from '@/lib/types';
 import { Textarea } from '@/components/ui/textarea';
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
 const serviceSchema = z.object({
   id: z.string().optional(),
@@ -27,7 +28,7 @@ const serviceSchema = z.object({
 });
 
 const formSchema = z.object({
-  services: z.array(serviceSchema),
+  services: z.array(serviceSchema).max(3, 'Solo puedes tener un máximo de 3 servicios.'),
 });
 
 export default function EditServicesPage() {
@@ -37,7 +38,6 @@ export default function EditServicesPage() {
   const router = useRouter();
   const [isSubmitting, setIsSubmitting] = useState(false);
   
-  // Fetch User's Workshop
   const userWorkshopsQuery = useMemoFirebase(() => {
     if (!firestore || !user?.uid) return null;
     return query(collection(firestore, 'workshops'), where('ownerId', '==', user.uid));
@@ -46,7 +46,6 @@ export default function EditServicesPage() {
   const { data: workshops, isLoading: isWorkshopsLoading } = useCollection<Workshop>(userWorkshopsQuery);
   const workshop = workshops?.[0];
   
-  // Fetch Workshop's Services
   const servicesCollectionRef = useMemoFirebase(() => {
     if (!firestore || !workshop) return null;
     return collection(firestore, `workshops/${workshop.id}/services`);
@@ -68,7 +67,6 @@ export default function EditServicesPage() {
 
   useEffect(() => {
     if (currentServices) {
-      // Ensure all fields are defined to prevent uncontrolled component warnings
       const sanitizedServices = currentServices.map(s => ({
         id: s.id,
         name: s.name || '',
@@ -161,15 +159,25 @@ export default function EditServicesPage() {
             <CardHeader>
             <CardTitle className="text-2xl font-headline text-primary">Gestionar Servicios de "{workshop.name}"</CardTitle>
             <CardDescription>
-                Añade, edita o elimina los servicios que tu taller ofrece a los clientes.
+                Añade hasta un máximo de 3 servicios que tu taller ofrece a los clientes.
             </CardDescription>
             </CardHeader>
             <CardContent>
                 <Form {...form}>
                     <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
+                        {fields.length >= 3 && (
+                            <Alert variant="default" className="border-orange-500 bg-orange-500/10 text-orange-500">
+                                <AlertCircle className="h-4 w-4" />
+                                <AlertTitle>Límite Alcanzado</AlertTitle>
+                                <AlertDescription>
+                                    Has alcanzado el máximo de 3 servicios permitidos por taller.
+                                </AlertDescription>
+                            </Alert>
+                        )}
+                        
                         <div className="space-y-6">
                             {fields.map((field, index) => (
-                                <Card key={field.id} className="p-4 relative">
+                                <Card key={field.id} className="p-4 relative border-primary/20 bg-card/50">
                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                         <FormField
                                             control={form.control}
@@ -215,15 +223,20 @@ export default function EditServicesPage() {
                             ))}
                         </div>
 
-                        <Button type="button" variant="outline" onClick={() => append({ name: '', description: '', price: 0 })}>
+                        <Button 
+                            type="button" 
+                            variant="outline" 
+                            disabled={fields.length >= 3}
+                            onClick={() => append({ name: '', description: '', price: 0 })}
+                        >
                             <PlusCircle className="mr-2 h-4 w-4" />
-                            Añadir Nuevo Servicio
+                            {fields.length >= 3 ? 'Límite de Servicios Alcanzado' : 'Añadir Nuevo Servicio'}
                         </Button>
                         
                         <div className="flex gap-4 pt-4 border-t">
                             <Button type="submit" disabled={isSubmitting}>
                                 {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                                Guardar Servicios
+                                Guardar Servicios ({fields.length}/3)
                             </Button>
                             <Button variant="ghost" asChild>
                                 <Link href="/dashboard">Cancelar</Link>
