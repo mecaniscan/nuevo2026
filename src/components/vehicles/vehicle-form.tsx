@@ -78,10 +78,11 @@ export function VehicleForm() {
       hasExistingImages: z.boolean().optional(),
     }).refine(data => {
         if (data.isForSale) {
-          if (data.hasExistingImages && (!data.images || data.images.length === 0)) {
+          if (data.hasExistingImages && (!data.images || (data.images instanceof FileList && data.images.length === 0))) {
               return true;
           }
-          return data.images && data.images.length > 0 && data.images.length <= 3;
+          const imageCount = data.images instanceof FileList ? data.images.length : 0;
+          return imageCount > 0 && imageCount <= 3;
         }
         return true;
     }, {

@@ -1,4 +1,3 @@
-
 'use client';
 import React, { useEffect, useState } from 'react';
 import { useFieldArray, useForm } from 'react-hook-form';
@@ -17,6 +16,7 @@ import Link from 'next/link';
 import type { Workshop, Service } from '@/lib/types';
 import { Textarea } from '@/components/ui/textarea';
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { Badge } from '@/components/ui/badge';
 
 const serviceSchema = z.object({
   id: z.string().optional(),
@@ -250,7 +250,7 @@ export default function EditServicesPage() {
                             <Button 
                                 type="submit" 
                                 className="flex-1 h-12 text-lg font-bold" 
-                                disabled={isSubmitting || !form.formState.isDirty}
+                                disabled={isSubmitting}
                             >
                                 {isSubmitting ? <Loader2 className="mr-2 h-5 w-5 animate-spin" /> : <Save className="mr-2 h-5 w-5" />}
                                 {isSubmitting ? 'Guardando...' : 'Guardar Todos los Cambios'}
