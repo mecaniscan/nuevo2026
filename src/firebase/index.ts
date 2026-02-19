@@ -23,7 +23,7 @@ export function initializeFirebase() {
 }
 
 export function getSdks(firebaseApp: FirebaseApp) {
-  // Sincronización exacta con el bucket del proyecto para evitar errores de resolución de red
+  // Sincronización exacta con el bucket del proyecto para evitar errores de resolución
   const storageBucket = 'gs://studio-3565960860-31363.firebasestorage.app';
   
   return {

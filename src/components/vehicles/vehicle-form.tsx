@@ -143,7 +143,6 @@ export function VehicleForm() {
   const uploadImages = async (files: FileList): Promise<string[]> => {
     if (!storage || !user) throw new Error("Servicio de almacenamiento no disponible.");
     const uploadPromises = Array.from(files).map(file => {
-        // Metadatos cruciales para cumplir con las Storage Rules
         const metadata = { contentType: file.type || 'image/jpeg' };
         const imageRef = storageRef(storage, `vehicles/${user.uid}/${uuidv4()}`);
         return uploadBytes(imageRef, file, metadata).then(snapshot => getDownloadURL(snapshot.ref));
