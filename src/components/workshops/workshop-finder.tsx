@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState, useMemo, useEffect } from 'react';
@@ -60,7 +61,6 @@ export function WorkshopFinder() {
                 setAllServices(servicesMap);
             }
         } catch (error) {
-            // Silently handle list error or emit if specific to permissions
             if (isMounted) {
                  errorEmitter.emit('permission-error', new FirestorePermissionError({
                     path: 'workshops/*/services',

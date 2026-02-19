@@ -1,3 +1,4 @@
+
 'use client';
 
 import { firebaseConfig } from '@/firebase/config';
@@ -35,8 +36,9 @@ export function initializeFirebase() {
 
 export function getSdks(firebaseApp: FirebaseApp) {
   // Pull the storage bucket from the app options for maximum compatibility.
-  // Ensure it has the gs:// prefix if it's provided as a plain domain string.
-  let bucket = firebaseApp.options.storageBucket;
+  // We prefer the plain domain in the config and add gs:// prefix for the SDK getter.
+  let bucket = firebaseApp.options.storageBucket || firebaseConfig.storageBucket;
+  
   if (bucket && !bucket.startsWith('gs://')) {
     bucket = `gs://${bucket}`;
   }

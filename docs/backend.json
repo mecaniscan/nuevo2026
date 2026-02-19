@@ -120,6 +120,20 @@
         "nextChangeMileage": { "type": "number" }
       },
       "required": ["id", "userId", "vehicleId", "date", "oilType", "oilPrice", "mileage", "nextChangeMileage"]
+    },
+    "FavoriteWorkshop": {
+      "title": "Favorite Workshop",
+      "type": "object",
+      "description": "A workshop saved as favorite by a user.",
+      "properties": {
+        "workshopId": { "type": "string" },
+        "name": { "type": "string" },
+        "address": { "type": "string" },
+        "imageUrl": { "type": "string", "format": "uri" },
+        "averageRating": { "type": "number" },
+        "addedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["workshopId", "name", "address", "addedAt"]
     }
   },
   "auth": {
