@@ -6,7 +6,7 @@ import { collection, query, where, doc, getDocs, writeBatch } from 'firebase/fir
 import type { Workshop } from '@/lib/types';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Loader2, Calendar, Wrench, Trash2, Settings, Pencil, LogOut, Building, ArrowRight, Droplets, Car, Heart } from 'lucide-react';
+import { Loader2, Calendar, Wrench, Trash2, Settings, Pencil, LogOut, Building, ArrowRight, Droplets, Car, Heart, FileCheck } from 'lucide-react';
 import Link from 'next/link';
 import { useToast } from '@/hooks/use-toast';
 import {
@@ -220,12 +220,21 @@ export default function DashboardPage() {
             />
         </div>
 
-        <div className="lg:col-span-3">
+        <div className="lg:col-span-1">
              <ActionButton 
                 href="/dashboard/oil-changes"
                 icon={<Droplets className="h-8 w-8 text-primary"/>}
                 title="Cambios de Aceite"
                 description="Lleva un historial de los cambios de aceite."
+            />
+        </div>
+
+        <div className="lg:col-span-2">
+             <ActionButton 
+                href="/dashboard/my-vehicles"
+                icon={<FileCheck className="h-8 w-8 text-primary"/>}
+                title="Certificados Digitales"
+                description="Visualiza e imprime tus certificados de venta."
             />
         </div>
 
