@@ -33,18 +33,13 @@ export function initializeFirebase() {
 }
 
 export function getSdks(firebaseApp: FirebaseApp) {
-  // Ensure the storage bucket has the correct gs:// prefix
-  let bucket = firebaseApp.options.storageBucket || firebaseConfig.storageBucket;
-  
-  if (bucket && !bucket.startsWith('gs://')) {
-    bucket = `gs://${bucket}`;
-  }
-
+  // Rely on the default bucket configured in the Firebase App options.
+  // This is the most robust way to initialize Storage on the client.
   return {
     firebaseApp,
     auth: getAuth(firebaseApp),
     firestore: getFirestore(firebaseApp),
-    storage: getStorage(firebaseApp, bucket || undefined)
+    storage: getStorage(firebaseApp)
   };
 }
 
