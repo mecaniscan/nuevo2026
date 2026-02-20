@@ -8,9 +8,9 @@
     },
     {
       "id": "login-background",
-      "description": "Un escáner de diagnóstico automotriz profesional mostrando gráficos y datos técnicos en un entorno de taller.",
-      "imageUrl": "https://images.unsplash.com/photo-1599256621730-535171e28e50?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwzfHxhdXRvbW90aXZlJTIwc2Nhbm5lcnxlbnwwfHx8fDE3NDA0NzY4OTl8MA&ixlib=rb-4.1.0&q=80&w=1080",
-      "imageHint": "automotive scanner"
+      "description": "Un escáner de diagnóstico automotriz profesional OBDII mostrando datos técnicos en tiempo real en la pantalla de un vehículo.",
+      "imageUrl": "https://images.unsplash.com/photo-1597328290883-50c5787b7c7e?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwzfHxhdXRvbW90aXZlJTIwZGlhZ25vc3RpY3xlbnwwfHx8fDE3NDA0NzY4OTl8MA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "automotive diagnostic"
     },
     {
       "id": "vehicle-registration-background",
