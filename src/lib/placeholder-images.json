@@ -2,9 +2,9 @@
   "placeholderImages": [
     {
       "id": "hero-image",
-      "description": "Un escáner de diagnóstico automotriz de alta tecnología conectado al tablero de un automóvil, que muestra gráficos de datos complejos en una pantalla de tableta en un taller profesional.",
-      "imageUrl": "https://images.unsplash.com/photo-1621905251189-08b45d6a269e?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw2fHxjYXIlMjBkaWFnbm9zdGljc3xlbnwwfHx8fDE3NjY0NTMyMjN8MA&ixlib=rb-4.1.0&q=80&w=1080",
-      "imageHint": "car diagnostics"
+      "description": "Un taller mecánico profesional de alta gama, limpio y moderno con elevadores de vehículos y herramientas de precisión organizadas.",
+      "imageUrl": "https://images.unsplash.com/photo-1619642751034-765dfdf7c58e?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw0fHxwcm9mZXNzaW9uYWwlMjBhdXRvJTIwd29ya3Nob3B8ZW58MHx8fHwxNzM5Mzc1NjAxfDA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "professional workshop"
     },
     {
       "id": "login-background",
