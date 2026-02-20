@@ -23,7 +23,7 @@ export function HeroSection() {
             <div className="absolute inset-0 bg-gradient-to-t from-background via-background/60 to-transparent" />
             <div className="relative z-10 flex flex-col items-center justify-center h-full text-center text-foreground px-4">
                  <div className="max-w-5xl p-8 rounded-2xl backdrop-blur-[2px]">
-                    <h1 className="text-5xl font-extrabold tracking-tight bg-gradient-to-r from-primary via-accent to-yellow-400 text-transparent bg-clip-text sm:text-6xl md:text-7xl lg:text-8xl font-headline shadow-text drop-shadow-2xl pb-4">
+                    <h1 className="text-5xl font-extrabold tracking-tight bg-gradient-to-r from-primary via-cyan-400 to-blue-600 text-transparent bg-clip-text sm:text-6xl md:text-7xl lg:text-8xl font-headline shadow-text drop-shadow-2xl pb-4">
                         MecaniScan Pro
                     </h1>
                     <p className="mt-6 max-w-3xl mx-auto text-xl text-white md:text-2xl font-semibold shadow-text leading-relaxed">
