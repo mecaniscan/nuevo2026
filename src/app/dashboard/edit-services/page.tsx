@@ -1,4 +1,3 @@
-
 'use client';
 import React, { useEffect, useState } from 'react';
 import { useFieldArray, useForm } from 'react-hook-form';
@@ -64,7 +63,6 @@ export default function EditServicesPage() {
     name: "services"
   });
 
-  // Sync services from DB to form
   useEffect(() => {
     if (currentServices) {
       const sanitizedServices = currentServices.map(s => ({
@@ -73,7 +71,6 @@ export default function EditServicesPage() {
         description: s.description || '',
         price: s.price || 0,
       }));
-      // Only replace if the form is empty to initialize
       if (form.getValues('services').length === 0 && sanitizedServices.length > 0) {
         replace(sanitizedServices);
       }
@@ -91,10 +88,8 @@ export default function EditServicesPage() {
     const batch = writeBatch(firestore);
     const servicesColRef = collection(firestore, `workshops/${workshop.id}/services`);
     
-    // Track current form IDs to know what to keep/update
     const formIds = new Set(values.services.map(s => s.id).filter(Boolean));
 
-    // Delete services that are not in the form anymore
     currentServices?.forEach(serviceInDb => {
       if (!formIds.has(serviceInDb.id)) {
           const docRef = doc(servicesColRef, serviceInDb.id);
@@ -102,7 +97,6 @@ export default function EditServicesPage() {
       }
     });
     
-    // Add or update services from the form
     values.services.forEach(service => {
       const docRef = service.id ? doc(servicesColRef, service.id) : doc(servicesColRef);
       const { id, ...serviceData } = service; 
