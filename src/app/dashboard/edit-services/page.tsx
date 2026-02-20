@@ -71,6 +71,7 @@ export default function EditServicesPage() {
         description: s.description || '',
         price: s.price || 0,
       }));
+      // Solo reemplazamos si el formulario está vacío para no sobreescribir cambios locales
       if (form.getValues('services').length === 0 && sanitizedServices.length > 0) {
         replace(sanitizedServices);
       }
