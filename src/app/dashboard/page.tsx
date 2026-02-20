@@ -1,12 +1,12 @@
 'use client';
 
-import React, { useEffect } from 'react';
+import React, { useEffect, useMemo } from 'react';
 import { useUser, useFirestore, useMemoFirebase, useCollection, useAuth, errorEmitter, FirestorePermissionError } from '@/firebase';
-import { collection, query, where, doc, getDocs, writeBatch } from 'firebase/firestore';
-import type { Workshop } from '@/lib/types';
+import { collection, query, where, doc, getDocs, writeBatch, orderBy } from 'firebase/firestore';
+import type { Workshop, Vehicle, OilChange } from '@/lib/types';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Loader2, Calendar, Wrench, Trash2, Settings, Pencil, LogOut, Building, ArrowRight, Droplets, Car, Heart, FileCheck } from 'lucide-react';
+import { Loader2, Calendar, Wrench, Trash2, Settings, Pencil, LogOut, Building, ArrowRight, Droplets, Car, Heart, FileCheck, BadgePercent, AlertCircle } from 'lucide-react';
 import Link from 'next/link';
 import { useToast } from '@/hooks/use-toast';
 import {
@@ -23,6 +23,8 @@ import {
 import { signOut } from 'firebase/auth';
 import { cn } from '@/lib/utils';
 import { useRouter } from 'next/navigation';
+import Image from 'next/image';
+import { Badge } from '@/components/ui/badge';
 
 interface ActionButtonProps {
   href: string;
@@ -56,12 +58,25 @@ export default function DashboardPage() {
   const { toast } = useToast();
   const router = useRouter();
 
+  // Queries
   const userWorkshopsQuery = useMemoFirebase(() => {
     if (!firestore || !user?.uid) return null;
     return query(collection(firestore, 'workshops'), where('ownerId', '==', user.uid));
   }, [firestore, user?.uid]);
 
+  const vehiclesQuery = useMemoFirebase(() => {
+    if (!firestore || !user?.uid) return null;
+    return query(collection(firestore, `users/${user.uid}/vehicles`), orderBy('brand'));
+  }, [firestore, user?.uid]);
+
+  const oilChangesQuery = useMemoFirebase(() => {
+    if (!firestore || !user?.uid) return null;
+    return query(collection(firestore, `users/${user.uid}/oilChanges`), orderBy('date', 'desc'));
+  }, [firestore, user?.uid]);
+
   const { data: workshops, isLoading: isWorkshopsLoading } = useCollection<Workshop>(userWorkshopsQuery);
+  const { data: vehicles, isLoading: isVehiclesLoading } = useCollection<Vehicle>(vehiclesQuery);
+  const { data: oilChanges, isLoading: isOilChangesLoading } = useCollection<OilChange>(oilChangesQuery);
     
   const handleLogout = () => {
     if (auth) {
@@ -155,7 +170,9 @@ export default function DashboardPage() {
     }
   }, [isUserLoading, user, router]);
 
-  if (isUserLoading || isWorkshopsLoading || !user) {
+  const isLoading = isUserLoading || isWorkshopsLoading || isVehiclesLoading || isOilChangesLoading;
+
+  if (isLoading && !user) {
     return (
       <div className="flex min-h-screen items-center justify-center">
         <Loader2 className="h-12 w-12 animate-spin text-primary" />
@@ -164,13 +181,19 @@ export default function DashboardPage() {
   }
 
   const hasWorkshop = workshops && workshops.length > 0;
+
+  // Helper to find the next oil change mileage for a vehicle
+  const getNextOilChange = (vehicleId: string) => {
+    const latestChange = oilChanges?.find(oc => oc.vehicleId === vehicleId);
+    return latestChange ? latestChange.nextChangeMileage : null;
+  };
   
   return (
-    <div className="container mx-auto py-12">
+    <div className="container mx-auto py-12 px-4">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-8">
         <div>
           <h1 className="text-3xl font-bold font-headline text-primary">Panel de Control</h1>
-          <p className="text-muted-foreground">Bienvenido, {user.displayName || user.email}.</p>
+          <p className="text-muted-foreground">Bienvenido, {user?.displayName || user?.email}.</p>
         </div>
         <Button onClick={handleLogout} variant="outline" className="mt-4 sm:mt-0">
           <LogOut className="mr-2 h-4 w-4" />
@@ -179,18 +202,73 @@ export default function DashboardPage() {
       </div>
       
       <div className="grid gap-6 lg:grid-cols-3">
-        <div className="lg:col-span-3">
-            <Card className="flex flex-col items-center justify-center p-8 text-center bg-gradient-to-br from-primary/10 to-card">
-                <CardHeader>
-                    <CardTitle>Comienza a registrar tu actividad</CardTitle>
-                    <CardDescription>Añade tus vehículos y lleva un control de su mantenimiento.</CardDescription>
-                </CardHeader>
-                <CardContent>
-                     <Button asChild>
-                        <Link href="/dashboard/my-vehicles">Añadir mis Vehículos</Link>
-                    </Button>
-                </CardContent>
-            </Card>
+        {/* Vehicles Summary Section */}
+        <div className="lg:col-span-3 space-y-4">
+            <div className="flex items-center justify-between">
+                <h2 className="text-xl font-bold flex items-center gap-2"><Car className="text-primary"/> Resumen de mis Vehículos</h2>
+                <Button variant="link" asChild className="p-0">
+                    <Link href="/dashboard/my-vehicles">Ver todos <ArrowRight className="ml-1 h-4 w-4"/></Link>
+                </Button>
+            </div>
+            
+            {isVehiclesLoading ? (
+                <div className="flex h-32 items-center justify-center"><Loader2 className="animate-spin h-8 w-8 text-primary"/></div>
+            ) : vehicles && vehicles.length > 0 ? (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    {vehicles.slice(0, 3).map((vehicle) => {
+                        const nextChange = getNextOilChange(vehicle.id);
+                        return (
+                            <Card key={vehicle.id} className="overflow-hidden border-primary/10 hover:border-primary/30 transition-colors">
+                                <CardContent className="p-0 flex items-stretch h-32">
+                                    <div className="relative w-32 shrink-0 bg-muted">
+                                        {vehicle.imageUrls && vehicle.imageUrls[0] ? (
+                                            <Image src={vehicle.imageUrls[0]} alt={vehicle.brand} fill className="object-cover" />
+                                        ) : (
+                                            <Car className="h-10 w-10 text-muted-foreground m-auto absolute inset-0" />
+                                        )}
+                                    </div>
+                                    <div className="p-4 flex flex-col justify-between flex-1">
+                                        <div>
+                                            <h3 className="font-bold truncate text-sm">{vehicle.brand} {vehicle.model}</h3>
+                                            <p className="text-[10px] text-muted-foreground">{vehicle.year} &bull; {vehicle.licensePlate}</p>
+                                        </div>
+                                        <div className="space-y-1">
+                                            {nextChange ? (
+                                                <div className="flex items-center gap-1 text-[10px] font-medium text-orange-500">
+                                                    <Droplets className="h-3 w-3" />
+                                                    Próximo Aceite: {nextChange.toLocaleString()} km
+                                                </div>
+                                            ) : (
+                                                <div className="flex items-center gap-1 text-[10px] text-muted-foreground">
+                                                    <AlertCircle className="h-3 w-3" />
+                                                    Sin registro de aceite
+                                                </div>
+                                            )}
+                                            {vehicle.isForSale ? (
+                                                <Badge className="text-[9px] h-4 px-1.5 bg-accent text-accent-foreground"><BadgePercent className="h-2 w-2 mr-1"/> En Marketplace</Badge>
+                                            ) : (
+                                                <Badge variant="outline" className="text-[9px] h-4 px-1.5">Uso Personal</Badge>
+                                            )}
+                                        </div>
+                                    </div>
+                                </CardContent>
+                            </Card>
+                        );
+                    })}
+                </div>
+            ) : (
+                <Card className="flex flex-col items-center justify-center p-8 text-center bg-gradient-to-br from-primary/5 to-card border-dashed">
+                    <CardHeader>
+                        <CardTitle className="text-lg">Comienza a registrar tu actividad</CardTitle>
+                        <CardDescription>Añade tus vehículos para llevar un control profesional de su mantenimiento.</CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                        <Button asChild>
+                            <Link href="/dashboard/register-vehicle">Registrar mi primer vehículo</Link>
+                        </Button>
+                    </CardContent>
+                </Card>
+            )}
         </div>
 
         <div className="lg:col-span-1">
@@ -241,7 +319,7 @@ export default function DashboardPage() {
         <div className="lg:col-span-3">
              <Card>
                 <CardHeader>
-                    <CardTitle className="flex items-center gap-2"><Settings /> Configuración de la Cuenta</CardTitle>
+                    <CardTitle className="flex items-center gap-2 text-xl font-bold"><Settings className="h-5 w-5"/> Configuración de la Cuenta</CardTitle>
                 </CardHeader>
                 <CardContent className="flex flex-col items-start gap-4 sm:flex-row sm:items-center">
                     <Button asChild variant="outline">
