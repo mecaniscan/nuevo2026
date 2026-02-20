@@ -2,14 +2,14 @@
   "placeholderImages": [
     {
       "id": "hero-image",
-      "description": "A sleek black Lamborghini parked on a modern driveway at dusk with glowing headlights.",
-      "imageUrl": "https://images.unsplash.com/photo-1657107154933-0822c6695f6d?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwzfHxibGFjayUyMGxhbWJvcmdoaW5pfGVufDB8fHx8MTc3MTUzODQwM3ww&ixlib=rb-4.1.0&q=80&w=1080",
-      "imageHint": "black lamborghini"
+      "description": "Un escáner de diagnóstico automotriz de alta tecnología conectado al tablero de un automóvil, que muestra gráficos de datos complejos en una pantalla de tableta en un taller profesional.",
+      "imageUrl": "https://images.unsplash.com/photo-1702146713858-8e7d1cc29fe8?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw2fHxjYXIlMjBkaWFnbm9zdGljc3xlbnwwfHx8fDE3NjY0NTMyMjN8MA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "car diagnostics"
     },
     {
       "id": "login-background",
       "description": "A red Ferrari sports car parked on the street.",
-      "imageUrl": "https://images.unsplash.com/photo-1583121274602-3e2820c69888?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwxfHxmZXJyYXJpfGVufDB8fHx8MTc2NjM4MzQ3N3ww&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageUrl": "https://images.unsplash.com/photo-1583121274602-3e2820c69888?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHxfHxmZXJyYXJpfGVufDB8fHx8MTc2NjM4MzQ3N3ww&ixlib=rb-4.1.0&q=80&w=1080",
       "imageHint": "red car"
     },
     {

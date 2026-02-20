@@ -1,3 +1,4 @@
+
 'use client';
 import React, { useEffect, useState } from 'react';
 import { useFieldArray, useForm } from 'react-hook-form';
@@ -64,15 +65,14 @@ export default function EditServicesPage() {
   });
 
   useEffect(() => {
-    if (currentServices) {
+    if (currentServices && currentServices.length > 0) {
       const sanitizedServices = currentServices.map(s => ({
         id: s.id,
         name: s.name || '',
         description: s.description || '',
         price: s.price || 0,
       }));
-      // Solo reemplazamos si el formulario está vacío para no sobreescribir cambios locales
-      if (form.getValues('services').length === 0 && sanitizedServices.length > 0) {
+      if (form.getValues('services').length === 0) {
         replace(sanitizedServices);
       }
     }
@@ -160,46 +160,44 @@ export default function EditServicesPage() {
   
   return (
     <div className="container mx-auto py-12 px-4">
-        <Card className="max-w-4xl mx-auto shadow-xl border-primary/20 bg-card/50 backdrop-blur-sm">
+        <Card className="max-w-4xl mx-auto shadow-2xl border-primary/20 bg-card/60 backdrop-blur-md">
             <CardHeader className="bg-primary/5 border-b border-primary/10">
                 <div className="flex items-center justify-between flex-wrap gap-4">
                   <div className="space-y-1">
-                    <CardTitle className="text-2xl font-headline text-primary">Servicios de "{workshop.name}"</CardTitle>
+                    <CardTitle className="text-2xl font-headline text-primary">Gestionar Servicios</CardTitle>
                     <CardDescription>
-                        Configura los servicios principales de tu taller. Máximo 3 permitidos.
+                        Configura los servicios que ofrece "{workshop.name}". Máximo 3 permitidos.
                     </CardDescription>
                   </div>
-                  <div className="flex items-center gap-3">
-                    <Badge variant={fields.length >= 3 ? "destructive" : "secondary"} className="text-sm py-1 px-3">
-                      {fields.length} / 3 Servicios
-                    </Badge>
-                  </div>
+                  <Badge variant={fields.length >= 3 ? "destructive" : "secondary"} className="text-sm py-1 px-3">
+                    {fields.length} / 3 Servicios
+                  </Badge>
                 </div>
             </CardHeader>
             <CardContent className="pt-8">
                 <Form {...form}>
                     <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
                         {fields.length >= 3 && (
-                            <Alert variant="default" className="border-orange-500 bg-orange-500/10 text-orange-500">
+                            <Alert variant="default" className="border-accent bg-accent/10 text-accent">
                                 <AlertCircle className="h-4 w-4" />
                                 <AlertTitle>Capacidad Máxima</AlertTitle>
                                 <AlertDescription>
-                                    Has alcanzado el límite de 3 servicios. Elimina uno para añadir otro.
+                                    Has alcanzado el límite de 3 servicios principales.
                                 </AlertDescription>
                             </Alert>
                         )}
 
                         <div className="space-y-6">
                             {fields.map((field, index) => (
-                                <Card key={field.id} className="p-6 relative border-primary/10 bg-background/40 group hover:border-primary/30 transition-all duration-300">
+                                <Card key={field.id} className="p-6 relative border-primary/10 bg-background/50 group hover:border-primary/40 transition-all duration-300">
                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pr-12">
                                         <FormField
                                             control={form.control}
                                             name={`services.${index}.name`}
                                             render={({ field }) => (
                                                 <FormItem>
-                                                <FormLabel className="text-xs font-bold uppercase tracking-widest text-primary/70">Nombre del Servicio</FormLabel>
-                                                <FormControl><Input placeholder="Ej: Cambio de Aceite Sintético" {...field} value={field.value || ''} /></FormControl>
+                                                <FormLabel className="text-xs font-bold uppercase tracking-widest text-primary">Nombre del Servicio</FormLabel>
+                                                <FormControl><Input placeholder="Ej: Escáner Computarizado" {...field} value={field.value || ''} /></FormControl>
                                                 <FormMessage />
                                                 </FormItem>
                                             )}
@@ -209,7 +207,7 @@ export default function EditServicesPage() {
                                             name={`services.${index}.price`}
                                             render={({ field }) => (
                                                 <FormItem>
-                                                <FormLabel className="text-xs font-bold uppercase tracking-widest text-primary/70">Precio sugerido ($)</FormLabel>
+                                                <FormLabel className="text-xs font-bold uppercase tracking-widest text-primary">Precio ($)</FormLabel>
                                                 <FormControl><Input type="number" step="0.01" placeholder="0.00" {...field} value={field.value ?? ''} /></FormControl>
                                                 <FormMessage />
                                                 </FormItem>
@@ -221,8 +219,8 @@ export default function EditServicesPage() {
                                                 name={`services.${index}.description`}
                                                 render={({ field }) => (
                                                     <FormItem>
-                                                    <FormLabel className="text-xs font-bold uppercase tracking-widest text-primary/70">Detalles adicionales</FormLabel>
-                                                    <FormControl><Textarea rows={2} placeholder="Explica brevemente qué incluye este servicio." {...field} value={field.value || ''} /></FormControl>
+                                                    <FormLabel className="text-xs font-bold uppercase tracking-widest text-primary">Descripción Corta</FormLabel>
+                                                    <FormControl><Textarea rows={2} placeholder="Explica brevemente qué incluye." {...field} value={field.value || ''} /></FormControl>
                                                     <FormMessage />
                                                     </FormItem>
                                                 )}
@@ -237,7 +235,6 @@ export default function EditServicesPage() {
                                       onClick={() => remove(index)}
                                     >
                                         <Trash2 className="h-5 w-5" />
-                                        <span className="sr-only">Eliminar</span>
                                     </Button>
                                 </Card>
                             ))}
@@ -247,11 +244,11 @@ export default function EditServicesPage() {
                           <Button 
                               type="button" 
                               variant="outline" 
-                              className="w-full border-dashed border-2 py-10 hover:bg-primary/5 hover:border-primary/30 transition-all group"
+                              className="w-full border-dashed border-2 py-8 hover:bg-primary/5 hover:border-primary/40 transition-all group"
                               onClick={() => append({ name: '', description: '', price: 0 })}
                           >
-                              <PlusCircle className="mr-2 h-6 w-6 group-hover:scale-110 transition-transform" />
-                              <span className="text-lg font-semibold">Añadir Nuevo Servicio</span>
+                              <PlusCircle className="mr-2 h-6 w-6" />
+                              <span className="text-lg font-semibold">Añadir Servicio</span>
                           </Button>
                         )}
                         
