@@ -3,31 +3,31 @@
     {
       "id": "hero-image",
       "description": "Un taller mecánico profesional de alta gama, limpio y moderno con elevadores de vehículos y herramientas de precisión organizadas.",
-      "imageUrl": "https://images.unsplash.com/photo-1619642751034-765dfdf7c58e?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw0fHxwcm9mZXNzaW9uYWwlMjBhdXRvJTIwd29ya3Nob3B8ZW58MHx8fHwxNzM5Mzc1NjAxfDA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageUrl": "https://images.unsplash.com/photo-1619642751034-765dfdf7c58e?q=80&w=2070",
       "imageHint": "professional workshop"
     },
     {
       "id": "login-background",
       "description": "Un escáner de diagnóstico automotriz profesional OBDII mostrando datos técnicos en tiempo real en la pantalla de un vehículo.",
-      "imageUrl": "https://images.unsplash.com/photo-1597328290883-50c5787b7c7e?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwzfHxhdXRvbW90aXZlJTIwZGlhZ25vc3RpY3xlbnwwfHx8fDE3NDA0NzY4OTl8MA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageUrl": "https://images.unsplash.com/photo-1597328290883-50c5787b7c7e?q=80&w=2070",
       "imageHint": "automotive diagnostic"
     },
     {
       "id": "vehicle-registration-background",
       "description": "Primer plano de un puerto OBD-II en un automóvil con un dispositivo de escaneo inteligente conectado.",
-      "imageUrl": "https://images.unsplash.com/photo-1492144534655-ae79c964c9d7?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwxfHxjYXIlMjBlbmdpbmUlMjB0ZWNofGVufDB8fHx8MTc2NjQ1NTIyM3ww&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageUrl": "https://images.unsplash.com/photo-1492144534655-ae79c964c9d7?q=80&w=2070",
       "imageHint": "car engine tech"
     },
     {
       "id": "workshop-1",
       "description": "Interior de un taller mecánico moderno y limpio con herramientas de diagnóstico avanzadas.",
-      "imageUrl": "https://images.unsplash.com/photo-1702146713858-8e7d1cc29fe8?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwxMHx8YXV0byUyMHJlcGFpcnxlbnwwfHx8fDE3NjYzOTE1Mjl8MA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageUrl": "https://images.unsplash.com/photo-1702146713858-8e7d1cc29fe8?q=80&w=2070",
       "imageHint": "auto repair"
     },
     {
       "id": "workshop-2",
       "description": "Mecánico trabajando con una tablet conectada al sistema computarizado del vehículo.",
-      "imageUrl": "https://images.unsplash.com/photo-1604068105030-06d82bb48fd1?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwyfHxtZWNoYW5pYyUyMGNhcnxlbnwwfHx8fDE3NjY0NTMyMjN8MA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageUrl": "https://images.unsplash.com/photo-1604068105030-06d82bb48fd1?q=80&w=2070",
       "imageHint": "mechanic car"
     }
   ]
