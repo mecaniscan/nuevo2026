@@ -1,3 +1,4 @@
+
 'use client';
 import React, { useEffect, useState } from 'react';
 import { useFieldArray, useForm } from 'react-hook-form';
@@ -72,7 +73,7 @@ export default function EditServicesPage() {
         description: s.description || '',
         price: s.price || 0,
       }));
-      // Only replace if the form hasn't been edited or to initialize
+      // Only replace if the form is empty to initialize
       if (form.getValues('services').length === 0 && sanitizedServices.length > 0) {
         replace(sanitizedServices);
       }
@@ -193,16 +194,6 @@ export default function EditServicesPage() {
                             </Alert>
                         )}
 
-                        {Object.keys(form.formState.errors).length > 0 && (
-                          <Alert variant="destructive">
-                            <AlertCircle className="h-4 w-4" />
-                            <AlertTitle>Error de Validación</AlertTitle>
-                            <AlertDescription>
-                              Por favor revisa los campos marcados en rojo antes de guardar.
-                            </AlertDescription>
-                          </Alert>
-                        )}
-                        
                         <div className="space-y-6">
                             {fields.map((field, index) => (
                                 <Card key={field.id} className="p-6 relative border-primary/10 bg-background/40 group hover:border-primary/30 transition-all duration-300">
