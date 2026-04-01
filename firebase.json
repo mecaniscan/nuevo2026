@@ -4,6 +4,7 @@
     "indexes": "firestore.indexes.json"
   },
   "hosting": {
+    "site": "studio-3565960860-31363-bcd10",
     "source": ".",
     "ignore": [
       "firebase.json",
