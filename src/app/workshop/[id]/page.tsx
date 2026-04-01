@@ -56,32 +56,32 @@ export default function WorkshopDetailPage() {
     const [today, setToday] = React.useState<Date | null>(null);
 
     React.useEffect(() => {
-        // Set today's date only on the client-side to avoid hydration mismatch
+        // Establecer la fecha de hoy solo en el lado del cliente para evitar errores de hidratación
         setToday(new Date(new Date().setHours(0, 0, 0, 0)));
     }, []);
 
-    // Fetch Workshop
+    // Cargar Taller
     const workshopRef = useMemoFirebase(() => {
         if (!firestore || !workshopId) return null;
         return doc(firestore, 'workshops', workshopId);
     }, [firestore, workshopId]);
     const { data: workshopData, isLoading: isWorkshopLoading } = useDoc<Workshop>(workshopRef);
     
-    // Fetch Workshop Services
+    // Cargar Servicios
     const workshopServicesCollection = useMemoFirebase(() => {
         if (!firestore || !workshopId) return null;
         return collection(firestore, `workshops/${workshopId}/services`);
       }, [firestore, workshopId]);
     const { data: workshopServices, isLoading: isServicesLoading } = useCollection<Service>(workshopServicesCollection);
     
-    // Fetch Reviews
+    // Cargar Reseñas
     const reviewsCollection = useMemoFirebase(() => {
         if (!firestore || !workshopId) return null;
         return collection(firestore, `workshops/${workshopId}/reviews`);
       }, [firestore, workshopId]);
     const { data: reviews, isLoading: areReviewsLoading } = useCollection<Review>(reviewsCollection);
 
-    // Fetch User's Vehicles
+    // Cargar Vehículos del Usuario
     const vehiclesCollectionRef = useMemoFirebase(() => {
         if (!firestore || !user?.uid) return null;
         return collection(firestore, `users/${user.uid}/vehicles`);
@@ -93,7 +93,7 @@ export default function WorkshopDetailPage() {
         return reviews.some(review => review.userId === user.uid);
     }, [user, reviews]);
 
-    // Fetch User Favorites
+    // Cargar Favoritos
     const favoriteRef = useMemoFirebase(() => {
         if (!firestore || !user?.uid || !workshopId) return null;
         return doc(firestore, `users/${user.uid}/favorites`, workshopId);
@@ -181,26 +181,23 @@ export default function WorkshopDetailPage() {
 
         setIsSubmitting(true);
         
-        const appointmentData: Omit<Appointment, 'id'> = {
-            workshopId: workshop.id,
-            workshopName: workshop.name,
-            userId: user.uid,
-            vehicleId: '', // placeholder
-            vehicleName: '', // placeholder
-            appointmentDateTime: values.appointmentDateTime.toISOString(),
-            description: values.description,
-            status: 'scheduled',
-        };
-
-        
         const selectedVehicle = vehicles.find(v => v.id === values.vehicleId);
         if (!selectedVehicle) {
             toast({ variant: 'destructive', title: 'Error', description: 'Vehículo seleccionado no válido.' });
             setIsSubmitting(false);
             return;
         }
-        appointmentData.vehicleId = selectedVehicle.id;
-        appointmentData.vehicleName = `${selectedVehicle.brand} ${selectedVehicle.model}`;
+
+        const appointmentData: Omit<Appointment, 'id'> = {
+            workshopId: workshop.id,
+            workshopName: workshop.name,
+            userId: user.uid,
+            vehicleId: selectedVehicle.id,
+            vehicleName: `${selectedVehicle.brand} ${selectedVehicle.model}`,
+            appointmentDateTime: values.appointmentDateTime.toISOString(),
+            description: values.description,
+            status: 'scheduled',
+        };
 
         addDoc(collection(firestore, 'appointments'), appointmentData)
             .then(() => {
@@ -212,7 +209,7 @@ export default function WorkshopDetailPage() {
                 
                 toast({
                     title: '¡Cita Registrada!',
-                    description: 'Redirigiendo a WhatsApp para que confirmes tu cita con el taller.',
+                    description: 'Redirigiendo a WhatsApp para confirmar con el taller.',
                 });
                 appointmentForm.reset();
                 router.push('/dashboard/my-appointments');
@@ -256,11 +253,13 @@ export default function WorkshopDetailPage() {
                 const newReviewCount = currentReviewCount + 1;
                 const newAverageRating = (currentAverageRating * currentReviewCount + values.rating) / newReviewCount;
 
+                // Actualizar el taller con las nuevas estadísticas
                 transaction.update(workshopRef, {
                     reviewCount: newReviewCount,
                     averageRating: newAverageRating
                 });
 
+                // Crear la reseña
                 const reviewData = {
                     rating: values.rating,
                     comment: values.comment,
@@ -321,7 +320,7 @@ export default function WorkshopDetailPage() {
             <div className="flex min-h-screen items-center justify-center">
                 <div className="text-center">
                     <h1 className="text-2xl font-bold">Taller no encontrado</h1>
-                    <p className="text-muted-foreground">No pudimos encontrar el taller que estás buscando.</p>
+                    <p className="text-muted-foreground">No pudimos encontrar el taller solicitado.</p>
                     <Button asChild variant="link">
                         <Link href="/">Volver al inicio</Link>
                     </Button>
@@ -334,7 +333,7 @@ export default function WorkshopDetailPage() {
     <div className="container mx-auto py-12 px-4">
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-12">
             <div className="lg:col-span-2 space-y-8">
-                {/* Image Header */}
+                {/* Cabecera con Imagen */}
                 <div className="relative h-96 w-full rounded-xl overflow-hidden shadow-lg bg-muted flex items-center justify-center">
                     {workshop.imageUrl ? (
                         <Image
@@ -359,10 +358,9 @@ export default function WorkshopDetailPage() {
                         {user && !user.isAnonymous && (
                             <Button size="icon" variant="secondary" onClick={toggleFavorite} className="rounded-full h-12 w-12 shrink-0">
                                 <Heart className={cn("h-6 w-6 transition-all", isFavorite ? "text-red-500 fill-red-500" : "text-muted-foreground")} />
-                                <span className="sr-only">Añadir a favoritos</span>
+                                <span className="sr-only">Favorito</span>
                             </Button>
                         )}
-                     
                     </div>
                     {workshop.obdScannerService && (
                         <Badge variant="default" className="absolute top-4 right-4 bg-accent text-accent-foreground border-transparent shadow-md">
@@ -371,7 +369,7 @@ export default function WorkshopDetailPage() {
                     )}
                 </div>
                 
-                {/* Details Card */}
+                {/* Detalles del Taller */}
                 <Card>
                     <CardHeader>
                         <CardTitle>Acerca de {workshop.name}</CardTitle>
@@ -409,76 +407,69 @@ export default function WorkshopDetailPage() {
                                 ))}
                                 </div>
                             ) : (
-                                <p className="text-sm text-muted-foreground">Este taller aún no ha especificado sus servicios.</p>
+                                <p className="text-sm text-muted-foreground">Aún no se han especificado servicios.</p>
                             )}
                         </div>
                     </CardContent>
                 </Card>
-                 {/* Reviews Section */}
+
+                 {/* Sección de Reseñas */}
                 <Card>
                     <CardHeader>
-                        <CardTitle className="flex items-center gap-2"><MessageSquare/> Reseñas de Clientes</CardTitle>
+                        <CardTitle className="flex items-center gap-2"><MessageSquare/> Reseñas</CardTitle>
                     </CardHeader>
                     <CardContent className="space-y-6">
-                        {user && !user.isAnonymous && (
-                          <>
-                            {userHasReviewed ? (
-                                <div className="p-4 text-center bg-muted rounded-lg">
-                                    <p className="text-muted-foreground">Ya has dejado una reseña para este taller.</p>
-                                </div>
-                            ) : (
-                              <Form {...reviewForm}>
-                                 <form onSubmit={reviewForm.handleSubmit(onReviewSubmit)} className="space-y-4 p-4 border rounded-lg bg-card/30">
-                                    <FormLabel>Deja tu reseña</FormLabel>
+                        {user && !user.isAnonymous && !userHasReviewed && (
+                            <Form {...reviewForm}>
+                                <form onSubmit={reviewForm.handleSubmit(onReviewSubmit)} className="space-y-4 p-4 border rounded-lg bg-card/30">
+                                    <FormLabel>Deja tu opinión</FormLabel>
                                     <FormField
-                                      control={reviewForm.control}
-                                      name="rating"
-                                      render={({ field }) => (
+                                        control={reviewForm.control}
+                                        name="rating"
+                                        render={({ field }) => (
                                         <FormItem className="flex items-center gap-2">
-                                          <FormLabel>Calificación:</FormLabel>
-                                           <div className="flex">
-                                              {[1, 2, 3, 4, 5].map((star) => (
+                                            <div className="flex">
+                                                {[1, 2, 3, 4, 5].map((star) => (
                                                 <Star
-                                                  key={star}
-                                                  className={cn("h-6 w-6 cursor-pointer", field.value >= star ? "text-amber-400 fill-amber-400" : "text-muted-foreground")}
-                                                  onClick={() => field.onChange(star)}
+                                                    key={star}
+                                                    className={cn("h-6 w-6 cursor-pointer transition-colors", field.value >= star ? "text-amber-400 fill-amber-400" : "text-muted-foreground")}
+                                                    onClick={() => field.onChange(star)}
                                                 />
-                                              ))}
-                                          </div>
-                                          <FormMessage/>
+                                                ))}
+                                            </div>
+                                            <FormMessage/>
                                         </FormItem>
-                                      )}
+                                        )}
                                     />
                                     <FormField
-                                      control={reviewForm.control}
-                                      name="comment"
-                                      render={({ field }) => (
+                                        control={reviewForm.control}
+                                        name="comment"
+                                        render={({ field }) => (
                                         <FormItem>
-                                          <FormControl>
-                                            <Textarea placeholder="Comparte tu experiencia con este taller..." {...field}/>
-                                          </FormControl>
-                                          <FormMessage />
+                                            <FormControl>
+                                            <Textarea placeholder="Cuéntanos tu experiencia..." {...field}/>
+                                            </FormControl>
+                                            <FormMessage />
                                         </FormItem>
-                                      )}
+                                        )}
                                     />
                                     <Button type="submit" disabled={isSubmittingReview}>
-                                      {isSubmittingReview ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <Send className="mr-2 h-4 w-4" />}
-                                      Enviar Reseña
+                                        {isSubmittingReview ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <Send className="mr-2 h-4 w-4" />}
+                                        Enviar Reseña
                                     </Button>
                                 </form>
-                              </Form>
-                            )}
-                          </>
+                            </Form>
                         )}
                         <div className="space-y-4">
                             {reviews && reviews.length > 0 ? (
                                 reviews.map(review => (
-                                <div key={review.id} className="p-4 border-b">
+                                <div key={review.id} className="p-4 border-b last:border-0">
                                     <div className="flex justify-between items-center">
                                       <p className="font-semibold">{review.authorName || 'Anónimo'}</p>
                                       <div className="flex items-center">
-                                          {[...Array(review.rating)].map((_, i) => <Star key={i} className="h-4 w-4 fill-amber-400 text-amber-400"/>)}
-                                          {[...Array(5 - review.rating)].map((_, i) => <Star key={i} className="h-4 w-4 text-muted-foreground"/>)}
+                                          {[...Array(5)].map((_, i) => (
+                                            <Star key={i} className={cn("h-4 w-4", i < review.rating ? "fill-amber-400 text-amber-400" : "text-muted-foreground")}/>
+                                          ))}
                                       </div>
                                     </div>
                                     <p className="text-muted-foreground mt-2">{review.comment}</p>
@@ -486,27 +477,27 @@ export default function WorkshopDetailPage() {
                                 </div>
                                 ))
                             ) : (
-                                <p className="text-muted-foreground text-center">Todavía no hay reseñas para este taller. ¡Sé el primero!</p>
+                                <p className="text-muted-foreground text-center py-4">Sin reseñas todavía. ¡Sé el primero!</p>
                             )}
                         </div>
                     </CardContent>
                 </Card>
             </div>
             
-            {/* Appointment Form */}
+            {/* Formulario de Cita */}
             <div className="lg:col-span-1">
-                <Card className="sticky top-24 shadow-xl">
+                <Card className="sticky top-24 shadow-xl border-primary/10">
                     <CardHeader>
-                        <CardTitle>Agendar una Cita</CardTitle>
-                        <CardDescription>Selecciona una fecha y describe el problema de tu vehículo.</CardDescription>
+                        <CardTitle>Agendar Cita</CardTitle>
+                        <CardDescription>Reserva tu lugar y agiliza la atención vía WhatsApp.</CardDescription>
                     </CardHeader>
                     <CardContent>
                         {user ? (
                             (!vehicles || vehicles.length === 0) ? (
                                 <div className="flex flex-col items-center justify-center text-center space-y-4 p-8 border-2 border-dashed rounded-lg">
-                                    <p className="text-muted-foreground">Debes tener al menos un vehículo registrado para agendar una cita.</p>
+                                    <p className="text-muted-foreground">Registra un vehículo primero para poder agendar.</p>
                                     <Button asChild>
-                                        <Link href="/dashboard/my-vehicles">Registrar mi Vehículo</Link>
+                                        <Link href="/dashboard/my-vehicles">Registrar Vehículo</Link>
                                     </Button>
                                 </div>
                             ) : (
@@ -517,17 +508,17 @@ export default function WorkshopDetailPage() {
                                             name="vehicleId"
                                             render={({ field }) => (
                                                 <FormItem>
-                                                <FormLabel>Selecciona tu Vehículo</FormLabel>
+                                                <FormLabel>Vehículo</FormLabel>
                                                 <Select onValueChange={field.onChange} defaultValue={field.value}>
                                                     <FormControl>
                                                     <SelectTrigger>
-                                                        <SelectValue placeholder="Elige tu vehículo" />
+                                                        <SelectValue placeholder="Selecciona un vehículo" />
                                                     </SelectTrigger>
                                                     </FormControl>
                                                     <SelectContent>
-                                                    {vehicles.map(vehicle => (
-                                                        <SelectItem key={vehicle.id} value={vehicle.id}>
-                                                        {vehicle.brand} {vehicle.model} ({vehicle.year})
+                                                    {vehicles.map(v => (
+                                                        <SelectItem key={v.id} value={v.id}>
+                                                        {v.brand} {v.model} ({v.year})
                                                         </SelectItem>
                                                     ))}
                                                     </SelectContent>
@@ -541,7 +532,7 @@ export default function WorkshopDetailPage() {
                                             name="appointmentDateTime"
                                             render={({ field }) => (
                                                 <FormItem className="flex flex-col">
-                                                <FormLabel>Fecha de la Cita</FormLabel>
+                                                <FormLabel>Fecha</FormLabel>
                                                 <Popover>
                                                     <PopoverTrigger asChild>
                                                     <FormControl>
@@ -555,7 +546,7 @@ export default function WorkshopDetailPage() {
                                                         {field.value ? (
                                                             format(field.value, "PPP", { locale: es })
                                                         ) : (
-                                                            <span>Elige una fecha</span>
+                                                            <span>Seleccionar fecha</span>
                                                         )}
                                                         <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
                                                         </Button>
@@ -580,24 +571,24 @@ export default function WorkshopDetailPage() {
                                             name="description"
                                             render={({ field }) => (
                                             <FormItem>
-                                                <FormLabel>Describe el servicio que necesitas</FormLabel>
+                                                <FormLabel>Motivo de la visita</FormLabel>
                                                 <FormControl>
-                                                <Textarea placeholder="Ej: El auto hace un ruido extraño al frenar, necesito una revisión de frenos." {...field} />
+                                                <Textarea placeholder="Ej: Ruido en los frenos, cambio de aceite..." {...field} />
                                                 </FormControl>
                                                 <FormMessage />
                                             </FormItem>
                                             )}
                                         />
-                                        <Button type="submit" disabled={isSubmitting} className="w-full">
-                                            {isSubmitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <WhatsappIcon />}
-                                            Contactar por WhatsApp para Agendar
+                                        <Button type="submit" disabled={isSubmitting} className="w-full h-12 text-lg">
+                                            {isSubmitting ? <Loader2 className="mr-2 h-5 w-5 animate-spin" /> : <WhatsappIcon />}
+                                            Contactar por WhatsApp
                                         </Button>
                                     </form>
                                 </Form>
                             )
                         ) : (
                             <div className="flex flex-col items-center justify-center text-center space-y-4 p-8 border-2 border-dashed rounded-lg">
-                                <p className="text-muted-foreground">Debes iniciar sesión para poder agendar una cita.</p>
+                                <p className="text-muted-foreground">Inicia sesión para agendar tu cita.</p>
                                 <Button onClick={handleLogin}>Iniciar Sesión</Button>
                             </div>
                         )}

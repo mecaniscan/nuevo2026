@@ -3,7 +3,7 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    // Helper functions for readability
+    // Funciones auxiliares para legibilidad y seguridad
     function isSignedIn() {
       return request.auth != null;
     }
@@ -16,7 +16,7 @@ service cloud.firestore {
       return isSignedIn() && get(/databases/$(database)/documents/workshops/$(workshopId)).data.ownerId == request.auth.uid;
     }
     
-    // USERS collection
+    // Colección de USUARIOS
     match /users/{userId} {
       allow create: if isOwner(userId);
       allow read, update, delete: if isOwner(userId);
@@ -34,22 +34,26 @@ service cloud.firestore {
       }
     }
 
-    // WORKSHOPS collection
+    // Colección de TALLERES
     match /workshops/{workshopId} {
-      // Anyone can read workshop data.
+      // Lectura pública permitida para todos.
       allow get, list: if true;
-      // Only an authenticated user can create a workshop for themselves.
+      
+      // Creación: Solo usuarios registrados y estableciendo su propio ownerId.
       allow create: if isSignedIn() && request.resource.data.ownerId == request.auth.uid;
       
-      // Allow owner to update everything. 
-      // Allow authenticated users to update ONLY review stats (needed for transactions when reviewing).
-      allow update: if isOwner(resource.data.ownerId) || 
-                    (isSignedIn() && 
-                     request.resource.data.diff(resource.data).affectedKeys().hasOnly(['reviewCount', 'averageRating']));
+      // Actualización: 
+      // 1. El dueño puede editar todo.
+      // 2. Otros usuarios (clientes) pueden actualizar SOLO las estadísticas de reseñas mediante transacciones.
+      allow update: if isSignedIn() && (
+        isOwner(resource.data.ownerId) || 
+        (request.resource.data.diff(resource.data).affectedKeys().hasOnly(['reviewCount', 'averageRating']) && 
+         request.resource.data.ownerId == resource.data.ownerId)
+      );
       
       allow delete: if isOwner(resource.data.ownerId);
 
-       // Subcollections of WORKSHOP
+       // Subcolecciones de TALLER
       match /services/{serviceId} {
         allow list, get: if true;
         allow create, update, delete: if isWorkshopOwner(workshopId);
@@ -57,18 +61,18 @@ service cloud.firestore {
       
       match /reviews/{reviewUserId} {
         allow list, get: if true;
-        // A user can only manage their own review document.
+        // Un usuario solo puede gestionar su propio documento de reseña por su UID.
         allow create, update, delete: if isSignedIn() && request.auth.uid == reviewUserId;
       }
     }
     
-    // APPOINTMENTS collection
+    // Colección de CITAS
     match /appointments/{appointmentId} {
         allow create: if isOwner(request.resource.data.userId);
         allow read, update, delete: if isOwner(resource.data.userId) || isWorkshopOwner(resource.data.workshopId);
     }
 
-    // MARKETPLACE collection
+    // Colección de MARKETPLACE
     match /marketplace/{marketVehicleId} {
       allow get, list: if true;
       allow create: if isOwner(request.resource.data.userId);
