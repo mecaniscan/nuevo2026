@@ -24,10 +24,10 @@ export function initializeFirebase() {
 
 /**
  * Exports core SDK services.
- * Uses the storageBucket from config with the proper gs:// protocol.
+ * Uses the specific storage bucket URI for us-central1 consistency.
  */
 export function getSdks(firebaseApp: FirebaseApp) {
-  // Use the provided bucket directly for consistency
+  // Use the exact bucket URI provided to repair missing metadata/dataset issues
   const bucketUrl = 'gs://studio-3565960860-31363.firebasestorage.app';
   
   return {

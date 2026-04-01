@@ -10,7 +10,7 @@
     --card-foreground: 222.2 84% 4.9%;
     --popover: 0 0% 100%;
     --popover-foreground: 222.2 84% 4.9%;
-    --primary: 217.2 91.2% 59.8%; /* Azul Eléctrico */
+    --primary: 217.2 91.2% 59.8%; /* Azul Eléctrico Tecnológico */
     --primary-foreground: 210 40% 98%;
     --secondary: 199 89% 48%; /* Cian */
     --secondary-foreground: 222.2 47.4% 11.2%;
@@ -24,6 +24,7 @@
     --input: 214.3 31.8% 91.4%;
     --ring: 221.2 83.2% 53.3%;
     --radius: 0.75rem;
+    --orange: 24 95% 53%;
   }
   .dark {
     --background: 222.2 47.4% 11.2%;
@@ -45,6 +46,7 @@
     --border: 217.2 32.6% 17.5%;
     --input: 217.2 32.6% 17.5%;
     --ring: 224.3 76.3% 48%;
+    --orange: 24 95% 53%;
   }
 }
 

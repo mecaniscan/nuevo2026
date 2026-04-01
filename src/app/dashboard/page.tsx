@@ -202,7 +202,7 @@ export default function DashboardPage() {
       </div>
       
       <div className="grid gap-6 lg:grid-cols-3">
-        {/* Vehicles Summary Section */}
+        {/* Vehicles Summary Section with Thumbnails */}
         <div className="lg:col-span-3 space-y-4">
             <div className="flex items-center justify-between">
                 <h2 className="text-xl font-bold flex items-center gap-2"><Car className="text-primary"/> Resumen de mis Vehículos</h2>
@@ -218,7 +218,7 @@ export default function DashboardPage() {
                     {vehicles.slice(0, 3).map((vehicle) => {
                         const nextChange = getNextOilChange(vehicle.id);
                         return (
-                            <Card key={vehicle.id} className="overflow-hidden border-primary/10 hover:border-primary/30 transition-colors">
+                            <Card key={vehicle.id} className="overflow-hidden border-primary/10 hover:border-primary/30 transition-colors shadow-sm">
                                 <CardContent className="p-0 flex items-stretch h-32">
                                     <div className="relative w-32 shrink-0 bg-muted">
                                         {vehicle.imageUrls && vehicle.imageUrls[0] ? (
@@ -245,7 +245,7 @@ export default function DashboardPage() {
                                                 </div>
                                             )}
                                             {vehicle.isForSale ? (
-                                                <Badge className="text-[9px] h-4 px-1.5 bg-accent text-accent-foreground"><BadgePercent className="h-2 w-2 mr-1"/> En Marketplace</Badge>
+                                                <Badge className="text-[9px] h-4 px-1.5 bg-accent text-accent-foreground border-transparent"><BadgePercent className="h-2 w-2 mr-1"/> En Marketplace</Badge>
                                             ) : (
                                                 <Badge variant="outline" className="text-[9px] h-4 px-1.5">Uso Personal</Badge>
                                             )}
