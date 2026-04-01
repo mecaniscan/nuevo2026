@@ -37,10 +37,13 @@ service cloud.firestore {
       allow create: if isSignedIn() && request.resource.data.ownerId == request.auth.uid;
       
       // Permitir actualización del dueño o actualización pública de estadísticas de reseñas.
-      // Se permite que cualquier usuario autenticado actualice SOLO los contadores de reseñas.
+      // Se permite que cualquier usuario autenticado actualice los contadores si no altera campos sensibles como el ownerId.
       allow update: if isSignedIn() && (
         isOwner(resource.data.ownerId) || 
-        (request.resource.data.diff(resource.data).affectedKeys().hasOnly(['reviewCount', 'averageRating']))
+        (
+          request.resource.data.ownerId == resource.data.ownerId &&
+          request.resource.data.diff(resource.data).affectedKeys().hasOnly(['reviewCount', 'averageRating'])
+        )
       );
       
       allow delete: if isOwner(resource.data.ownerId);

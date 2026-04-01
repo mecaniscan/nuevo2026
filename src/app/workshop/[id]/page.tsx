@@ -7,10 +7,10 @@ import * as z from 'zod';
 import { useParams, useRouter } from 'next/navigation';
 import Image from 'next/image';
 import { useDoc, useUser, useFirestore, useMemoFirebase, useCollection, FirestorePermissionError, errorEmitter } from '@/firebase';
-import { doc, collection, query, serverTimestamp, Timestamp, writeBatch, deleteDoc, setDoc, addDoc, runTransaction } from 'firebase/firestore';
+import { doc, collection, serverTimestamp, Timestamp, deleteDoc, setDoc, addDoc, runTransaction } from 'firebase/firestore';
 import type { Workshop, Appointment, Service, Review, FavoriteWorkshop, Vehicle } from '@/lib/types';
 import { Loader2, MapPin, ScanLine, Star, Calendar as CalendarIcon, Wrench, MessageSquare, Send, Heart, Phone, Car } from 'lucide-react';
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
@@ -241,6 +241,7 @@ export default function WorkshopDetailPage() {
                 const newReviewCount = currentReviewCount + 1;
                 const newAverageRating = (currentAverageRating * currentReviewCount + values.rating) / newReviewCount;
 
+                // Solo actualizamos los campos de estadísticas, respetando las reglas de seguridad.
                 transaction.update(workshopRef, {
                     reviewCount: newReviewCount,
                     averageRating: newAverageRating
