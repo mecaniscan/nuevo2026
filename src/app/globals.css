@@ -12,11 +12,11 @@
     --popover-foreground: 222.2 84% 4.9%;
     --primary: 184 100% 75%; /* Azul Eléctrico (#7DF9FF) */
     --primary-foreground: 222.2 47.4% 11.2%;
-    --secondary: 199 89% 48%; /* Cian */
+    --secondary: 190 90% 50%; /* Cian Brillante */
     --secondary-foreground: 210 40% 98%;
     --muted: 210 40% 96.1%;
     --muted-foreground: 215.4 16.3% 46.9%;
-    --accent: 190 90% 50%; /* Cian Brillante */
+    --accent: 184 100% 75%;
     --accent-foreground: 222.2 47.4% 11.2%;
     --destructive: 0 84.2% 60.2%;
     --destructive-foreground: 210 40% 98%;
@@ -24,27 +24,27 @@
     --input: 214.3 31.8% 91.4%;
     --ring: 184 100% 75%;
     --radius: 0.75rem;
-    --orange: 39 100% 50%; /* Naranja brillante (#FFA500) */
+    --orange: 39 100% 50%;
   }
   .dark {
-    --background: 0 0% 20%; /* Gris oscuro (#333333) */
+    --background: 222 47% 11%; /* Fondo oscuro profundo */
     --foreground: 210 40% 98%;
-    --card: 0 0% 20%;
+    --card: 222 47% 13%;
     --card-foreground: 210 40% 98%;
-    --popover: 0 0% 15%;
+    --popover: 222 47% 10%;
     --popover-foreground: 210 40% 98%;
-    --primary: 184 100% 75%;
+    --primary: 184 100% 75%; /* Azul Eléctrico */
     --primary-foreground: 222.2 47.4% 11.2%;
-    --secondary: 199 89% 48%;
+    --secondary: 190 90% 50%; /* Cian */
     --secondary-foreground: 210 40% 98%;
-    --muted: 0 0% 25%;
+    --muted: 217.2 32.6% 17.5%;
     --muted-foreground: 215 20.2% 65.1%;
     --accent: 190 90% 50%;
     --accent-foreground: 210 40% 98%;
     --destructive: 0 62.8% 30.6%;
     --destructive-foreground: 210 40% 98%;
-    --border: 0 0% 25%;
-    --input: 0 0% 25%;
+    --border: 217.2 32.6% 17.5%;
+    --input: 217.2 32.6% 17.5%;
     --ring: 184 100% 75%;
     --orange: 39 100% 50%;
   }
@@ -72,4 +72,8 @@
 
 .text-gradient-tech {
   @apply bg-gradient-tech bg-clip-text text-transparent;
+}
+
+.glass-card {
+  @apply bg-card/40 backdrop-blur-md border border-white/10;
 }

@@ -36,9 +36,9 @@ interface ActionButtonProps {
 
 const ActionButton = ({ href, icon, title, description, disabled = false }: ActionButtonProps) => (
   <Link href={!disabled ? href : '#'} className={cn("group block", disabled && "pointer-events-none opacity-50")}>
-      <Card className="h-full transition-all duration-300 hover:border-primary hover:shadow-xl hover:-translate-y-1 bg-card/40 backdrop-blur-sm">
+      <Card className="h-full transition-all duration-300 hover:border-primary hover:shadow-xl hover:-translate-y-1 bg-card/40 backdrop-blur-sm border-primary/10">
           <CardHeader className="flex flex-row items-center gap-4">
-              <div className="bg-primary/10 p-3 rounded-full">
+              <div className="bg-primary/10 p-3 rounded-full group-hover:bg-primary/20 transition-colors">
                   {icon}
               </div>
               <div className="flex-1">
@@ -211,7 +211,7 @@ export default function DashboardPage() {
             </div>
             
             {isVehiclesLoading ? (
-                <div className="flex h-32 items-center justify-center bg-card/20 rounded-xl border border-dashed"><Loader2 className="animate-spin h-8 w-8 text-primary"/></div>
+                <div className="flex h-32 items-center justify-center bg-card/20 rounded-xl border border-dashed border-primary/20"><Loader2 className="animate-spin h-8 w-8 text-primary"/></div>
             ) : vehicles && vehicles.length > 0 ? (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                     {vehicles.slice(0, 3).map((vehicle) => {
