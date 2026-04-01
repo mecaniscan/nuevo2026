@@ -24,10 +24,10 @@ export function initializeFirebase() {
 
 /**
  * Exports core SDK services.
- * Explicitly uses the storage bucket for us-central1 to repair metadata issues.
+ * Explicitly uses the storage bucket for us-central1 to ensure metadata consistency.
  */
 export function getSdks(firebaseApp: FirebaseApp) {
-  // Region-specific bucket for consistent metadata management
+  // Region-specific bucket for consistent metadata management in us-central1
   const bucketUrl = 'gs://studio-3565960860-31363.firebasestorage.app';
   
   return {

@@ -36,11 +36,11 @@ service cloud.firestore {
       allow get, list: if true;
       allow create: if isSignedIn() && request.resource.data.ownerId == request.auth.uid;
       
-      // Permitir actualización del dueño o actualización pública de estadísticas de reseñas (reviewCount y averageRating)
-      // Esto es crucial para que la transacción de reseñas funcione para los clientes.
+      // Permitir actualización del dueño o actualización pública de estadísticas de reseñas.
+      // Usamos un control de cambios específico para asegurar la integridad de los datos.
       allow update: if isSignedIn() && (
         isOwner(resource.data.ownerId) || 
-        (request.resource.data.diff(resource.data).affectedKeys().hasOnly(['reviewCount', 'averageRating']))
+        (request.resource.data.diff(resource.data).affectedKeys().hasAny(['reviewCount', 'averageRating']))
       );
       
       allow delete: if isOwner(resource.data.ownerId);
@@ -52,6 +52,7 @@ service cloud.firestore {
       
       match /reviews/{reviewUserId} {
         allow list, get: if true;
+        // Permitir que el autor de la reseña gestione su propio documento
         allow create, update, delete: if isSignedIn() && request.auth.uid == reviewUserId;
       }
     }

@@ -36,14 +36,14 @@ interface ActionButtonProps {
 
 const ActionButton = ({ href, icon, title, description, disabled = false }: ActionButtonProps) => (
   <Link href={!disabled ? href : '#'} className={cn("group block", disabled && "pointer-events-none opacity-50")}>
-      <Card className="h-full transition-all duration-300 hover:border-primary hover:shadow-xl hover:-translate-y-1">
+      <Card className="h-full transition-all duration-300 hover:border-primary hover:shadow-xl hover:-translate-y-1 bg-card/40 backdrop-blur-sm">
           <CardHeader className="flex flex-row items-center gap-4">
               <div className="bg-primary/10 p-3 rounded-full">
                   {icon}
               </div>
               <div className="flex-1">
-                  <CardTitle className="text-xl font-semibold">{title}</CardTitle>
-                  <CardDescription>{description}</CardDescription>
+                  <CardTitle className="text-xl font-semibold text-primary">{title}</CardTitle>
+                  <CardDescription className="text-muted-foreground">{description}</CardDescription>
               </div>
               <ArrowRight className="ml-auto h-5 w-5 text-muted-foreground transition-transform group-hover:translate-x-1"/>
           </CardHeader>
@@ -182,7 +182,6 @@ export default function DashboardPage() {
 
   const hasWorkshop = workshops && workshops.length > 0;
 
-  // Helper to find the next oil change mileage for a vehicle
   const getNextOilChange = (vehicleId: string) => {
     const latestChange = oilChanges?.find(oc => oc.vehicleId === vehicleId);
     return latestChange ? latestChange.nextChangeMileage : null;
@@ -192,10 +191,10 @@ export default function DashboardPage() {
     <div className="container mx-auto py-12 px-4">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-8">
         <div>
-          <h1 className="text-3xl font-bold font-headline text-primary">Panel de Control</h1>
-          <p className="text-muted-foreground">Bienvenido, {user?.displayName || user?.email}.</p>
+          <h1 className="text-4xl font-bold font-headline text-primary tracking-tight">Panel de Control</h1>
+          <p className="text-muted-foreground">Bienvenido de nuevo, <span className="text-foreground font-semibold">{user?.displayName || user?.email}</span>.</p>
         </div>
-        <Button onClick={handleLogout} variant="outline" className="mt-4 sm:mt-0">
+        <Button onClick={handleLogout} variant="outline" className="mt-4 sm:mt-0 border-primary/20 hover:bg-primary/10">
           <LogOut className="mr-2 h-4 w-4" />
           Cerrar Sesión
         </Button>
@@ -205,49 +204,51 @@ export default function DashboardPage() {
         {/* Vehicles Summary Section with Thumbnails */}
         <div className="lg:col-span-3 space-y-4">
             <div className="flex items-center justify-between">
-                <h2 className="text-xl font-bold flex items-center gap-2 text-primary"><Car /> Resumen de mis Vehículos</h2>
-                <Button variant="link" asChild className="p-0 text-primary">
-                    <Link href="/dashboard/my-vehicles">Ver todos <ArrowRight className="ml-1 h-4 w-4"/></Link>
+                <h2 className="text-xl font-bold flex items-center gap-2 text-primary"><Car /> Mis Vehículos</h2>
+                <Button variant="link" asChild className="p-0 text-primary hover:text-primary/80">
+                    <Link href="/dashboard/my-vehicles" className="flex items-center">Gestionar todos <ArrowRight className="ml-1 h-4 w-4"/></Link>
                 </Button>
             </div>
             
             {isVehiclesLoading ? (
-                <div className="flex h-32 items-center justify-center"><Loader2 className="animate-spin h-8 w-8 text-primary"/></div>
+                <div className="flex h-32 items-center justify-center bg-card/20 rounded-xl border border-dashed"><Loader2 className="animate-spin h-8 w-8 text-primary"/></div>
             ) : vehicles && vehicles.length > 0 ? (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                     {vehicles.slice(0, 3).map((vehicle) => {
                         const nextChange = getNextOilChange(vehicle.id);
                         return (
-                            <Card key={vehicle.id} className="overflow-hidden border-primary/20 hover:border-primary/50 transition-colors shadow-sm bg-card/50 backdrop-blur-sm">
+                            <Card key={vehicle.id} className="overflow-hidden border-primary/20 hover:border-primary/50 transition-all shadow-md bg-card/40 backdrop-blur-md group">
                                 <CardContent className="p-0 flex items-stretch h-32">
                                     <div className="relative w-32 shrink-0 bg-muted">
                                         {vehicle.imageUrls && vehicle.imageUrls[0] ? (
-                                            <Image src={vehicle.imageUrls[0]} alt={vehicle.brand} fill className="object-cover" />
+                                            <Image src={vehicle.imageUrls[0]} alt={vehicle.brand} fill className="object-cover transition-transform group-hover:scale-110" />
                                         ) : (
                                             <Car className="h-10 w-10 text-muted-foreground m-auto absolute inset-0" />
                                         )}
                                     </div>
                                     <div className="p-4 flex flex-col justify-between flex-1 overflow-hidden">
                                         <div>
-                                            <h3 className="font-bold truncate text-sm text-primary">{vehicle.brand} {vehicle.model}</h3>
-                                            <p className="text-[10px] text-muted-foreground truncate">{vehicle.year} &bull; {vehicle.licensePlate}</p>
+                                            <h3 className="font-bold truncate text-sm text-primary uppercase tracking-wider">{vehicle.brand} {vehicle.model}</h3>
+                                            <p className="text-[10px] text-muted-foreground font-mono">{vehicle.year} &bull; {vehicle.licensePlate}</p>
                                         </div>
                                         <div className="space-y-1">
                                             {nextChange ? (
                                                 <div className="flex items-center gap-1 text-[10px] font-bold text-orange-500">
                                                     <Droplets className="h-3 w-3" />
-                                                    Próximo: {nextChange.toLocaleString()} km
+                                                    Próximo cambio: {nextChange.toLocaleString()} km
                                                 </div>
                                             ) : (
-                                                <div className="flex items-center gap-1 text-[10px] text-muted-foreground">
+                                                <div className="flex items-center gap-1 text-[10px] text-muted-foreground italic">
                                                     <AlertCircle className="h-3 w-3" />
                                                     Sin registro de aceite
                                                 </div>
                                             )}
                                             {vehicle.isForSale ? (
-                                                <Badge className="text-[9px] h-4 px-1.5 bg-accent text-accent-foreground border-transparent"><BadgePercent className="h-2 w-2 mr-1"/> En Marketplace</Badge>
+                                                <Badge className="text-[9px] h-4 px-1.5 bg-accent text-accent-foreground border-transparent font-bold">
+                                                    <BadgePercent className="h-2 w-2 mr-1"/> MARKETPLACE
+                                                </Badge>
                                             ) : (
-                                                <Badge variant="outline" className="text-[9px] h-4 px-1.5">Uso Personal</Badge>
+                                                <Badge variant="outline" className="text-[9px] h-4 px-1.5 border-primary/30 text-primary/80">USO PERSONAL</Badge>
                                             )}
                                         </div>
                                     </div>
@@ -257,13 +258,13 @@ export default function DashboardPage() {
                     })}
                 </div>
             ) : (
-                <Card className="flex flex-col items-center justify-center p-8 text-center bg-gradient-to-br from-primary/5 to-card border-dashed border-2">
+                <Card className="flex flex-col items-center justify-center p-8 text-center bg-gradient-to-br from-primary/5 to-card/20 border-dashed border-2 border-primary/20 rounded-xl">
                     <CardHeader>
-                        <CardTitle className="text-lg">Comienza a registrar tu actividad</CardTitle>
-                        <CardDescription>Añade tus vehículos para llevar un control profesional de su mantenimiento.</CardDescription>
+                        <CardTitle className="text-lg text-primary">Tu Garaje Digital está vacío</CardTitle>
+                        <CardDescription>Añade tus vehículos para llevar un control profesional de su mantenimiento y certificados.</CardDescription>
                     </CardHeader>
                     <CardContent>
-                        <Button asChild>
+                        <Button asChild className="bg-primary hover:bg-primary/90 text-primary-foreground font-bold">
                             <Link href="/dashboard/register-vehicle">Registrar mi primer vehículo</Link>
                         </Button>
                     </CardContent>
@@ -275,8 +276,8 @@ export default function DashboardPage() {
             <ActionButton 
                 href="/dashboard/my-appointments"
                 icon={<Calendar className="h-8 w-8 text-primary"/>}
-                title="Citas por WhatsApp"
-                description="Gestiona tus citas guardadas."
+                title="Citas WhatsApp"
+                description="Historial de citas agendadas."
             />
         </div>
         
@@ -285,7 +286,7 @@ export default function DashboardPage() {
                 href="/dashboard/my-favorites"
                 icon={<Heart className="h-8 w-8 text-primary"/>}
                 title="Mis Favoritos"
-                description="Accede a tus talleres guardados."
+                description="Acceso rápido a tus talleres."
             />
         </div>
 
@@ -293,8 +294,8 @@ export default function DashboardPage() {
              <ActionButton 
                 href="/dashboard/oil-changes"
                 icon={<Droplets className="h-8 w-8 text-primary"/>}
-                title="Cambios de Aceite"
-                description="Lleva un historial de mantenimiento."
+                title="Mantenimiento"
+                description="Control de cambios de aceite."
             />
         </div>
 
@@ -302,8 +303,8 @@ export default function DashboardPage() {
              <ActionButton 
                 href="/dashboard/my-vehicles"
                 icon={<Car className="h-8 w-8 text-primary"/>}
-                title="Mis Vehículos"
-                description="Registra y gestiona tus vehículos."
+                title="Gestionar Autos"
+                description="Registra y edita tu flota."
             />
         </div>
 
@@ -311,29 +312,29 @@ export default function DashboardPage() {
              <ActionButton 
                 href="/dashboard/certificates"
                 icon={<FileCheck className="h-8 w-8 text-primary"/>}
-                title="Certificados Digitales"
-                description="Visualiza e imprime tus certificados de venta."
+                title="Certificados Venta"
+                description="Documentación digital de tus autos."
             />
         </div>
 
         <div className="lg:col-span-3">
-             <Card className="border-primary/10">
+             <Card className="border-primary/10 bg-card/20 backdrop-blur-md">
                 <CardHeader>
-                    <CardTitle className="flex items-center gap-2 text-xl font-bold"><Settings className="h-5 w-5 text-primary"/> Configuración de la Cuenta</CardTitle>
+                    <CardTitle className="flex items-center gap-2 text-xl font-bold text-primary"><Settings className="h-5 w-5"/> Configuración de la Cuenta</CardTitle>
                 </CardHeader>
                 <CardContent className="flex flex-col items-start gap-4 sm:flex-row sm:items-center">
-                    <Button asChild variant="outline">
+                    <Button asChild variant="outline" className="border-primary/20">
                       <Link href="/dashboard/profile">
                         <Pencil className="mr-2 h-4 w-4" /> Editar Perfil
                       </Link>
                     </Button>
-                    <Button asChild variant={hasWorkshop ? "outline" : "default"}>
+                    <Button asChild variant={hasWorkshop ? "outline" : "default"} className={!hasWorkshop ? "bg-primary text-primary-foreground font-bold" : "border-primary/20"}>
                         <Link href={hasWorkshop ? "/dashboard/edit-workshop" : "/dashboard/register-workshop"}>
                             {hasWorkshop ? <><Wrench className="mr-2 h-4 w-4" />Gestionar mi Taller</> : <><Building className="mr-2 h-4 w-4" />Registrar mi Taller</>}
                         </Link>
                     </Button>
                      {hasWorkshop && (
-                        <Button asChild variant="outline">
+                        <Button asChild variant="outline" className="border-primary/20">
                             <Link href="/dashboard/edit-services">
                                 <Wrench className="mr-2 h-4 w-4" />Gestionar Servicios
                             </Link>
@@ -341,7 +342,7 @@ export default function DashboardPage() {
                     )}
                     <AlertDialog>
                         <AlertDialogTrigger asChild>
-                            <Button variant="destructive">
+                            <Button variant="destructive" className="ml-auto">
                                <Trash2 className="mr-2 h-4 w-4"/> Eliminar Cuenta
                             </Button>
                         </AlertDialogTrigger>
@@ -349,12 +350,12 @@ export default function DashboardPage() {
                             <AlertDialogHeader>
                             <AlertDialogTitle>¿Estás absolutamente seguro?</AlertDialogTitle>
                             <AlertDialogDescription>
-                                Esta acción no se puede deshacer. Esto eliminará permanentemente tu cuenta y todos los datos asociados.
+                                Esta acción no se puede deshacer. Esto eliminará permanentemente tu cuenta y todos los datos asociados (vehículos, talleres, citas).
                             </AlertDialogDescription>
                             </AlertDialogHeader>
                             <AlertDialogFooter>
                             <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                            <AlertDialogAction onClick={handleDeleteAccount} className="bg-destructive hover:bg-destructive/90">Continuar</AlertDialogAction>
+                            <AlertDialogAction onClick={handleDeleteAccount} className="bg-destructive hover:bg-destructive/90 text-white font-bold">Confirmar Eliminación</AlertDialogAction>
                             </AlertDialogFooter>
                         </AlertDialogContent>
                     </AlertDialog>
