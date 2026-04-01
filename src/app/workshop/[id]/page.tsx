@@ -246,13 +246,7 @@ export default function WorkshopDetailPage() {
             await runTransaction(firestore, async (transaction) => {
                 const workshopDoc = await transaction.get(workshopRef);
                 if (!workshopDoc.exists()) {
-                    throw "El taller no existe.";
-                }
-
-                // Check if review already exists inside transaction for race conditions
-                const existingReviewDoc = await transaction.get(reviewRef);
-                if (existingReviewDoc.exists()) {
-                    throw new Error("Ya has dejado una reseña para este taller.");
+                    throw new Error("El taller no existe.");
                 }
 
                 const currentData = workshopDoc.data();
@@ -267,8 +261,9 @@ export default function WorkshopDetailPage() {
                     averageRating: newAverageRating
                 });
 
-                const reviewData: Omit<Review, 'id' | 'createdAt'> & { createdAt: any } = {
-                    ...values,
+                const reviewData = {
+                    rating: values.rating,
+                    comment: values.comment,
                     workshopId,
                     userId: user.uid,
                     authorName: user.displayName || user.email,
@@ -284,25 +279,19 @@ export default function WorkshopDetailPage() {
             reviewForm.reset({rating: 0, comment: ""});
 
         } catch (error: any) {
-            if (error.message === "Ya has dejado una reseña para este taller.") {
-                 toast({
-                    variant: "destructive",
-                    title: "Acción no permitida",
-                    description: error.message,
-                });
-            } else {
-                 const reviewData = {
-                    ...values,
-                    workshopId,
-                    userId: user.uid,
-                    authorName: user.displayName || user.email,
-                };
-                 errorEmitter.emit('permission-error', new FirestorePermissionError({
-                    path: reviewRef.path,
-                    operation: 'create',
-                    requestResourceData: reviewData
-                }));
-            }
+            console.error("Error en transacción de reseña:", error);
+            const reviewData = {
+                rating: values.rating,
+                comment: values.comment,
+                workshopId,
+                userId: user.uid,
+                authorName: user.displayName || user.email,
+            };
+            errorEmitter.emit('permission-error', new FirestorePermissionError({
+                path: reviewRef.path,
+                operation: 'create',
+                requestResourceData: reviewData
+            }));
         } finally {
             setIsSubmittingReview(false);
         }
