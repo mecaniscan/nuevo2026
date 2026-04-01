@@ -36,7 +36,7 @@ service cloud.firestore {
       allow get, list: if true;
       allow create: if isSignedIn() && request.resource.data.ownerId == request.auth.uid;
       
-      // Permitir actualización del dueño o actualización pública de estadísticas de reseñas
+      // Permitir actualización del dueño o actualización pública de estadísticas de reseñas (reviewCount y averageRating)
       allow update: if isSignedIn() && (
         isOwner(resource.data.ownerId) || 
         (request.resource.data.diff(resource.data).affectedKeys().hasOnly(['reviewCount', 'averageRating']))
