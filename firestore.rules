@@ -18,12 +18,9 @@ service cloud.firestore {
     
     // USERS collection
     match /users/{userId} {
-      // Any authenticated user can create their own document.
       allow create: if isOwner(userId);
-      // Only the owner can read, update, or delete their own document.
       allow read, update, delete: if isOwner(userId);
       
-      // Subcollections of USER
       match /oilChanges/{oilChangeId} {
         allow read, list, create, update, delete: if isOwner(userId);
       }
@@ -31,11 +28,10 @@ service cloud.firestore {
       match /favorites/{workshopId} {
           allow read, list, create, delete: if isOwner(userId);
       }
-    }
-
-    // Explicit rule for user vehicles
-    match /users/{userId}/vehicles/{vehicleId} {
-      allow read, list, create, update, delete: if isOwner(userId);
+      
+      match /vehicles/{vehicleId} {
+        allow read, list, create, update, delete: if isOwner(userId);
+      }
     }
 
     // WORKSHOPS collection
@@ -44,39 +40,38 @@ service cloud.firestore {
       allow get, list: if true;
       // Only an authenticated user can create a workshop for themselves.
       allow create: if isSignedIn() && request.resource.data.ownerId == request.auth.uid;
-      // Only the owner of the workshop can update or delete it.
-      allow update, delete: if isOwner(get(/databases/$(database)/documents/workshops/$(workshopId)).data.ownerId);
+      
+      // Allow owner to update everything. 
+      // Allow authenticated users to update ONLY review stats (needed for transactions when reviewing).
+      allow update: if isOwner(resource.data.ownerId) || 
+                    (isSignedIn() && 
+                     request.resource.data.diff(resource.data).affectedKeys().hasOnly(['reviewCount', 'averageRating']));
+      
+      allow delete: if isOwner(resource.data.ownerId);
 
        // Subcollections of WORKSHOP
       match /services/{serviceId} {
-        allow list: if true;
-        allow get: if true;
-        // Only the workshop owner can manage services.
+        allow list, get: if true;
         allow create, update, delete: if isWorkshopOwner(workshopId);
       }
       
       match /reviews/{userId} {
         allow list, get: if true;
-        // A user can only create/update/delete their own review document, identified by their UID.
+        // A user can only manage their own review document.
         allow create, update, delete: if isOwner(userId);
       }
     }
     
     // APPOINTMENTS collection
     match /appointments/{appointmentId} {
-        // A user can create an appointment for themselves.
         allow create: if isOwner(request.resource.data.userId);
-        // The user who created it or the workshop owner can read/update/delete it.
         allow read, update, delete: if isOwner(resource.data.userId) || isWorkshopOwner(resource.data.workshopId);
     }
 
     // MARKETPLACE collection
     match /marketplace/{vehicleId} {
-      // Anyone can see vehicles for sale.
       allow get, list: if true;
-      // The user creating the vehicle must be the owner.
       allow create: if isOwner(request.resource.data.userId);
-      // Only the vehicle owner can update or remove it from the marketplace.
       allow update, delete: if isOwner(resource.data.userId);
     }
   }
