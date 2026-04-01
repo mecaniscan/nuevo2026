@@ -205,8 +205,8 @@ export default function DashboardPage() {
         {/* Vehicles Summary Section with Thumbnails */}
         <div className="lg:col-span-3 space-y-4">
             <div className="flex items-center justify-between">
-                <h2 className="text-xl font-bold flex items-center gap-2"><Car className="text-primary"/> Resumen de mis Vehículos</h2>
-                <Button variant="link" asChild className="p-0">
+                <h2 className="text-xl font-bold flex items-center gap-2 text-primary"><Car /> Resumen de mis Vehículos</h2>
+                <Button variant="link" asChild className="p-0 text-primary">
                     <Link href="/dashboard/my-vehicles">Ver todos <ArrowRight className="ml-1 h-4 w-4"/></Link>
                 </Button>
             </div>
@@ -218,7 +218,7 @@ export default function DashboardPage() {
                     {vehicles.slice(0, 3).map((vehicle) => {
                         const nextChange = getNextOilChange(vehicle.id);
                         return (
-                            <Card key={vehicle.id} className="overflow-hidden border-primary/10 hover:border-primary/30 transition-colors shadow-sm">
+                            <Card key={vehicle.id} className="overflow-hidden border-primary/20 hover:border-primary/50 transition-colors shadow-sm bg-card/50 backdrop-blur-sm">
                                 <CardContent className="p-0 flex items-stretch h-32">
                                     <div className="relative w-32 shrink-0 bg-muted">
                                         {vehicle.imageUrls && vehicle.imageUrls[0] ? (
@@ -227,16 +227,16 @@ export default function DashboardPage() {
                                             <Car className="h-10 w-10 text-muted-foreground m-auto absolute inset-0" />
                                         )}
                                     </div>
-                                    <div className="p-4 flex flex-col justify-between flex-1">
+                                    <div className="p-4 flex flex-col justify-between flex-1 overflow-hidden">
                                         <div>
-                                            <h3 className="font-bold truncate text-sm">{vehicle.brand} {vehicle.model}</h3>
-                                            <p className="text-[10px] text-muted-foreground">{vehicle.year} &bull; {vehicle.licensePlate}</p>
+                                            <h3 className="font-bold truncate text-sm text-primary">{vehicle.brand} {vehicle.model}</h3>
+                                            <p className="text-[10px] text-muted-foreground truncate">{vehicle.year} &bull; {vehicle.licensePlate}</p>
                                         </div>
                                         <div className="space-y-1">
                                             {nextChange ? (
-                                                <div className="flex items-center gap-1 text-[10px] font-medium text-orange-500">
+                                                <div className="flex items-center gap-1 text-[10px] font-bold text-orange-500">
                                                     <Droplets className="h-3 w-3" />
-                                                    Próximo Aceite: {nextChange.toLocaleString()} km
+                                                    Próximo: {nextChange.toLocaleString()} km
                                                 </div>
                                             ) : (
                                                 <div className="flex items-center gap-1 text-[10px] text-muted-foreground">
@@ -257,7 +257,7 @@ export default function DashboardPage() {
                     })}
                 </div>
             ) : (
-                <Card className="flex flex-col items-center justify-center p-8 text-center bg-gradient-to-br from-primary/5 to-card border-dashed">
+                <Card className="flex flex-col items-center justify-center p-8 text-center bg-gradient-to-br from-primary/5 to-card border-dashed border-2">
                     <CardHeader>
                         <CardTitle className="text-lg">Comienza a registrar tu actividad</CardTitle>
                         <CardDescription>Añade tus vehículos para llevar un control profesional de su mantenimiento.</CardDescription>
@@ -291,19 +291,19 @@ export default function DashboardPage() {
 
         <div className="lg:col-span-1">
              <ActionButton 
-                href="/dashboard/my-vehicles"
-                icon={<Car className="h-8 w-8 text-primary"/>}
-                title="Mis Vehículos"
-                description="Registra y gestiona tus vehículos."
+                href="/dashboard/oil-changes"
+                icon={<Droplets className="h-8 w-8 text-primary"/>}
+                title="Cambios de Aceite"
+                description="Lleva un historial de mantenimiento."
             />
         </div>
 
         <div className="lg:col-span-1">
              <ActionButton 
-                href="/dashboard/oil-changes"
-                icon={<Droplets className="h-8 w-8 text-primary"/>}
-                title="Cambios de Aceite"
-                description="Lleva un historial de los cambios de aceite."
+                href="/dashboard/my-vehicles"
+                icon={<Car className="h-8 w-8 text-primary"/>}
+                title="Mis Vehículos"
+                description="Registra y gestiona tus vehículos."
             />
         </div>
 
@@ -317,9 +317,9 @@ export default function DashboardPage() {
         </div>
 
         <div className="lg:col-span-3">
-             <Card>
+             <Card className="border-primary/10">
                 <CardHeader>
-                    <CardTitle className="flex items-center gap-2 text-xl font-bold"><Settings className="h-5 w-5"/> Configuración de la Cuenta</CardTitle>
+                    <CardTitle className="flex items-center gap-2 text-xl font-bold"><Settings className="h-5 w-5 text-primary"/> Configuración de la Cuenta</CardTitle>
                 </CardHeader>
                 <CardContent className="flex flex-col items-start gap-4 sm:flex-row sm:items-center">
                     <Button asChild variant="outline">
