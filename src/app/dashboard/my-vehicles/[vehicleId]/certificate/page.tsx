@@ -1,5 +1,5 @@
 'use client';
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { useUser, useFirestore, useMemoFirebase, useDoc } from '@/firebase';
 import { doc } from 'firebase/firestore';
 import type { Vehicle } from '@/lib/types';
@@ -26,6 +26,11 @@ export default function VehicleCertificatePage() {
   const vehicleId = params.vehicleId as string;
   const { user, isUserLoading } = useUser();
   const firestore = useFirestore();
+  const [currentDate, setCurrentDate] = useState<string>('');
+
+  useEffect(() => {
+    setCurrentDate(new Date().toLocaleDateString());
+  }, []);
 
   const vehicleRef = useMemoFirebase(() => {
     if (!firestore || !user?.uid || !vehicleId) return null;
@@ -63,8 +68,8 @@ export default function VehicleCertificatePage() {
                 <Link href="/dashboard/my-vehicles"><ArrowLeft className="mr-2 h-4 w-4"/> Volver</Link>
             </Button>
             <div className="flex gap-2">
-                <Button onClick={handlePrint} variant="outline">
-                    <Printer className="mr-2 h-4 w-4" /> Imprimir
+                <Button onClick={handlePrint} variant="outline" className="gap-2">
+                    <Printer className="h-4 w-4" /> Imprimir
                 </Button>
             </div>
         </div>
@@ -194,7 +199,7 @@ export default function VehicleCertificatePage() {
             </CardContent>
             
             <CardFooter className="bg-primary/5 border-t border-primary/20 py-4 flex justify-between text-[10px] text-muted-foreground font-bold uppercase">
-                <span>Fecha de Emisión: {new Date().toLocaleDateString()}</span>
+                <span>Fecha de Emisión: {currentDate}</span>
                 <span>MecaniScan v1.2 - Seguridad Vehicular Avanzada</span>
             </CardFooter>
         </Card>
