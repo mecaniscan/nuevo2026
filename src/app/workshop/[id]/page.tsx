@@ -56,32 +56,27 @@ export default function WorkshopDetailPage() {
     const [today, setToday] = React.useState<Date | null>(null);
 
     React.useEffect(() => {
-        // Establecer la fecha de hoy solo en el lado del cliente para evitar errores de hidratación
         setToday(new Date(new Date().setHours(0, 0, 0, 0)));
     }, []);
 
-    // Cargar Taller
     const workshopRef = useMemoFirebase(() => {
         if (!firestore || !workshopId) return null;
         return doc(firestore, 'workshops', workshopId);
     }, [firestore, workshopId]);
     const { data: workshopData, isLoading: isWorkshopLoading } = useDoc<Workshop>(workshopRef);
     
-    // Cargar Servicios
     const workshopServicesCollection = useMemoFirebase(() => {
         if (!firestore || !workshopId) return null;
         return collection(firestore, `workshops/${workshopId}/services`);
       }, [firestore, workshopId]);
     const { data: workshopServices, isLoading: isServicesLoading } = useCollection<Service>(workshopServicesCollection);
     
-    // Cargar Reseñas
     const reviewsCollection = useMemoFirebase(() => {
         if (!firestore || !workshopId) return null;
         return collection(firestore, `workshops/${workshopId}/reviews`);
       }, [firestore, workshopId]);
     const { data: reviews, isLoading: areReviewsLoading } = useCollection<Review>(reviewsCollection);
 
-    // Cargar Vehículos del Usuario
     const vehiclesCollectionRef = useMemoFirebase(() => {
         if (!firestore || !user?.uid) return null;
         return collection(firestore, `users/${user.uid}/vehicles`);
@@ -93,7 +88,6 @@ export default function WorkshopDetailPage() {
         return reviews.some(review => review.userId === user.uid);
     }, [user, reviews]);
 
-    // Cargar Favoritos
     const favoriteRef = useMemoFirebase(() => {
         if (!firestore || !user?.uid || !workshopId) return null;
         return doc(firestore, `users/${user.uid}/favorites`, workshopId);
@@ -125,10 +119,6 @@ export default function WorkshopDetailPage() {
           services: workshopServices || [],
         };
     }, [workshopData, workshopServices]);
-
-    const handleLogin = () => {
-        router.push('/login');
-    };
 
     const toggleFavorite = async () => {
         if (!firestore || !user || !workshopId || !workshop) {
@@ -242,9 +232,7 @@ export default function WorkshopDetailPage() {
         try {
             await runTransaction(firestore, async (transaction) => {
                 const workshopDoc = await transaction.get(workshopRef);
-                if (!workshopDoc.exists()) {
-                    throw new Error("El taller no existe.");
-                }
+                if (!workshopDoc.exists()) throw new Error("Taller no encontrado.");
 
                 const currentData = workshopDoc.data();
                 const currentReviewCount = currentData.reviewCount || 0;
@@ -253,13 +241,11 @@ export default function WorkshopDetailPage() {
                 const newReviewCount = currentReviewCount + 1;
                 const newAverageRating = (currentAverageRating * currentReviewCount + values.rating) / newReviewCount;
 
-                // Actualizar el taller con las nuevas estadísticas
                 transaction.update(workshopRef, {
                     reviewCount: newReviewCount,
                     averageRating: newAverageRating
                 });
 
-                // Crear la reseña
                 const reviewData = {
                     rating: values.rating,
                     comment: values.comment,
@@ -271,25 +257,14 @@ export default function WorkshopDetailPage() {
                 transaction.set(reviewRef, reviewData);
             });
 
-            toast({
-                title: "¡Reseña Enviada!",
-                description: "Gracias por compartir tu opinión.",
-            });
+            toast({ title: "¡Reseña Enviada!", description: "Gracias por compartir tu opinión." });
             reviewForm.reset({rating: 0, comment: ""});
-
         } catch (error: any) {
-            console.error("Error en transacción de reseña:", error);
-            const reviewData = {
-                rating: values.rating,
-                comment: values.comment,
-                workshopId,
-                userId: user.uid,
-                authorName: user.displayName || user.email,
-            };
+            console.error("Error en transacción:", error);
             errorEmitter.emit('permission-error', new FirestorePermissionError({
                 path: reviewRef.path,
                 operation: 'create',
-                requestResourceData: reviewData
+                requestResourceData: { rating: values.rating, comment: values.comment }
             }));
         } finally {
             setIsSubmittingReview(false);
@@ -308,11 +283,7 @@ export default function WorkshopDetailPage() {
     };
 
     if (isWorkshopLoading || isUserLoading || isServicesLoading || areReviewsLoading || isFavoriteLoading || areVehiclesLoading) {
-        return (
-            <div className="flex min-h-screen items-center justify-center">
-                <Loader2 className="h-16 w-16 animate-spin text-primary" />
-            </div>
-        );
+        return <div className="flex min-h-screen items-center justify-center"><Loader2 className="h-16 w-16 animate-spin text-primary" /></div>;
     }
 
     if (!workshop) {
@@ -320,10 +291,7 @@ export default function WorkshopDetailPage() {
             <div className="flex min-h-screen items-center justify-center">
                 <div className="text-center">
                     <h1 className="text-2xl font-bold">Taller no encontrado</h1>
-                    <p className="text-muted-foreground">No pudimos encontrar el taller solicitado.</p>
-                    <Button asChild variant="link">
-                        <Link href="/">Volver al inicio</Link>
-                    </Button>
+                    <Button asChild variant="link"><Link href="/">Volver al inicio</Link></Button>
                 </div>
             </div>
         );
@@ -333,32 +301,21 @@ export default function WorkshopDetailPage() {
     <div className="container mx-auto py-12 px-4">
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-12">
             <div className="lg:col-span-2 space-y-8">
-                {/* Cabecera con Imagen */}
                 <div className="relative h-96 w-full rounded-xl overflow-hidden shadow-lg bg-muted flex items-center justify-center">
                     {workshop.imageUrl ? (
-                        <Image
-                            src={workshop.imageUrl}
-                            alt={workshop.name}
-                            fill
-                            className="object-cover"
-                            priority
-                        />
-                    ) : (
-                        <Car className="h-24 w-24 text-muted-foreground"/>
-                    )}
+                        <Image src={workshop.imageUrl} alt={workshop.name} fill className="object-cover" priority />
+                    ) : <Car className="h-24 w-24 text-muted-foreground"/>}
                     <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/30 to-transparent" />
                     <div className="absolute bottom-0 left-0 p-6 w-full flex justify-between items-end">
                         <div>
                             <h1 className="text-4xl font-headline font-bold text-white shadow-text">{workshop.name}</h1>
                             <div className="flex items-center gap-2 text-sm text-white/90 mt-2">
-                                <MapPin className="h-4 w-4 shrink-0" /> 
-                                <span>{workshop.address}</span>
+                                <MapPin className="h-4 w-4 shrink-0" /> <span>{workshop.address}</span>
                             </div>
                         </div>
                         {user && !user.isAnonymous && (
                             <Button size="icon" variant="secondary" onClick={toggleFavorite} className="rounded-full h-12 w-12 shrink-0">
                                 <Heart className={cn("h-6 w-6 transition-all", isFavorite ? "text-red-500 fill-red-500" : "text-muted-foreground")} />
-                                <span className="sr-only">Favorito</span>
                             </Button>
                         )}
                     </div>
@@ -369,11 +326,8 @@ export default function WorkshopDetailPage() {
                     )}
                 </div>
                 
-                {/* Detalles del Taller */}
                 <Card>
-                    <CardHeader>
-                        <CardTitle>Acerca de {workshop.name}</CardTitle>
-                    </CardHeader>
+                    <CardHeader><CardTitle>Acerca de {workshop.name}</CardTitle></CardHeader>
                     <CardContent className="space-y-6">
                         <p className="text-muted-foreground">{workshop.description}</p>
                         <div className="flex items-center gap-6 flex-wrap">
@@ -382,17 +336,10 @@ export default function WorkshopDetailPage() {
                                 <span className="font-bold text-foreground text-lg">{(workshop.averageRating || 0).toFixed(1)}</span>
                                 <span className="text-sm text-muted-foreground">({(workshop.reviewCount || 0)} reseñas)</span>
                             </div>
-                             <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                                <Phone className="h-4 w-4" /> {workshop.contactNumber}
-                            </div>
+                             <div className="flex items-center gap-2 text-sm text-muted-foreground"><Phone className="h-4 w-4" /> {workshop.contactNumber}</div>
                             {workshop.whatsappNumber && (
-                                <a
-                                href={`https://wa.me/${workshop.whatsappNumber.replace(/\D/g, '')}`}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-primary"
-                                >
-                                <WhatsappIcon /> {workshop.whatsappNumber}
+                                <a href={`https://wa.me/${workshop.whatsappNumber.replace(/\D/g, '')}`} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-primary">
+                                    <WhatsappIcon /> {workshop.whatsappNumber}
                                 </a>
                             )}
                         </div>
@@ -406,190 +353,81 @@ export default function WorkshopDetailPage() {
                                     </Badge>
                                 ))}
                                 </div>
-                            ) : (
-                                <p className="text-sm text-muted-foreground">Aún no se han especificado servicios.</p>
-                            )}
+                            ) : <p className="text-sm text-muted-foreground">Aún no se han especificado servicios.</p>}
                         </div>
                     </CardContent>
                 </Card>
 
-                 {/* Sección de Reseñas */}
                 <Card>
-                    <CardHeader>
-                        <CardTitle className="flex items-center gap-2"><MessageSquare/> Reseñas</CardTitle>
-                    </CardHeader>
+                    <CardHeader><CardTitle className="flex items-center gap-2"><MessageSquare/> Reseñas</CardTitle></CardHeader>
                     <CardContent className="space-y-6">
                         {user && !user.isAnonymous && !userHasReviewed && (
                             <Form {...reviewForm}>
                                 <form onSubmit={reviewForm.handleSubmit(onReviewSubmit)} className="space-y-4 p-4 border rounded-lg bg-card/30">
-                                    <FormLabel>Deja tu opinión</FormLabel>
-                                    <FormField
-                                        control={reviewForm.control}
-                                        name="rating"
-                                        render={({ field }) => (
-                                        <FormItem className="flex items-center gap-2">
+                                    <div className="flex items-center gap-2">
+                                        <FormField control={reviewForm.control} name="rating" render={({ field }) => (
                                             <div className="flex">
                                                 {[1, 2, 3, 4, 5].map((star) => (
-                                                <Star
-                                                    key={star}
-                                                    className={cn("h-6 w-6 cursor-pointer transition-colors", field.value >= star ? "text-amber-400 fill-amber-400" : "text-muted-foreground")}
-                                                    onClick={() => field.onChange(star)}
-                                                />
+                                                <Star key={star} className={cn("h-6 w-6 cursor-pointer", field.value >= star ? "text-amber-400 fill-amber-400" : "text-muted-foreground")} onClick={() => field.onChange(star)} />
                                                 ))}
                                             </div>
-                                            <FormMessage/>
-                                        </FormItem>
-                                        )}
-                                    />
-                                    <FormField
-                                        control={reviewForm.control}
-                                        name="comment"
-                                        render={({ field }) => (
-                                        <FormItem>
-                                            <FormControl>
-                                            <Textarea placeholder="Cuéntanos tu experiencia..." {...field}/>
-                                            </FormControl>
-                                            <FormMessage />
-                                        </FormItem>
-                                        )}
-                                    />
-                                    <Button type="submit" disabled={isSubmittingReview}>
-                                        {isSubmittingReview ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <Send className="mr-2 h-4 w-4" />}
-                                        Enviar Reseña
-                                    </Button>
+                                        )} />
+                                    </div>
+                                    <FormField control={reviewForm.control} name="comment" render={({ field }) => (
+                                        <FormItem><FormControl><Textarea placeholder="Cuéntanos tu experiencia..." {...field}/></FormControl><FormMessage /></FormItem>
+                                    )} />
+                                    <Button type="submit" disabled={isSubmittingReview}>{isSubmittingReview ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <Send className="mr-2 h-4 w-4" />} Enviar Reseña</Button>
                                 </form>
                             </Form>
                         )}
                         <div className="space-y-4">
-                            {reviews && reviews.length > 0 ? (
-                                reviews.map(review => (
+                            {reviews && reviews.length > 0 ? reviews.map(review => (
                                 <div key={review.id} className="p-4 border-b last:border-0">
                                     <div className="flex justify-between items-center">
                                       <p className="font-semibold">{review.authorName || 'Anónimo'}</p>
                                       <div className="flex items-center">
-                                          {[...Array(5)].map((_, i) => (
-                                            <Star key={i} className={cn("h-4 w-4", i < review.rating ? "fill-amber-400 text-amber-400" : "text-muted-foreground")}/>
-                                          ))}
+                                          {[...Array(5)].map((_, i) => <Star key={i} className={cn("h-4 w-4", i < review.rating ? "fill-amber-400 text-amber-400" : "text-muted-foreground")}/>)}
                                       </div>
                                     </div>
                                     <p className="text-muted-foreground mt-2">{review.comment}</p>
                                     <p className="text-xs text-muted-foreground mt-2">{formatDate(review.createdAt)}</p>
                                 </div>
-                                ))
-                            ) : (
-                                <p className="text-muted-foreground text-center py-4">Sin reseñas todavía. ¡Sé el primero!</p>
-                            )}
+                            )) : <p className="text-muted-foreground text-center py-4">Sin reseñas todavía. ¡Sé el primero!</p>}
                         </div>
                     </CardContent>
                 </Card>
             </div>
             
-            {/* Formulario de Cita */}
             <div className="lg:col-span-1">
                 <Card className="sticky top-24 shadow-xl border-primary/10">
-                    <CardHeader>
-                        <CardTitle>Agendar Cita</CardTitle>
-                        <CardDescription>Reserva tu lugar y agiliza la atención vía WhatsApp.</CardDescription>
-                    </CardHeader>
+                    <CardHeader><CardTitle>Agendar Cita</CardTitle><CardDescription>Reserva tu lugar vía WhatsApp.</CardDescription></CardHeader>
                     <CardContent>
                         {user ? (
                             (!vehicles || vehicles.length === 0) ? (
-                                <div className="flex flex-col items-center justify-center text-center space-y-4 p-8 border-2 border-dashed rounded-lg">
-                                    <p className="text-muted-foreground">Registra un vehículo primero para poder agendar.</p>
-                                    <Button asChild>
-                                        <Link href="/dashboard/my-vehicles">Registrar Vehículo</Link>
-                                    </Button>
+                                <div className="text-center space-y-4 p-8 border-2 border-dashed rounded-lg">
+                                    <p className="text-muted-foreground">Registra un vehículo primero.</p>
+                                    <Button asChild><Link href="/dashboard/my-vehicles">Registrar Vehículo</Link></Button>
                                 </div>
                             ) : (
                                 <Form {...appointmentForm}>
                                     <form onSubmit={appointmentForm.handleSubmit(onAppointmentSubmit)} className="space-y-6">
-                                        <FormField
-                                            control={appointmentForm.control}
-                                            name="vehicleId"
-                                            render={({ field }) => (
-                                                <FormItem>
-                                                <FormLabel>Vehículo</FormLabel>
-                                                <Select onValueChange={field.onChange} defaultValue={field.value}>
-                                                    <FormControl>
-                                                    <SelectTrigger>
-                                                        <SelectValue placeholder="Selecciona un vehículo" />
-                                                    </SelectTrigger>
-                                                    </FormControl>
-                                                    <SelectContent>
-                                                    {vehicles.map(v => (
-                                                        <SelectItem key={v.id} value={v.id}>
-                                                        {v.brand} {v.model} ({v.year})
-                                                        </SelectItem>
-                                                    ))}
-                                                    </SelectContent>
-                                                </Select>
-                                                <FormMessage />
-                                                </FormItem>
-                                            )}
-                                        />
-                                        <FormField
-                                            control={appointmentForm.control}
-                                            name="appointmentDateTime"
-                                            render={({ field }) => (
-                                                <FormItem className="flex flex-col">
-                                                <FormLabel>Fecha</FormLabel>
-                                                <Popover>
-                                                    <PopoverTrigger asChild>
-                                                    <FormControl>
-                                                        <Button
-                                                        variant={"outline"}
-                                                        className={cn(
-                                                            "w-full pl-3 text-left font-normal",
-                                                            !field.value && "text-muted-foreground"
-                                                        )}
-                                                        >
-                                                        {field.value ? (
-                                                            format(field.value, "PPP", { locale: es })
-                                                        ) : (
-                                                            <span>Seleccionar fecha</span>
-                                                        )}
-                                                        <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
-                                                        </Button>
-                                                    </FormControl>
-                                                    </PopoverTrigger>
-                                                    <PopoverContent className="w-auto p-0" align="start">
-                                                    <Calendar
-                                                        mode="single"
-                                                        selected={field.value}
-                                                        onSelect={field.onChange}
-                                                        disabled={(date) => today ? date < today : true}
-                                                        initialFocus
-                                                    />
-                                                    </PopoverContent>
-                                                </Popover>
-                                                <FormMessage />
-                                                </FormItem>
-                                            )}
-                                        />
-                                        <FormField
-                                            control={appointmentForm.control}
-                                            name="description"
-                                            render={({ field }) => (
-                                            <FormItem>
-                                                <FormLabel>Motivo de la visita</FormLabel>
-                                                <FormControl>
-                                                <Textarea placeholder="Ej: Ruido en los frenos, cambio de aceite..." {...field} />
-                                                </FormControl>
-                                                <FormMessage />
-                                            </FormItem>
-                                            )}
-                                        />
-                                        <Button type="submit" disabled={isSubmitting} className="w-full h-12 text-lg">
-                                            {isSubmitting ? <Loader2 className="mr-2 h-5 w-5 animate-spin" /> : <WhatsappIcon />}
-                                            Contactar por WhatsApp
-                                        </Button>
+                                        <FormField control={appointmentForm.control} name="vehicleId" render={({ field }) => (
+                                            <FormItem><FormLabel>Vehículo</FormLabel><Select onValueChange={field.onChange} defaultValue={field.value}><FormControl><SelectTrigger><SelectValue placeholder="Selecciona..." /></SelectTrigger></FormControl><SelectContent>{vehicles.map(v => <SelectItem key={v.id} value={v.id}>{v.brand} {v.model}</SelectItem>)}</SelectContent></Select><FormMessage /></FormItem>
+                                        )} />
+                                        <FormField control={appointmentForm.control} name="appointmentDateTime" render={({ field }) => (
+                                            <FormItem className="flex flex-col"><FormLabel>Fecha</FormLabel><Popover><PopoverTrigger asChild><FormControl><Button variant={"outline"} className={cn("w-full pl-3 text-left font-normal", !field.value && "text-muted-foreground")}>{field.value ? format(field.value, "PPP", { locale: es }) : <span>Seleccionar...</span>}<CalendarIcon className="ml-auto h-4 w-4 opacity-50" /></Button></FormControl></PopoverTrigger><PopoverContent className="w-auto p-0" align="start"><Calendar mode="single" selected={field.value} onSelect={field.onChange} disabled={(date) => today ? date < today : true} initialFocus /></PopoverContent></Popover><FormMessage /></FormItem>
+                                        )} />
+                                        <FormField control={appointmentForm.control} name="description" render={({ field }) => (
+                                            <FormItem><FormLabel>Motivo</FormLabel><FormControl><Textarea placeholder="Ej: Cambio de aceite..." {...field} /></FormControl><FormMessage /></FormItem>
+                                        )} />
+                                        <Button type="submit" disabled={isSubmitting} className="w-full h-12 text-lg"><WhatsappIcon /> Contactar WhatsApp</Button>
                                     </form>
                                 </Form>
                             )
                         ) : (
-                            <div className="flex flex-col items-center justify-center text-center space-y-4 p-8 border-2 border-dashed rounded-lg">
-                                <p className="text-muted-foreground">Inicia sesión para agendar tu cita.</p>
-                                <Button onClick={handleLogin}>Iniciar Sesión</Button>
+                            <div className="text-center space-y-4 p-8 border-2 border-dashed rounded-lg">
+                                <p className="text-muted-foreground">Inicia sesión para agendar.</p>
+                                <Button asChild><Link href="/login">Iniciar Sesión</Link></Button>
                             </div>
                         )}
                     </CardContent>

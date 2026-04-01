@@ -36,24 +36,20 @@ service cloud.firestore {
 
     // Colección de TALLERES
     match /workshops/{workshopId} {
-      // Lectura pública permitida para todos.
       allow get, list: if true;
       
-      // Creación: Solo usuarios registrados y estableciendo su propio ownerId.
       allow create: if isSignedIn() && request.resource.data.ownerId == request.auth.uid;
       
       // Actualización: 
       // 1. El dueño puede editar todo.
-      // 2. Otros usuarios (clientes) pueden actualizar SOLO las estadísticas de reseñas mediante transacciones.
+      // 2. Otros usuarios pueden actualizar ÚNICAMENTE las estadísticas de reseñas.
       allow update: if isSignedIn() && (
         isOwner(resource.data.ownerId) || 
-        (request.resource.data.diff(resource.data).affectedKeys().hasOnly(['reviewCount', 'averageRating']) && 
-         request.resource.data.ownerId == resource.data.ownerId)
+        (request.resource.data.diff(resource.data).affectedKeys().hasOnly(['reviewCount', 'averageRating']))
       );
       
       allow delete: if isOwner(resource.data.ownerId);
 
-       // Subcolecciones de TALLER
       match /services/{serviceId} {
         allow list, get: if true;
         allow create, update, delete: if isWorkshopOwner(workshopId);
@@ -61,22 +57,22 @@ service cloud.firestore {
       
       match /reviews/{reviewUserId} {
         allow list, get: if true;
-        // Un usuario solo puede gestionar su propio documento de reseña por su UID.
+        // Permite crear si el UID coincide. Se usa en transacciones con el taller.
         allow create, update, delete: if isSignedIn() && request.auth.uid == reviewUserId;
       }
     }
     
     // Colección de CITAS
     match /appointments/{appointmentId} {
-        allow create: if isOwner(request.resource.data.userId);
-        allow read, update, delete: if isOwner(resource.data.userId) || isWorkshopOwner(resource.data.workshopId);
+        allow create: if isSignedIn() && request.resource.data.userId == request.auth.uid;
+        allow read, update, delete: if isSignedIn() && (request.auth.uid == resource.data.userId || isWorkshopOwner(resource.data.workshopId));
     }
 
     // Colección de MARKETPLACE
     match /marketplace/{marketVehicleId} {
       allow get, list: if true;
-      allow create: if isOwner(request.resource.data.userId);
-      allow update, delete: if isOwner(resource.data.userId);
+      allow create: if isSignedIn() && request.resource.data.userId == request.auth.uid;
+      allow update, delete: if isSignedIn() && request.auth.uid == resource.data.userId;
     }
   }
 }
