@@ -20,14 +20,14 @@ import { signOut } from 'firebase/auth';
 function MainNav({ className, onLinkClick }: { className?: string, onLinkClick?: () => void }) {
   return (
     <nav className={cn("items-center space-x-6 lg:space-x-8", className)}>
-      <Link href="/#workshops" onClick={onLinkClick} className="text-base font-semibold bg-gradient-to-r from-red-500 via-yellow-400 to-orange-500 text-transparent bg-clip-text hover:opacity-80 transition-opacity">
+      <Link href="/#workshops" onClick={onLinkClick} className="text-base font-semibold bg-gradient-to-r from-primary to-cyan-400 text-transparent bg-clip-text hover:opacity-80 transition-opacity">
         Talleres
       </Link>
-       <Link href="/marketplace" onClick={onLinkClick} className="text-base font-semibold bg-gradient-to-r from-red-500 via-yellow-400 to-orange-500 text-transparent bg-clip-text hover:opacity-80 transition-opacity">
+       <Link href="/marketplace" onClick={onLinkClick} className="text-base font-semibold bg-gradient-to-r from-primary to-cyan-400 text-transparent bg-clip-text hover:opacity-80 transition-opacity">
         Marketplace
       </Link>
-      <Link href="/verify" onClick={onLinkClick} className="text-base font-semibold bg-gradient-to-r from-red-500 via-yellow-400 to-orange-500 text-transparent bg-clip-text hover:opacity-80 transition-opacity flex items-center gap-1">
-        <FileCheck className="h-4 w-4 text-orange-500" /> Validar Certificado
+      <Link href="/verify" onClick={onLinkClick} className="text-base font-semibold bg-gradient-to-r from-primary to-cyan-400 text-transparent bg-clip-text hover:opacity-80 transition-opacity flex items-center gap-1">
+        <FileCheck className="h-4 w-4 text-primary" /> Validar Certificado
       </Link>
     </nav>
   );
@@ -108,9 +108,9 @@ export function Header() {
           {!user && !isUserLoading && (
             <>
                <Button variant="ghost" asChild>
-                <Link href="/login" className="text-base font-semibold bg-gradient-to-r from-red-500 via-yellow-400 to-orange-500 text-transparent bg-clip-text hover:opacity-80 transition-opacity">Iniciar Sesión</Link>
+                <Link href="/login" className="text-base font-semibold bg-gradient-to-r from-primary to-cyan-400 text-transparent bg-clip-text hover:opacity-80 transition-opacity">Iniciar Sesión</Link>
               </Button>
-               <Button asChild className="bg-gradient-to-r from-red-500 via-yellow-400 to-orange-500 text-primary-foreground hover:opacity-90 transition-opacity">
+               <Button asChild className="bg-gradient-to-r from-primary to-cyan-500 text-primary-foreground hover:opacity-90 transition-opacity">
                 <Link href="/register">Crear Cuenta</Link>
               </Button>
             </>
