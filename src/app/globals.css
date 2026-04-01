@@ -26,7 +26,7 @@
     --radius: 0.75rem;
   }
   .dark {
-    --background: 222.2 47.4% 11.2%; /* Gris Oscuro Profundo */
+    --background: 222.2 47.4% 11.2%;
     --foreground: 210 40% 98%;
     --card: 222.2 47.4% 11.2%;
     --card-foreground: 210 40% 98%;

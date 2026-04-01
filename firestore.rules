@@ -3,7 +3,6 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    // Funciones auxiliares para legibilidad y seguridad
     function isSignedIn() {
       return request.auth != null;
     }
@@ -16,7 +15,6 @@ service cloud.firestore {
       return isSignedIn() && get(/databases/$(database)/documents/workshops/$(workshopId)).data.ownerId == request.auth.uid;
     }
     
-    // Colección de USUARIOS
     match /users/{userId} {
       allow create: if isOwner(userId);
       allow read, update, delete: if isOwner(userId);
@@ -34,15 +32,11 @@ service cloud.firestore {
       }
     }
 
-    // Colección de TALLERES
     match /workshops/{workshopId} {
       allow get, list: if true;
-      
       allow create: if isSignedIn() && request.resource.data.ownerId == request.auth.uid;
       
-      // Actualización: 
-      // 1. El dueño puede editar todo.
-      // 2. Otros usuarios pueden actualizar ÚNICAMENTE las estadísticas de reseñas.
+      // Permitir actualización del dueño o actualización pública de estadísticas de reseñas
       allow update: if isSignedIn() && (
         isOwner(resource.data.ownerId) || 
         (request.resource.data.diff(resource.data).affectedKeys().hasOnly(['reviewCount', 'averageRating']))
@@ -57,18 +51,15 @@ service cloud.firestore {
       
       match /reviews/{reviewUserId} {
         allow list, get: if true;
-        // Permite crear si el UID coincide. Se usa en transacciones con el taller.
         allow create, update, delete: if isSignedIn() && request.auth.uid == reviewUserId;
       }
     }
     
-    // Colección de CITAS
     match /appointments/{appointmentId} {
         allow create: if isSignedIn() && request.resource.data.userId == request.auth.uid;
         allow read, update, delete: if isSignedIn() && (request.auth.uid == resource.data.userId || isWorkshopOwner(resource.data.workshopId));
     }
 
-    // Colección de MARKETPLACE
     match /marketplace/{marketVehicleId} {
       allow get, list: if true;
       allow create: if isSignedIn() && request.resource.data.userId == request.auth.uid;

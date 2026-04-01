@@ -17,7 +17,6 @@ import { initiateEmailSignIn } from '@/firebase/non-blocking-login';
 import { getPlaceholderImage } from '@/lib/placeholder-images';
 import Image from 'next/image';
 
-
 const loginSchema = z.object({
   email: z.string().email('El correo electrónico no es válido.'),
   password: z.string().min(1, 'La contraseña es obligatoria.'),
@@ -86,10 +85,10 @@ export default function LoginPage() {
             />
        )}
        <div className="absolute inset-0 z-10 bg-black/60 backdrop-blur-sm" />
-      <Card className="z-20 w-full max-md shadow-2xl bg-black/20 border-white/20 text-white">
+      <Card className="z-20 w-full max-w-md shadow-2xl bg-black/20 border-white/20 text-white">
         <CardHeader className="text-center">
-          <CardTitle className="text-3xl font-headline text-primary">Bienvenido de Nuevo</CardTitle>
-          <CardDescription className="text-white/80">Inicia sesión para acceder a tu panel.</CardDescription>
+          <CardTitle className="text-3xl font-headline text-primary">MecaniScan Pro</CardTitle>
+          <CardDescription className="text-white/80">Inicia sesión para gestionar tus diagnósticos.</CardDescription>
         </CardHeader>
         <CardContent>
             <Form {...form}>
@@ -132,7 +131,7 @@ export default function LoginPage() {
                     </FormItem>
                   )}
                 />
-                <Button type="submit" className="w-full" disabled={isLoggingIn}>
+                <Button type="submit" className="w-full bg-primary hover:bg-primary/90 text-primary-foreground font-bold h-12" disabled={isLoggingIn}>
                    {isLoggingIn ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Lock className="mr-2 h-4 w-4" />}
                    {isLoggingIn ? 'Iniciando Sesión...' : 'Iniciar Sesión'}
                 </Button>
@@ -142,11 +141,11 @@ export default function LoginPage() {
         <CardContent className="flex flex-col gap-4 text-center">
             <p className="text-sm text-white/70">
             ¿No tienes una cuenta?{' '}
-            <Button variant="link" className="p-0 h-auto text-primary" asChild>
+            <Button variant="link" className="p-0 h-auto text-primary font-bold" asChild>
                 <Link href="/register">Regístrate aquí</Link>
             </Button>
             </p>
-            <Button variant="link" className="text-orange-500" asChild>
+            <Button variant="link" className="text-muted-foreground hover:text-white" asChild>
                 <Link href="/">Volver a la página principal</Link>
             </Button>
         </CardContent>
